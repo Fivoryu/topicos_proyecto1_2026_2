@@ -1,0 +1,6 @@
+{
+  "include": ["backend/app", "backend/migrations", "backend/tests"],
+  "exclude": ["**/__pycache__", "**/.pytest_cache", "**/.ruff_cache"],
+  "extraPaths": ["."],
+  "pythonVersion": "3.11"
+}
