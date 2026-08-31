@@ -1,0 +1,49 @@
+project:
+  name: topicos-proyecto-1
+  description: "Cuentas Claras / Amigo Duradero group expense app for Tópicos"
+  stack:
+    backend: "FastAPI/Python + PostgreSQL/SQLAlchemy/Alembic"
+    web: "React/Vite/TanStack Query/Tailwind"
+    mobile: "Flutter/Bloc-Cubit/Dio"
+  monetary_authority: FastAPI
+  api_contract: OpenAPI
+  realtime_policy: "WebSocket invalidates/refetches REST only"
+sdd:
+  artifact_store: both
+  execution_mode: auto
+  delivery_strategy: exception-ok
+  chain_strategy: stacked-to-main
+  review_budget_changed_lines: 600
+  strict_tdd: true
+  phase_rules:
+    - "Define and approve proposal, specs, design, context, and tasks before product code."
+    - "Implement incrementally, one task at a time, with acceptance checks."
+    - "Preserve docs/requerimiento-docente.md as the baseline source."
+testing:
+  runner: "pytest 9.1.1, Vitest 3.0.5, Flutter test"
+  capabilities:
+    backend:
+      runner: "pytest 9.1.1"
+      runtime: "Python 3.14.6"
+      command: "python -m pytest backend/tests -q"
+    web:
+      script: "test"
+      runner: "Vitest 3.0.5"
+      runtime: "Node v22.23.0"
+      command: "npm --prefix web run test"
+    mobile:
+      runner: "Flutter test 3.41.8"
+      runtime: "Dart 3.11.5"
+      command: "cd mobile && flutter test --no-pub"
+  strict_tdd:
+    red: >-
+      Write the focused failing test, then run the affected runner command.
+    green: >-
+      Run the affected runner command and require the focused behavior plus
+      existing suite to pass.
+    triangulate: >-
+      Re-run the focused command with edge cases and invalid-state coverage.
+    refactor: >-
+      Run the affected runner command again after cleanup; retain green
+      evidence.
+  status: detected
