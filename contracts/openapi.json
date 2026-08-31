@@ -1,0 +1,1777 @@
+{
+  "components": {
+    "responses": {
+      "ErrorResponse": {
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/ErrorResponse"
+            }
+          }
+        },
+        "description": "Stable machine-readable error envelope."
+      }
+    },
+    "schemas": {
+      "AccountIdentityResponse": {
+        "additionalProperties": false,
+        "description": "Public account identity; password and session token never appear here.",
+        "properties": {
+          "id": {
+            "title": "Id"
+          },
+          "login_name": {
+            "title": "Login Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "login_name"
+        ],
+        "title": "AccountIdentityResponse",
+        "type": "object"
+      },
+      "BalanceParticipantResponse": {
+        "additionalProperties": false,
+        "description": "One stable-order participant balance row.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "balance_cents": {
+            "title": "Balance Cents",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owed_cents": {
+            "title": "Owed Cents",
+            "type": "integer"
+          },
+          "paid_cents": {
+            "title": "Paid Cents",
+            "type": "integer"
+          },
+          "participant_id": {
+            "title": "Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id",
+          "name",
+          "archived",
+          "paid_cents",
+          "owed_cents",
+          "balance_cents"
+        ],
+        "title": "BalanceParticipantResponse",
+        "type": "object"
+      },
+      "BalancesResponse": {
+        "additionalProperties": false,
+        "description": "All participant balances derived from current source expenses.",
+        "properties": {
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "participants": {
+            "items": {
+              "$ref": "#/components/schemas/BalanceParticipantResponse"
+            },
+            "title": "Participants",
+            "type": "array"
+          }
+        },
+        "required": [
+          "group_id",
+          "participants"
+        ],
+        "title": "BalancesResponse",
+        "type": "object"
+      },
+      "DatabaseStatus": {
+        "enum": [
+          "ok",
+          "unavailable"
+        ],
+        "title": "DatabaseStatus",
+        "type": "string"
+      },
+      "ErrorResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "error_code": {
+            "type": "string"
+          },
+          "field_errors": {
+            "items": {
+              "$ref": "#/components/schemas/FieldError"
+            },
+            "type": "array"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "error_code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ExpenseBeneficiaryResponse": {
+        "additionalProperties": false,
+        "description": "Beneficiary history resolved to current participant metadata.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "participant_id": {
+            "title": "Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id",
+          "name",
+          "archived"
+        ],
+        "title": "ExpenseBeneficiaryResponse",
+        "type": "object"
+      },
+      "ExpenseContributorRequest": {
+        "additionalProperties": false,
+        "description": "One contributor and its decimal lexical input.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "participant_id": {
+            "title": "Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id",
+          "amount"
+        ],
+        "title": "ExpenseContributorRequest",
+        "type": "object"
+      },
+      "ExpenseContributorResponse": {
+        "additionalProperties": false,
+        "description": "Contributor history resolved to current participant metadata.",
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "participant_id": {
+            "title": "Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "participant_id",
+          "name",
+          "archived",
+          "amount_cents"
+        ],
+        "title": "ExpenseContributorResponse",
+        "type": "object"
+      },
+      "ExpenseResponse": {
+        "additionalProperties": false,
+        "description": "Persisted source expense; monetary values are integer cents only.",
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "beneficiaries": {
+            "items": {
+              "$ref": "#/components/schemas/ExpenseBeneficiaryResponse"
+            },
+            "title": "Beneficiaries",
+            "type": "array"
+          },
+          "contributors": {
+            "items": {
+              "$ref": "#/components/schemas/ExpenseContributorResponse"
+            },
+            "title": "Contributors",
+            "type": "array"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "required": [
+          "id",
+          "group_id",
+          "description",
+          "amount_cents",
+          "contributors",
+          "beneficiaries"
+        ],
+        "title": "ExpenseResponse",
+        "type": "object"
+      },
+      "ExpenseWriteRequest": {
+        "additionalProperties": false,
+        "description": "Complete replacement command for an expense.",
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "beneficiary_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Beneficiary Ids",
+            "type": "array"
+          },
+          "contributors": {
+            "items": {
+              "$ref": "#/components/schemas/ExpenseContributorRequest"
+            },
+            "title": "Contributors",
+            "type": "array"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          }
+        },
+        "required": [
+          "description",
+          "amount",
+          "contributors",
+          "beneficiary_ids"
+        ],
+        "title": "ExpenseWriteRequest",
+        "type": "object"
+      },
+      "FieldError": {
+        "additionalProperties": false,
+        "properties": {
+          "field": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "field",
+          "message"
+        ],
+        "type": "object"
+      },
+      "GroupResponse": {
+        "additionalProperties": false,
+        "description": "Server-owned group identity and settlement policy.",
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "owner_account_id": {
+            "title": "Owner Account Id",
+            "type": "string"
+          },
+          "settlementPolicy": {
+            "enum": [
+              "owner_only",
+              "any_member"
+            ],
+            "title": "Settlementpolicy",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "owner_account_id",
+          "settlementPolicy"
+        ],
+        "title": "GroupResponse",
+        "type": "object"
+      },
+      "GroupUpdateRequest": {
+        "additionalProperties": false,
+        "description": "The only mutable group setting exposed by the MVP.",
+        "properties": {
+          "settlementPolicy": {
+            "enum": [
+              "owner_only",
+              "any_member"
+            ],
+            "title": "Settlementpolicy",
+            "type": "string"
+          }
+        },
+        "required": [
+          "settlementPolicy"
+        ],
+        "title": "GroupUpdateRequest",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "database": {
+            "$ref": "#/components/schemas/DatabaseStatus"
+          },
+          "status": {
+            "$ref": "#/components/schemas/HealthStatus"
+          }
+        },
+        "required": [
+          "status",
+          "database"
+        ],
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "HealthStatus": {
+        "enum": [
+          "ok",
+          "error"
+        ],
+        "title": "HealthStatus",
+        "type": "string"
+      },
+      "LoginRequest": {
+        "additionalProperties": false,
+        "description": "Credentials accepted by the seeded-account login operation.",
+        "properties": {
+          "login_name": {
+            "title": "Login Name",
+            "type": "string"
+          },
+          "password": {
+            "title": "Password",
+            "type": "string"
+          }
+        },
+        "required": [
+          "login_name",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "ParticipantResponse": {
+        "additionalProperties": false,
+        "description": "Current participant identity and archive state.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "group_id",
+          "name",
+          "archived"
+        ],
+        "title": "ParticipantResponse",
+        "type": "object"
+      },
+      "ParticipantWriteRequest": {
+        "additionalProperties": false,
+        "description": "Request used to add a participant.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "ParticipantWriteRequest",
+        "type": "object"
+      },
+      "RenameParticipantRequest": {
+        "additionalProperties": false,
+        "description": "Exactly the name-only participant rename contract.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "RenameParticipantRequest",
+        "type": "object"
+      },
+      "SessionIdentityResponse": {
+        "additionalProperties": false,
+        "description": "Safe identity response with a role derived by the server.",
+        "properties": {
+          "account": {
+            "$ref": "#/components/schemas/AccountIdentityResponse"
+          },
+          "active_group_id": {
+            "title": "Active Group Id"
+          },
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "owner",
+              "member"
+            ],
+            "title": "Role",
+            "type": "string"
+          }
+        },
+        "required": [
+          "account",
+          "active_group_id",
+          "role",
+          "expires_at"
+        ],
+        "title": "SessionIdentityResponse",
+        "type": "object"
+      },
+      "SettlementResponse": {
+        "additionalProperties": false,
+        "description": "Current policy and deterministic transfers.",
+        "properties": {
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "settled": {
+            "title": "Settled",
+            "type": "boolean"
+          },
+          "settlementPolicy": {
+            "enum": [
+              "owner_only",
+              "any_member"
+            ],
+            "title": "Settlementpolicy",
+            "type": "string"
+          },
+          "transfers": {
+            "items": {
+              "$ref": "#/components/schemas/SettlementTransferResponse"
+            },
+            "title": "Transfers",
+            "type": "array"
+          }
+        },
+        "required": [
+          "group_id",
+          "settlementPolicy",
+          "settled",
+          "transfers"
+        ],
+        "title": "SettlementResponse",
+        "type": "object"
+      },
+      "SettlementTransferResponse": {
+        "additionalProperties": false,
+        "description": "One ordered positive-cent transfer.",
+        "properties": {
+          "amount_cents": {
+            "title": "Amount Cents",
+            "type": "integer"
+          },
+          "from_name": {
+            "title": "From Name",
+            "type": "string"
+          },
+          "from_participant_id": {
+            "title": "From Participant Id",
+            "type": "string"
+          },
+          "to_name": {
+            "title": "To Name",
+            "type": "string"
+          },
+          "to_participant_id": {
+            "title": "To Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "from_participant_id",
+          "to_participant_id",
+          "from_name",
+          "to_name",
+          "amount_cents"
+        ],
+        "title": "SettlementTransferResponse",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "cc_session": {
+        "description": "Opaque server-recognized session cookie.",
+        "in": "cookie",
+        "name": "cc_session",
+        "type": "apiKey"
+      },
+      "csrf_token": {
+        "description": "Required on unsafe cookie-authenticated operations.",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "type": "apiKey"
+      }
+    }
+  },
+  "info": {
+    "title": "Cuentas Claras API",
+    "version": "0.1.0"
+  },
+  "openapi": "3.0.3",
+  "paths": {
+    "/api/v1/auth/login": {
+      "post": {
+        "description": "Authenticate seeded credentials and establish both transport cookies.",
+        "operationId": "login_api_v1_auth_login_post",
+        "parameters": [
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionIdentityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "summary": "Login",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "description": "Revoke the current session and expire both browser-visible cookies.",
+        "operationId": "logout_api_v1_auth_logout_post",
+        "parameters": [
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Logout",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/session": {
+      "get": {
+        "description": "Return server identity and initialize CSRF even for an anonymous probe.",
+        "operationId": "session_api_v1_auth_session_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionIdentityResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "summary": "Session",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}": {
+      "get": {
+        "description": "Return the authenticated group's server-owned settings.",
+        "operationId": "get_group_api_v1_groups__group_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Get Group",
+        "tags": [
+          "groups"
+        ]
+      },
+      "patch": {
+        "description": "Update only settlement policy; authorization remains in GroupService.",
+        "operationId": "update_group_api_v1_groups__group_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupUpdateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Update Group",
+        "tags": [
+          "groups"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/balances": {
+      "get": {
+        "description": "Compute balances from source expenses in stable participant order.",
+        "operationId": "get_balances_api_v1_groups__group_id__balances_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BalancesResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Get Balances",
+        "tags": [
+          "balances"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/expenses": {
+      "get": {
+        "description": "List source expenses in stable creation order with current names.",
+        "operationId": "list_expenses_api_v1_groups__group_id__expenses_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ExpenseResponse"
+                  },
+                  "title": "Response List Expenses Api V1 Groups  Group Id  Expenses Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "List Expenses",
+        "tags": [
+          "expenses"
+        ]
+      },
+      "post": {
+        "description": "Parse lexical money and create one complete source expense.",
+        "operationId": "create_expense_api_v1_groups__group_id__expenses_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Create Expense",
+        "tags": [
+          "expenses"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/expenses/{expense_id}": {
+      "delete": {
+        "description": "Delete a source expense and all of its derived effect.",
+        "operationId": "delete_expense_api_v1_groups__group_id__expenses__expense_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "expense_id",
+            "required": true,
+            "schema": {
+              "title": "Expense Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Delete Expense",
+        "tags": [
+          "expenses"
+        ]
+      },
+      "get": {
+        "description": "Read one group-owned source expense.",
+        "operationId": "get_expense_api_v1_groups__group_id__expenses__expense_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "expense_id",
+            "required": true,
+            "schema": {
+              "title": "Expense Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Get Expense",
+        "tags": [
+          "expenses"
+        ]
+      },
+      "patch": {
+        "description": "Validate a full replacement before changing the source expense.",
+        "operationId": "edit_expense_api_v1_groups__group_id__expenses__expense_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "expense_id",
+            "required": true,
+            "schema": {
+              "title": "Expense Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ExpenseWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExpenseResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Edit Expense",
+        "tags": [
+          "expenses"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/participants": {
+      "get": {
+        "description": "List active and archived participants in stable creation order.",
+        "operationId": "list_participants_api_v1_groups__group_id__participants_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ParticipantResponse"
+                  },
+                  "title": "Response List Participants Api V1 Groups  Group Id  Participants Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "List Participants",
+        "tags": [
+          "participants"
+        ]
+      },
+      "post": {
+        "description": "Add a normalized, group-scoped participant.",
+        "operationId": "add_participant_api_v1_groups__group_id__participants_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ParticipantWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Add Participant",
+        "tags": [
+          "participants"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/participants/{participant_id}": {
+      "delete": {
+        "description": "Physically delete only a never-referenced participant.",
+        "operationId": "delete_participant_api_v1_groups__group_id__participants__participant_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "participant_id",
+            "required": true,
+            "schema": {
+              "title": "Participant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Delete Participant",
+        "tags": [
+          "participants"
+        ]
+      },
+      "patch": {
+        "description": "Rename only the participant display identity.",
+        "operationId": "rename_participant_api_v1_groups__group_id__participants__participant_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "participant_id",
+            "required": true,
+            "schema": {
+              "title": "Participant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RenameParticipantRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Rename Participant",
+        "tags": [
+          "participants"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/participants/{participant_id}/archive": {
+      "post": {
+        "description": "Archive a participant without deleting historical references.",
+        "operationId": "archive_participant_api_v1_groups__group_id__participants__participant_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "participant_id",
+            "required": true,
+            "schema": {
+              "title": "Participant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Archive Participant",
+        "tags": [
+          "participants"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/participants/{participant_id}/reactivate": {
+      "post": {
+        "description": "Reactivate an archived participant.",
+        "operationId": "reactivate_participant_api_v1_groups__group_id__participants__participant_id__reactivate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "participant_id",
+            "required": true,
+            "schema": {
+              "title": "Participant Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParticipantResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Reactivate Participant",
+        "tags": [
+          "participants"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/settlement": {
+      "get": {
+        "description": "Return policy and deterministic transfers derived from current balances.",
+        "operationId": "get_settlement_api_v1_groups__group_id__settlement_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SettlementResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Get Settlement",
+        "tags": [
+          "settlement"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Report application availability and PostgreSQL connectivity.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Health",
+        "tags": [
+          "health"
+        ]
+      }
+    }
+  }
+}
