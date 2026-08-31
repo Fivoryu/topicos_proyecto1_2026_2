@@ -1,0 +1,13 @@
+:root {
+  --surface-warm: #fff9f2;
+  --surface-card: #ffffff;
+  --content-primary: #1f2937;
+  --content-muted: #4b5563;
+  --brand-primary: #4338ca;
+  --brand-primary-strong: #312e81;
+  --finance-credit: #166534;
+  --finance-debt: #9f1239;
+  --state-error: #991b1b;
+  --border-default: #d6d3d1;
+  --focus-ring: #7c3aed;
+}
