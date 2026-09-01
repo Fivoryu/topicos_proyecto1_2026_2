@@ -14,25 +14,34 @@ enum SessionStatus {
 
 /// Presentation-only identity snapshot; cookie values never live here.
 class SessionState {
-  const SessionState({required this.status, this.role, this.activeGroupId});
+  const SessionState({
+    required this.status,
+    this.role,
+    this.activeGroupId,
+    this.errorMessage,
+  });
 
   const SessionState.unknown()
     : status = SessionStatus.unknown,
       role = null,
-      activeGroupId = null;
+      activeGroupId = null,
+      errorMessage = null;
 
   final SessionStatus status;
   final String? role;
   final String? activeGroupId;
+  final String? errorMessage;
 
   SessionState copyWith({
     SessionStatus? status,
     String? role,
     String? activeGroupId,
+    String? errorMessage,
   }) => SessionState(
     status: status ?? this.status,
     role: role ?? this.role,
     activeGroupId: activeGroupId ?? this.activeGroupId,
+    errorMessage: errorMessage ?? this.errorMessage,
   );
 }
 
@@ -64,15 +73,21 @@ class SessionCubit extends Cubit<SessionState> {
     required String loginName,
     required String password,
   }) async {
-    emit(state.copyWith(status: SessionStatus.authenticating));
+    emit(const SessionState(status: SessionStatus.authenticating));
     try {
       final identity = await _repository.login(
         loginName: loginName,
         password: password,
       );
       emit(_authenticated(identity));
-    } on Exception {
-      emit(const SessionState(status: SessionStatus.signedOut));
+    } on Object {
+      emit(
+        const SessionState(
+          status: SessionStatus.signedOut,
+          errorMessage:
+              'Unable to sign in. Check your credentials and connection.',
+        ),
+      );
     }
   }
 
