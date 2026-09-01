@@ -260,4 +260,4 @@ def test_session_and_csrf_cookie_flags_are_scoped_and_distinct():
     assert "SameSite=lax" in session_cookie
     assert "Path=/api" in session_cookie
     assert "HttpOnly" not in csrf_cookie
-    assert "Path=/api" in csrf_cookie
+    assert "Path=/" in csrf_cookie

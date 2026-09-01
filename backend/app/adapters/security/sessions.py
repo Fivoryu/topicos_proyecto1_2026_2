@@ -13,7 +13,10 @@ SESSION_COOKIE_PATH = "/api"
 SESSION_COOKIE_HTTP_ONLY = True
 SESSION_COOKIE_SAMESITE = "lax"
 CSRF_COOKIE_NAME = "cc_csrf"
-CSRF_COOKIE_PATH = SESSION_COOKIE_PATH
+# The readable CSRF cookie must match the SPA document path ("/") because
+# document.cookie only exposes cookies whose path matches the document URL;
+# the session cookie stays scoped to /api because it is sent automatically.
+CSRF_COOKIE_PATH = "/"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 CSRF_COOKIE_HTTP_ONLY = False
 CSRF_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
