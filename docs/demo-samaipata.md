@@ -37,6 +37,9 @@ python -m backend.scripts.seed_demo
 python -m backend.scripts.seed_demo
 python -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
 npm --prefix web run dev -- --host 127.0.0.1 --port 5173
+# The dev server proxies /api to the backend (same-origin cookies). Set
+# VITE_API_BASE_URL to the web origin (http://localhost:5173) — never the
+# backend origin — or same-origin cookie transport breaks in the browser.
 ```
 
 Supply development-only values out of band before the seed commands; never put real values in this file. For PowerShell, set placeholders locally:
