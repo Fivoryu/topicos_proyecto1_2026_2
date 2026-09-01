@@ -1298,3 +1298,15 @@ Broader pyright scan reports 9 errors in `backend/app/application/auth_service.p
 - **Demo walkthrough ≤3:00 with logout invalidation**: scripted 2:20 flow covers login → participants → expense → balances/settlement → refresh → logout with old-session replay rejected 401 (DA-06). Live timed run remains documented as re-runnable when host port 5432 frees (pre-existing `backend-db-1` condition, same as PR 20 closure).
 - **Stretch (T-36..T-38) NOT started**; no Must weakening introduced. ✔ GATE PASSED — T-MG checkbox marked `<!-- sdd-owner: parent -->`.
 - Next: PR 22 (Stretch T-36..T-38) is now unblocked but remains optional per tasks.md; no Stretch may weaken protected Must. Handoff to `sdd-verify`/`sdd-archive` carries the T-35 evidence.
+
+## Live rehearsal — fresh environment (COMPLETED 2026-08-31, follow-up closed)
+
+The deferred live rehearsal ran once host port 5432 was free (pre-existing backend-db-1 exited):
+
+1. `docker compose -f infra/docker-compose.yml down -v` → `up -d db` → infra-db-1 healthy (postgres:16-alpine).
+2. `python -m alembic -c backend/alembic.ini upgrade head` → 0001_auth → 0002_source applied on live PostgreSQL.
+3. `python -m scripts.seed_demo` run 1 → **2 accounts, 4 participants, 3 expenses created**; run 2 → **0/0/0** (idempotency proven live).
+4. `python -m uvicorn backend.app.main:app --port 8000` (PYTHONPATH=.) → `/health` = `{"status":"ok","database":"ok"}`.
+5. Live protected flow via the exact browser protocol: GET /auth/session bootstrap (401 + Set-Cookie cc_csrf) → POST /auth/login with Origin + X-CSRF-Token → **200 demo.owner role=owner**; GET participants → 200 (Ana/Beto/Carla/Diego); GET balances → **200 +56000/0/−16000/−40000** (seed-exact); POST /auth/logout → **204**; replay of the pre-logout session cookie → **401 unauthorized** (revocation proven live).
+6. `npm --prefix web run dev -- --host 127.0.0.1 --port 5173` → Vite ready, HTTP 200.
+7. Demo data left at pristine seed state (2/4/3, no extra expenses) so the timed 2:20 walkthrough in docs/demo-samaipata.md can be executed in the browser. Servers left running for the walkthrough; reset sequence documented in the demo doc for a clean repeat.
