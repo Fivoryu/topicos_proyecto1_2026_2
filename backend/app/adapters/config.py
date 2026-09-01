@@ -16,7 +16,12 @@ class Settings(BaseSettings):
     database_url: str = (
         "postgresql+asyncpg://postgres:postgres@localhost:5432/cuentas_claras"
     )
-    cors_origins: list[str] = Field(default_factory=lambda: ["http://localhost:5173"])  # pyright: ignore[reportAssignmentType]
+    cors_origins: list[str] = Field(
+        default_factory=lambda: [
+            "http://localhost:5173",
+            "http://127.0.0.1:5173",
+        ]
+    )  # pyright: ignore[reportAssignmentType]
     session_ttl: int = 28_800
     demo_owner_password: str = Field(default_factory=lambda: "change-me-owner")  # pyright: ignore[reportAssignmentType]
     demo_member_password: str = Field(default_factory=lambda: "change-me-member")  # pyright: ignore[reportAssignmentType]

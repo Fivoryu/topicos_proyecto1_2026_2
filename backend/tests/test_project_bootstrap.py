@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """Project metadata and local infrastructure tests for T-01."""
 
 import tomllib
@@ -41,3 +42,29 @@ def test_environment_example_documents_t01_variables():
         "DEMO_MEMBER_PASSWORD",
     ):
         assert f"{variable}=" in env_example
+
+
+def test_default_cors_origins_include_both_localhost_variants():
+    from backend.app.adapters.config import Settings
+
+    settings = Settings(_env_file=None)
+
+    assert settings.cors_origins == [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
+
+
+def test_cors_origins_environment_override_remains_explicit(monkeypatch):
+    from backend.app.adapters.config import Settings
+
+    monkeypatch.setenv(
+        "CORS_ORIGINS", "https://frontend.example, https://admin.example"
+    )
+
+    settings = Settings(_env_file=None)
+
+    assert settings.cors_origins == [
+        "https://frontend.example",
+        "https://admin.example",
+    ]
