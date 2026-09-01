@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """API security transport tests for session, CSRF, and origin boundaries."""
 
 from datetime import UTC, datetime
@@ -7,6 +8,8 @@ import pytest
 from backend.app.adapters.security.sessions import (
     CSRF_COOKIE_NAME,
     CSRF_HEADER_NAME,
+    NATIVE_CLIENT_HEADER_NAME,
+    NATIVE_CLIENT_MARKER,
     SESSION_COOKIE_NAME,
     set_session_cookies,
 )
@@ -234,17 +237,44 @@ async def test_csrf_mismatch_and_disallowed_origin_are_403_without_mutation(
             "/groups/group-demo/mutate",
             headers={CSRF_HEADER_NAME: "expected"},
         )
+        wrong_native_marker = await client.post(
+            "/groups/group-demo/mutate",
+            headers={
+                NATIVE_CLIENT_HEADER_NAME: "desktop",
+                CSRF_HEADER_NAME: "expected",
+            },
+        )
+        disallowed_native_origin = await client.post(
+            "/groups/group-demo/mutate",
+            headers={
+                "Origin": "https://evil.example",
+                NATIVE_CLIENT_HEADER_NAME: NATIVE_CLIENT_MARKER,
+                CSRF_HEADER_NAME: "expected",
+            },
+        )
+        native = await client.post(
+            "/groups/group-demo/mutate",
+            headers={
+                NATIVE_CLIENT_HEADER_NAME: NATIVE_CLIENT_MARKER,
+                CSRF_HEADER_NAME: "expected",
+            },
+        )
 
-    assert mismatch.status_code == 403
-    assert mismatch.json()["error_code"] == "csrf_failed"
-    assert disallowed.status_code == 403
-    assert disallowed.json()["error_code"] == "csrf_failed"
-    assert missing_origin.status_code == 403
-    assert missing_origin.json()["error_code"] == "csrf_failed"
-    assert auth.calls == []
-    assert membership.calls == []
-    assert groups.calls == []
-    assert security_app.state.mutation_calls == []
+    for response in (
+        mismatch,
+        disallowed,
+        missing_origin,
+        wrong_native_marker,
+        disallowed_native_origin,
+    ):
+        assert response.status_code == 403
+        assert response.json()["error_code"] == "csrf_failed"
+    assert native.status_code == 200
+    assert native.json() == {"account_id": "account-owner", "role": "owner"}
+    assert auth.calls == ["valid-token"]
+    assert membership.calls == [("account-owner", "group-demo")]
+    assert groups.calls == ["group-demo"]
+    assert len(security_app.state.mutation_calls) == 1
 
 
 def test_session_and_csrf_cookie_flags_are_scoped_and_distinct():
