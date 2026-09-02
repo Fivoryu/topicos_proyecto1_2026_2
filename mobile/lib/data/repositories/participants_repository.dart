@@ -15,8 +15,26 @@ abstract interface class ParticipantsOperations {
     required ParticipantWriteRequest participantWriteRequest,
   });
 
+  Future<Response<ParticipantResponse>> archiveParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  });
+
+  Future<Response<void>> deleteParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  });
+
   Future<Response<List<ParticipantResponse>>> listParticipants({
     required String groupId,
+  });
+
+  Future<Response<ParticipantResponse>> reactivateParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
   });
 
   Future<Response<ParticipantResponse>> renameParticipant({
@@ -44,9 +62,44 @@ class GeneratedParticipantsOperations implements ParticipantsOperations {
   );
 
   @override
+  Future<Response<ParticipantResponse>> archiveParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  }) => api
+      .archiveParticipantApiV1GroupsGroupIdParticipantsParticipantIdArchivePost(
+        groupId: groupId,
+        participantId: participantId,
+        xCSRFToken: xCSRFToken,
+      );
+
+  @override
+  Future<Response<void>> deleteParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  }) => api.deleteParticipantApiV1GroupsGroupIdParticipantsParticipantIdDelete(
+    groupId: groupId,
+    participantId: participantId,
+    xCSRFToken: xCSRFToken,
+  );
+
+  @override
   Future<Response<List<ParticipantResponse>>> listParticipants({
     required String groupId,
   }) => api.listParticipantsApiV1GroupsGroupIdParticipantsGet(groupId: groupId);
+
+  @override
+  Future<Response<ParticipantResponse>> reactivateParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  }) => api
+      .reactivateParticipantApiV1GroupsGroupIdParticipantsParticipantIdReactivatePost(
+        groupId: groupId,
+        participantId: participantId,
+        xCSRFToken: xCSRFToken,
+      );
 
   @override
   Future<Response<ParticipantResponse>> renameParticipant({
@@ -134,6 +187,44 @@ class ParticipantsRepository implements ParticipantsReader {
       'participant',
     );
     return ParticipantReadModel.fromDto(data);
+  }
+
+  Future<ParticipantReadModel> archiveParticipant(
+    String groupId,
+    String participantId,
+  ) async {
+    final data = requireReadData(
+      await operations.archiveParticipant(
+        groupId: groupId,
+        participantId: participantId,
+        xCSRFToken: await _csrfToken(),
+      ),
+      'participant',
+    );
+    return ParticipantReadModel.fromDto(data);
+  }
+
+  Future<ParticipantReadModel> reactivateParticipant(
+    String groupId,
+    String participantId,
+  ) async {
+    final data = requireReadData(
+      await operations.reactivateParticipant(
+        groupId: groupId,
+        participantId: participantId,
+        xCSRFToken: await _csrfToken(),
+      ),
+      'participant',
+    );
+    return ParticipantReadModel.fromDto(data);
+  }
+
+  Future<void> deleteParticipant(String groupId, String participantId) async {
+    await operations.deleteParticipant(
+      groupId: groupId,
+      participantId: participantId,
+      xCSRFToken: await _csrfToken(),
+    );
   }
 
   Future<List<ParticipantReadModel>> fetch(String groupId) =>

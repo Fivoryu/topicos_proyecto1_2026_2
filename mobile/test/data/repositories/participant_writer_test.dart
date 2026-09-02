@@ -47,6 +47,36 @@ void main() {
     },
   );
 
+  test('delegates lifecycle operations with group scope and CSRF', () async {
+    final operations = _FakeParticipantOperations();
+    final repository = ParticipantsRepository(
+      operations: operations,
+      csrfTokenProvider: () async => 'csrf-token',
+    );
+
+    final archived = await repository.archiveParticipant(
+      'group-1',
+      'participant-1',
+    );
+    final reactivated = await repository.reactivateParticipant(
+      'group-1',
+      'participant-1',
+    );
+    await repository.deleteParticipant('group-1', 'participant-1');
+
+    expect(archived.archived, isTrue);
+    expect(reactivated.archived, isFalse);
+    expect(operations.archiveGroupId, 'group-1');
+    expect(operations.archiveParticipantId, 'participant-1');
+    expect(operations.reactivateGroupId, 'group-1');
+    expect(operations.reactivateParticipantId, 'participant-1');
+    expect(operations.deleteGroupId, 'group-1');
+    expect(operations.deleteParticipantId, 'participant-1');
+    expect(operations.archiveToken, 'csrf-token');
+    expect(operations.reactivateToken, 'csrf-token');
+    expect(operations.deleteToken, 'csrf-token');
+  });
+
   test('rejects blank names before calling the generated operation', () async {
     final operations = _FakeParticipantOperations();
     final repository = ParticipantsRepository(
@@ -73,6 +103,15 @@ class _FakeParticipantOperations implements ParticipantsOperations {
   RenameParticipantRequest? renameRequest;
   String? addToken;
   String? renameToken;
+  String? archiveGroupId;
+  String? archiveParticipantId;
+  String? archiveToken;
+  String? reactivateGroupId;
+  String? reactivateParticipantId;
+  String? reactivateToken;
+  String? deleteGroupId;
+  String? deleteParticipantId;
+  String? deleteToken;
   var addCalls = 0;
   var renameCalls = 0;
 
@@ -89,9 +128,45 @@ class _FakeParticipantOperations implements ParticipantsOperations {
   }
 
   @override
+  Future<Response<ParticipantResponse>> archiveParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  }) async {
+    archiveGroupId = groupId;
+    archiveParticipantId = participantId;
+    archiveToken = xCSRFToken;
+    return _response(_participant(archived: true));
+  }
+
+  @override
+  Future<Response<void>> deleteParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  }) async {
+    deleteGroupId = groupId;
+    deleteParticipantId = participantId;
+    deleteToken = xCSRFToken;
+    return _response(null);
+  }
+
+  @override
   Future<Response<List<ParticipantResponse>>> listParticipants({
     required String groupId,
   }) async => _response(const []);
+
+  @override
+  Future<Response<ParticipantResponse>> reactivateParticipant({
+    required String groupId,
+    required String participantId,
+    required String xCSRFToken,
+  }) async {
+    reactivateGroupId = groupId;
+    reactivateParticipantId = participantId;
+    reactivateToken = xCSRFToken;
+    return _response(_participant());
+  }
 
   @override
   Future<Response<ParticipantResponse>> renameParticipant({
