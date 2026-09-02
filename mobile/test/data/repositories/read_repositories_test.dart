@@ -185,6 +185,9 @@ class _FakeParticipantsOperations implements ParticipantsOperations {
   Future<Response<List<ParticipantResponse>>> listParticipants({
     required String groupId,
   }) async => response(data);
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => throw UnimplementedError();
 }
 
 class _FakeExpensesOperations implements ExpensesOperations {
