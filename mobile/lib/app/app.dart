@@ -6,13 +6,13 @@ import '../data/auth/auth_repository.dart';
 import '../data/auth/auth_transport.dart';
 import '../data/repositories/group_repository.dart';
 import '../presentation/auth/session_cubit.dart';
-import '../presentation/group/group_cubit.dart';
-import '../presentation/group/group_screen.dart';
+import '../presentation/domain/domain_shell.dart';
 import 'app_config.dart';
+import 'domain_scope.dart';
 
 const _appTitle = 'Cuentas Claras';
 
-typedef GroupCubitFactory = GroupCubit Function(String groupId);
+typedef DomainScopeFactory = DomainScope Function(String groupId);
 
 /// Composition root for the authenticated first mobile slice.
 ///
@@ -26,16 +26,25 @@ class App extends StatefulWidget {
     this.authTransport,
     this.authRepository,
     this.sessionCubit,
+    this.domainReaders,
+    this.domainScopeFactory,
+    this.routeGroupId,
+    this.routeRole,
     this.groupReader,
-    this.groupCubitFactory,
   });
 
   final AppConfig config;
   final AuthTransport? authTransport;
   final AuthRepository? authRepository;
   final SessionCubit? sessionCubit;
+  final DomainReaders? domainReaders;
+  final DomainScopeFactory? domainScopeFactory;
+  final String? routeGroupId;
+  final String? routeRole;
+
+  /// Legacy test seam; the authenticated scope uses unavailable readers for
+  /// destinations that are not supplied by the test.
   final GroupReader? groupReader;
-  final GroupCubitFactory? groupCubitFactory;
 
   @override
   State<App> createState() => _AppState();
@@ -43,11 +52,11 @@ class App extends StatefulWidget {
 
 class _AppState extends State<App> {
   SessionCubit? _sessionCubit;
-  GroupCubitFactory? _groupCubitFactory;
+  DomainScopeFactory? _domainScopeFactory;
   AuthTransport? _ownedTransport;
   StreamSubscription<SessionState>? _sessionSubscription;
-  GroupCubit? _groupCubit;
-  String? _groupCubitId;
+  DomainScope? _domainScope;
+  String? _domainScopeGroupId;
   var _ownsSessionCubit = false;
 
   @override
@@ -81,49 +90,62 @@ class _AppState extends State<App> {
       }
     }
 
-    _groupCubitFactory = widget.groupCubitFactory;
-    if (_groupCubitFactory == null && widget.groupReader != null) {
-      final reader = widget.groupReader!;
-      _groupCubitFactory = (groupId) =>
-          GroupCubit(reader: reader, groupId: groupId);
+    _domainScopeFactory = widget.domainScopeFactory;
+    if (_domainScopeFactory == null && widget.domainReaders != null) {
+      final readers = widget.domainReaders!;
+      _domainScopeFactory = (groupId) =>
+          DomainScope(groupId: groupId, readers: readers);
     }
-    if (_groupCubitFactory == null && transport != null) {
-      final reader = GroupRepository.fromTransport(transport);
-      _groupCubitFactory = (groupId) =>
-          GroupCubit(reader: reader, groupId: groupId);
+    if (_domainScopeFactory == null && widget.groupReader != null) {
+      final readers = DomainReaders.unavailable();
+      final groupReader = widget.groupReader!;
+      _domainScopeFactory = (groupId) => DomainScope(
+        groupId: groupId,
+        readers: DomainReaders(
+          group: groupReader,
+          participants: readers.participants,
+          expenses: readers.expenses,
+          balances: readers.balances,
+          settlement: readers.settlement,
+        ),
+      );
+    }
+    if (_domainScopeFactory == null && transport != null) {
+      _domainScopeFactory = (groupId) =>
+          DomainScope.fromTransport(transport, groupId: groupId);
     }
   }
 
   void _onSessionChanged(SessionState state) {
     if (state.status != SessionStatus.authenticated) {
-      _disposeGroupCubit();
+      _disposeDomainScope();
     }
     if (mounted) setState(() {});
   }
 
-  GroupCubit? _groupCubitFor(String? groupId) {
+  DomainScope? _domainScopeFor(String? groupId) {
     final normalizedGroupId = groupId?.trim();
-    if (_groupCubit != null && _groupCubitId == normalizedGroupId) {
-      return _groupCubit;
+    if (_domainScope != null && _domainScopeGroupId == normalizedGroupId) {
+      return _domainScope;
     }
-    _disposeGroupCubit();
-    final factory = _groupCubitFactory;
+    _disposeDomainScope();
+    final factory = _domainScopeFactory;
     if (factory == null ||
         normalizedGroupId == null ||
         normalizedGroupId.isEmpty) {
       return null;
     }
-    final cubit = factory(normalizedGroupId);
-    _groupCubit = cubit;
-    _groupCubitId = normalizedGroupId;
-    return cubit;
+    final scope = factory(normalizedGroupId);
+    _domainScope = scope;
+    _domainScopeGroupId = normalizedGroupId;
+    return scope;
   }
 
-  void _disposeGroupCubit() {
-    final cubit = _groupCubit;
-    _groupCubit = null;
-    _groupCubitId = null;
-    if (cubit != null) unawaited(cubit.close());
+  void _disposeDomainScope() {
+    final scope = _domainScope;
+    _domainScope = null;
+    _domainScopeGroupId = null;
+    if (scope != null) unawaited(scope.close());
   }
 
   Widget _home() {
@@ -146,11 +168,7 @@ class _AppState extends State<App> {
         sessionCubit: sessionCubit,
         errorMessage: 'Your session expired. Please sign in again.',
       ),
-      SessionStatus.authenticated => _AuthenticatedScreen(
-        role: state.role ?? 'unknown',
-        groupCubit: _groupCubitFor(state.activeGroupId),
-        onLogout: sessionCubit.logout,
-      ),
+      SessionStatus.authenticated => _authenticatedHome(sessionCubit, state),
     };
   }
 
@@ -167,10 +185,22 @@ class _AppState extends State<App> {
     );
   }
 
+  Widget _authenticatedHome(SessionCubit sessionCubit, SessionState state) {
+    final scope = _domainScopeFor(state.activeGroupId);
+    if (scope == null) return const _ConfigurationScreen();
+    return DomainShell(
+      scope: scope,
+      role: state.role ?? 'unknown',
+      onLogout: sessionCubit.logout,
+      routeGroupId: widget.routeGroupId,
+      routeRole: widget.routeRole,
+    );
+  }
+
   @override
   void dispose() {
     _sessionSubscription?.cancel();
-    _disposeGroupCubit();
+    _disposeDomainScope();
     if (_ownsSessionCubit) unawaited(_sessionCubit?.close());
     _ownedTransport?.dio.close(force: true);
     super.dispose();
@@ -332,36 +362,5 @@ class _LoginScreenState extends State<_LoginScreen> {
         ),
       ),
     ),
-  );
-}
-
-class _AuthenticatedScreen extends StatelessWidget {
-  const _AuthenticatedScreen({
-    required this.role,
-    required this.groupCubit,
-    required this.onLogout,
-  });
-
-  final String role;
-  final GroupCubit? groupCubit;
-  final Future<void> Function() onLogout;
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text(_appTitle),
-      actions: [
-        Center(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8),
-            child: Text('Role: $role'),
-          ),
-        ),
-        TextButton(onPressed: onLogout, child: const Text('Log out')),
-      ],
-    ),
-    body: groupCubit == null
-        ? const _ConfigurationScreen()
-        : GroupScreen(cubit: groupCubit!),
   );
 }

@@ -4,6 +4,9 @@ import 'dart:convert';
 /// A REST reload callback owned by a read Cubit.
 typedef ReadReload = FutureOr<void> Function();
 
+/// A conservative refresh callback for an invalidation-only frame.
+typedef DataChangedRefresh = FutureOr<void> Function();
+
 /// Listens only for the invalidation type from the group WebSocket.
 ///
 /// The event payload is deliberately not exposed to reload callbacks. REST is
@@ -12,16 +15,23 @@ class DataChangedListener {
   DataChangedListener({
     required Stream<Object?> frames,
     Iterable<ReadReload> reloaders = const [],
+    DataChangedRefresh? onDataChanged,
   }) : _frames = frames,
-       _reloaders = [...reloaders];
+       _reloaders = [...reloaders],
+       _onDataChanged = onDataChanged;
 
   final Stream<Object?> _frames;
   final List<ReadReload> _reloaders;
+  DataChangedRefresh? _onDataChanged;
   StreamSubscription<Object?>? _subscription;
 
   bool get isListening => _subscription != null;
 
   void addReloader(ReadReload reloader) => _reloaders.add(reloader);
+
+  void bindOnDataChanged(DataChangedRefresh onDataChanged) {
+    _onDataChanged = onDataChanged;
+  }
 
   void start() {
     if (_subscription != null) return;
@@ -40,7 +50,12 @@ class DataChangedListener {
 
   Future<void> _reloadSafely() async {
     try {
-      await _reload();
+      final onDataChanged = _onDataChanged;
+      if (onDataChanged == null) {
+        await _reload();
+      } else {
+        await Future<void>.sync(onDataChanged);
+      }
     } on Object {
       // A failed invalidation reload is surfaced by the Cubit's own state on
       // the next explicit REST load; the listener must not kill the stream.

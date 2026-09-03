@@ -38,7 +38,15 @@ class _BalancesScreenState extends State<BalancesScreen> {
       final state = snapshot.data ?? widget.cubit.state;
       if (state.status != ReadStatus.loaded &&
           state.status != ReadStatus.empty) {
-        return ReadStateMessage(status: state.status, resource: 'balances');
+        return ReadStateMessage(
+          status: state.status,
+          resource: 'balances',
+          message: state.message,
+          onRetry: widget.cubit.reload,
+        );
+      }
+      if (state.status == ReadStatus.empty) {
+        return const ReadCard(child: Text('No balances available yet.'));
       }
       final participants = state.balances?.participants ?? const [];
       return ReadCard(

@@ -41,16 +41,19 @@ class ExpensesCubit extends Cubit<ExpensesState> {
   final ExpensesReader _reader;
   final String groupId;
 
-  Future<void> load() async {
+  Future<void> load({bool propagateFailure = false}) async {
+    if (isClosed) return;
     emit(ExpensesState.loading(expenses: state.expenses));
     try {
       final expenses = await _reader.listExpenses(groupId);
+      if (isClosed) return;
       emit(
         expenses.isEmpty
             ? const ExpensesState.empty()
             : ExpensesState.loaded(expenses),
       );
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       emit(
         isCorruptionFailure(error)
             ? ExpensesState.corruptionRecovery(
@@ -61,10 +64,13 @@ class ExpensesCubit extends Cubit<ExpensesState> {
                 expenses: state.expenses,
               ),
       );
+      if (propagateFailure) Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<void> reload() => load();
+
+  Future<void> reloadForRefresh() => load(propagateFailure: true);
 }
 
 typedef ExpenseHistoryCubit = ExpensesCubit;

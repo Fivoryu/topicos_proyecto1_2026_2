@@ -38,7 +38,12 @@ class _ExpenseHistoryScreenState extends State<ExpenseHistoryScreen> {
       final state = snapshot.data ?? widget.cubit.state;
       if (state.status != ReadStatus.loaded &&
           state.status != ReadStatus.empty) {
-        return ReadStateMessage(status: state.status, resource: 'expenses');
+        return ReadStateMessage(
+          status: state.status,
+          resource: 'expenses',
+          message: state.message,
+          onRetry: widget.cubit.reload,
+        );
       }
       if (state.expenses.isEmpty) {
         return const ReadCard(child: Text('No expenses recorded yet.'));

@@ -1,3 +1,5 @@
+import 'package:dio/dio.dart';
+
 import '../data/repositories/repository_support.dart';
 
 /// Lifecycle of a protected REST read.
@@ -9,6 +11,13 @@ bool isCorruptionFailure(Object error) =>
 
 String readFailureMessage(Object error, String resource) {
   if (error is ReadRepositoryException) return error.message;
+  if (error is DioException) {
+    return switch (error.response?.statusCode) {
+      401 => 'Your session expired. Please sign in again.',
+      403 => 'You are not authorized to view $resource.',
+      _ => 'Unable to load $resource. ${error.toString()}',
+    };
+  }
   return 'Unable to load $resource. ${error.toString()}';
 }
 

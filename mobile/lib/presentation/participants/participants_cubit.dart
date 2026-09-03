@@ -46,16 +46,19 @@ class ParticipantsCubit extends Cubit<ParticipantsState> {
   final ParticipantsReader _reader;
   final String groupId;
 
-  Future<void> load() async {
+  Future<void> load({bool propagateFailure = false}) async {
+    if (isClosed) return;
     emit(ParticipantsState.loading(participants: state.participants));
     try {
       final participants = await _reader.listParticipants(groupId);
+      if (isClosed) return;
       emit(
         participants.isEmpty
             ? const ParticipantsState.empty()
             : ParticipantsState.loaded(participants),
       );
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       emit(
         isCorruptionFailure(error)
             ? ParticipantsState.corruptionRecovery(
@@ -66,10 +69,13 @@ class ParticipantsCubit extends Cubit<ParticipantsState> {
                 participants: state.participants,
               ),
       );
+      if (propagateFailure) Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<void> reload() => load();
+
+  Future<void> reloadForRefresh() => load(propagateFailure: true);
 }
 
 typedef ParticipantsReadCubit = ParticipantsCubit;

@@ -119,11 +119,29 @@ abstract interface class ParticipantsReader {
   Future<List<ParticipantReadModel>> listParticipants(String groupId);
 }
 
+abstract interface class ParticipantsWriter {
+  Future<ParticipantReadModel> addParticipant(String groupId, String name);
+  Future<ParticipantReadModel> renameParticipant(
+    String groupId,
+    String participantId,
+    String name,
+  );
+  Future<ParticipantReadModel> archiveParticipant(
+    String groupId,
+    String participantId,
+  );
+  Future<ParticipantReadModel> reactivateParticipant(
+    String groupId,
+    String participantId,
+  );
+  Future<void> deleteParticipant(String groupId, String participantId);
+}
+
 class ParticipantWriteException extends StateError {
   ParticipantWriteException(super.message);
 }
 
-class ParticipantsRepository implements ParticipantsReader {
+class ParticipantsRepository implements ParticipantsReader, ParticipantsWriter {
   ParticipantsRepository({required this.operations, this.csrfTokenProvider});
 
   factory ParticipantsRepository.fromTransport(AuthTransport transport) =>
@@ -153,6 +171,7 @@ class ParticipantsRepository implements ParticipantsReader {
     }
   }
 
+  @override
   Future<ParticipantReadModel> addParticipant(
     String groupId,
     String name,
@@ -170,6 +189,7 @@ class ParticipantsRepository implements ParticipantsReader {
     return ParticipantReadModel.fromDto(data);
   }
 
+  @override
   Future<ParticipantReadModel> renameParticipant(
     String groupId,
     String participantId,
@@ -189,6 +209,7 @@ class ParticipantsRepository implements ParticipantsReader {
     return ParticipantReadModel.fromDto(data);
   }
 
+  @override
   Future<ParticipantReadModel> archiveParticipant(
     String groupId,
     String participantId,
@@ -204,6 +225,7 @@ class ParticipantsRepository implements ParticipantsReader {
     return ParticipantReadModel.fromDto(data);
   }
 
+  @override
   Future<ParticipantReadModel> reactivateParticipant(
     String groupId,
     String participantId,
@@ -219,6 +241,7 @@ class ParticipantsRepository implements ParticipantsReader {
     return ParticipantReadModel.fromDto(data);
   }
 
+  @override
   Future<void> deleteParticipant(String groupId, String participantId) async {
     await operations.deleteParticipant(
       groupId: groupId,

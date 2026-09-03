@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
@@ -6,8 +8,13 @@ import 'package:openapi/openapi.dart';
 
 import 'package:cuentas_claras_mobile/app/app.dart';
 import 'package:cuentas_claras_mobile/app/app_config.dart';
+import 'package:cuentas_claras_mobile/app/domain_scope.dart';
 import 'package:cuentas_claras_mobile/data/auth/auth_repository.dart';
+import 'package:cuentas_claras_mobile/data/repositories/balances_repository.dart';
+import 'package:cuentas_claras_mobile/data/repositories/expenses_repository.dart';
 import 'package:cuentas_claras_mobile/data/repositories/group_repository.dart';
+import 'package:cuentas_claras_mobile/data/repositories/participants_repository.dart';
+import 'package:cuentas_claras_mobile/data/repositories/settlement_repository.dart';
 import 'package:cuentas_claras_mobile/domain/read_models/read_models.dart';
 import 'package:cuentas_claras_mobile/presentation/auth/session_cubit.dart';
 
@@ -76,6 +83,126 @@ void main() {
     expect(find.text('Role: owner'), findsNothing);
     expect(operations.logoutCalls, 1);
 
+    await sessionCubit.close();
+  });
+
+  testWidgets('navigates through every destination from authenticated App', (
+    tester,
+  ) async {
+    const config = AppConfig(
+      apiBaseUrl: 'http://api.example.test:8000',
+      groupId: 'group-1',
+    );
+    final sessionCubit = SessionCubit(
+      repository: AuthRepository(
+        operations: _FakeAuthOperations(),
+        cookieJar: CookieJar(),
+      ),
+    );
+
+    await tester.pumpWidget(
+      App(
+        config: config,
+        sessionCubit: sessionCubit,
+        domainReaders: _domainReaders(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _signIn(tester);
+
+    expect(find.text('Samaipata'), findsOneWidget);
+    for (final destination in const {
+      'Participants': 'Ana',
+      'Expenses': 'Lodging',
+      'Balances': 'Bs. 10.00',
+      'Settlement': 'Everyone is settled',
+    }.entries) {
+      await tester.tap(find.text(destination.key));
+      await tester.pumpAndSettle();
+      expect(find.text(destination.value), findsOneWidget);
+    }
+
+    await sessionCubit.close();
+  });
+
+  testWidgets('rejects a protected route at the App boundary', (tester) async {
+    final sessionCubit = SessionCubit(
+      repository: AuthRepository(
+        operations: _FakeAuthOperations(),
+        cookieJar: CookieJar(),
+      ),
+    );
+
+    await tester.pumpWidget(
+      App(
+        config: const AppConfig(
+          apiBaseUrl: 'http://api.example.test:8000',
+          groupId: 'group-1',
+        ),
+        sessionCubit: sessionCubit,
+        domainReaders: _domainReaders(),
+        routeGroupId: 'different-group',
+        routeRole: 'member',
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _signIn(tester);
+
+    expect(
+      find.text('This route is not authorized for the active session.'),
+      findsOneWidget,
+    );
+    expect(find.text('Samaipata'), findsNothing);
+    expect(find.text('Log out'), findsNothing);
+
+    await sessionCubit.close();
+  });
+
+  testWidgets('expires at the App boundary while a protected read loads', (
+    tester,
+  ) async {
+    final pending = Completer<GroupReadModel>();
+    final unavailable = DomainReaders.unavailable();
+    final sessionCubit = SessionCubit(
+      repository: AuthRepository(
+        operations: _FakeAuthOperations(),
+        cookieJar: CookieJar(),
+      ),
+    );
+
+    await tester.pumpWidget(
+      App(
+        config: const AppConfig(
+          apiBaseUrl: 'http://api.example.test:8000',
+          groupId: 'group-1',
+        ),
+        sessionCubit: sessionCubit,
+        domainReaders: DomainReaders(
+          group: _PendingGroupReader(pending.future),
+          participants: unavailable.participants,
+          expenses: unavailable.expenses,
+          balances: unavailable.balances,
+          settlement: unavailable.settlement,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await _signIn(tester);
+    await tester.pump();
+
+    expect(find.text('Loading group…'), findsOneWidget);
+    sessionCubit.markSessionExpired();
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Your session expired. Please sign in again.'),
+      findsOneWidget,
+    );
+    expect(find.text('Log out'), findsNothing);
+    expect(find.text('Samaipata'), findsNothing);
+
+    pending.complete(_group());
+    await tester.pump();
     await sessionCubit.close();
   });
 
@@ -232,6 +359,21 @@ SessionIdentityResponse _identity({String? activeGroupId = 'group-1'}) =>
       role: SessionIdentityResponseRoleEnum.owner,
     );
 
+Future<void> _signIn(WidgetTester tester) async {
+  await tester.enterText(find.byType(TextFormField).at(0), 'demo.owner');
+  await tester.enterText(find.byType(TextFormField).at(1), 'owner-password');
+  await tester.tap(find.text('Sign in'));
+  await tester.pumpAndSettle();
+}
+
+DomainReaders _domainReaders() => DomainReaders(
+  group: _FakeGroupReader(),
+  participants: _FakeParticipantsReader(),
+  expenses: _FakeExpensesReader(),
+  balances: _FakeBalancesReader(),
+  settlement: _FakeSettlementReader(),
+);
+
 class _FakeGroupReader implements GroupReader {
   _FakeGroupReader({this.groupName = 'Samaipata'});
 
@@ -241,11 +383,81 @@ class _FakeGroupReader implements GroupReader {
   @override
   Future<GroupReadModel> getGroup(String groupId) async {
     requestedGroupIds.add(groupId);
-    return GroupReadModel(
-      id: groupId,
-      name: groupName,
-      ownerAccountId: 'account-1',
-      settlementPolicy: SettlementPolicy.ownerOnly,
-    );
+    return _group(groupId: groupId, name: groupName);
   }
 }
+
+class _PendingGroupReader implements GroupReader {
+  _PendingGroupReader(this.response);
+
+  final Future<GroupReadModel> response;
+
+  @override
+  Future<GroupReadModel> getGroup(String groupId) => response;
+}
+
+class _FakeParticipantsReader implements ParticipantsReader {
+  @override
+  Future<List<ParticipantReadModel>> listParticipants(String groupId) async =>
+      const [
+        ParticipantReadModel(
+          id: 'participant-1',
+          groupId: 'group-1',
+          name: 'Ana',
+          archived: false,
+        ),
+      ];
+}
+
+class _FakeExpensesReader implements ExpensesReader {
+  @override
+  Future<List<ExpenseReadModel>> listExpenses(String groupId) async => const [
+    ExpenseReadModel(
+      id: 'expense-1',
+      groupId: 'group-1',
+      description: 'Lodging',
+      amountCents: 1000,
+      contributors: [],
+      beneficiaries: [],
+    ),
+  ];
+}
+
+class _FakeBalancesReader implements BalancesReader {
+  @override
+  Future<BalancesReadModel> getBalances(String groupId) async =>
+      const BalancesReadModel(
+        groupId: 'group-1',
+        participants: [
+          BalanceParticipantReadModel(
+            participantId: 'participant-1',
+            name: 'Ana',
+            archived: false,
+            paidCents: 1000,
+            owedCents: 0,
+            balanceCents: 1000,
+          ),
+        ],
+      );
+}
+
+class _FakeSettlementReader implements SettlementReader {
+  @override
+  Future<SettlementReadModel> getSettlement(String groupId) async =>
+      const SettlementReadModel(
+        groupId: 'group-1',
+        settlementPolicy: SettlementPolicy.ownerOnly,
+        settled: true,
+        transfers: [],
+      );
+}
+
+GroupReadModel _group({
+  String groupId = 'group-1',
+  String name = 'Samaipata',
+}) => GroupReadModel(
+  id: groupId,
+  name: name,
+  ownerAccountId: 'account-1',
+  settlementPolicy: SettlementPolicy.ownerOnly,
+);
