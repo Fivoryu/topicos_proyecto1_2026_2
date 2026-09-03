@@ -18,6 +18,11 @@ CSRF_COOKIE_NAME = "cc_csrf"
 # the session cookie stays scoped to /api because it is sent automatically.
 CSRF_COOKIE_PATH = "/"
 CSRF_HEADER_NAME = "X-CSRF-Token"
+# Native clients do not send a browser Origin. The exact marker is required
+# only for that missing-origin path; configured Origins remain authoritative
+# whenever an Origin header is present.
+NATIVE_CLIENT_HEADER_NAME = "X-Client"
+NATIVE_CLIENT_MARKER = "mobile"
 CSRF_COOKIE_HTTP_ONLY = False
 CSRF_COOKIE_SAMESITE = SESSION_COOKIE_SAMESITE
 
@@ -140,6 +145,8 @@ __all__ = [
     "CSRF_COOKIE_PATH",
     "CSRF_COOKIE_SAMESITE",
     "CSRF_HEADER_NAME",
+    "NATIVE_CLIENT_HEADER_NAME",
+    "NATIVE_CLIENT_MARKER",
     "clear_session_cookie",
     "clear_session_cookies",
     "csrf_tokens_match",

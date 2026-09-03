@@ -35,16 +35,19 @@ class BalancesCubit extends Cubit<BalancesState> {
   final BalancesReader _reader;
   final String groupId;
 
-  Future<void> load() async {
+  Future<void> load({bool propagateFailure = false}) async {
+    if (isClosed) return;
     emit(BalancesState.loading(balances: state.balances));
     try {
       final balances = await _reader.getBalances(groupId);
+      if (isClosed) return;
       emit(
         balances.participants.isEmpty
             ? BalancesState.empty(balances)
             : BalancesState.loaded(balances),
       );
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       emit(
         isCorruptionFailure(error)
             ? BalancesState.corruptionRecovery(recoveryMessage('balances'))
@@ -53,10 +56,13 @@ class BalancesCubit extends Cubit<BalancesState> {
                 balances: state.balances,
               ),
       );
+      if (propagateFailure) Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<void> reload() => load();
+
+  Future<void> reloadForRefresh() => load(propagateFailure: true);
 }
 
 typedef BalanceCubit = BalancesCubit;

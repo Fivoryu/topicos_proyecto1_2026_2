@@ -7,7 +7,9 @@ import 'package:openapi/openapi.dart';
 
 import '../../core/auth/secure_cookie_store.dart';
 
-const _csrfCookieName = 'cc_csrf';
+const csrfCookieName = 'cc_csrf';
+const mobileClientHeaderName = 'X-Client';
+const mobileClientMarker = 'mobile';
 const _handledUnauthorizedKey = 'cuentas_claras.unauthorized_handled';
 
 const _unsafeMethods = {'POST', 'PATCH', 'PUT', 'DELETE'};
@@ -38,7 +40,7 @@ class CsrfInterceptor extends Interceptor {
     try {
       final cookies = await cookieJar.loadForRequest(options.uri);
       for (final cookie in cookies) {
-        if (cookie.name == _csrfCookieName) {
+        if (cookie.name == csrfCookieName) {
           options.headers['X-CSRF-Token'] = cookie.value;
           break;
         }
@@ -85,7 +87,16 @@ class UnauthorizedInterceptor extends Interceptor {
 
     error.requestOptions.extra[_handledUnauthorizedKey] = true;
     try {
+      // CookieManager completes its error handling before this interceptor,
+      // so load the current cookies before clearing the jar.
+      final csrfCookies =
+          (await cookieJar.loadForRequest(error.requestOptions.uri))
+              .where((cookie) => cookie.name == csrfCookieName)
+              .toList(growable: false);
       await cookieJar.deleteAll();
+      if (csrfCookies.isNotEmpty) {
+        await cookieJar.saveFromResponse(error.requestOptions.uri, csrfCookies);
+      }
     } finally {
       final failure = _failureFor(error.response?.data);
       final callback = onUnauthorized;
@@ -107,13 +118,24 @@ class UnauthorizedInterceptor extends Interceptor {
 /// Configures Dio for the generated client and the protected cookie contract.
 class AuthTransport {
   AuthTransport({
-    required SecureCookieStore cookieStore,
+    SecureCookieStore? cookieStore,
     String? baseUrl,
     Dio? dio,
     this.onUnauthorized,
-  }) : cookieJar = PersistCookieJar(storage: cookieStore),
-       dio = dio ?? Dio(BaseOptions(baseUrl: baseUrl ?? '')),
+  }) : cookieJar = PersistCookieJar(
+         storage: cookieStore ?? SecureCookieStore(),
+       ),
+       dio =
+           dio ??
+           Dio(
+             BaseOptions(
+               baseUrl: baseUrl ?? '',
+               headers: const {mobileClientHeaderName: mobileClientMarker},
+             ),
+           ),
        baseUri = Uri.tryParse(baseUrl ?? '') ?? Uri.parse('http://localhost') {
+    // Keep the marker exact even when a caller injects a custom Dio instance.
+    this.dio.options.headers[mobileClientHeaderName] = mobileClientMarker;
     if (!this.dio.interceptors.any(
       (interceptor) => interceptor is CookieManager,
     )) {

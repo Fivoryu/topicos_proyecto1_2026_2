@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """FastAPI dependencies for server-authoritative sessions and CSRF."""
 
 from __future__ import annotations
@@ -13,6 +14,8 @@ from backend.app.adapters.config import get_settings
 from backend.app.adapters.security.sessions import (
     CSRF_COOKIE_NAME,
     CSRF_HEADER_NAME,
+    NATIVE_CLIENT_HEADER_NAME,
+    NATIVE_CLIENT_MARKER,
     SESSION_COOKIE_NAME,
     csrf_tokens_match,
     origin_is_allowed,
@@ -161,9 +164,13 @@ def require_csrf(request: Request) -> None:
     """Reject origin or double-submit failures before an unsafe endpoint runs."""
 
     settings = getattr(request.app.state, "settings", None) or get_settings()
-    if not origin_is_allowed(
-        request.headers.get("origin"), settings.cors_origins
-    ) or not csrf_tokens_match(
+    origin = request.headers.get("origin")
+    origin_allowed = (
+        origin_is_allowed(origin, settings.cors_origins)
+        if origin is not None
+        else request.headers.get(NATIVE_CLIENT_HEADER_NAME) == NATIVE_CLIENT_MARKER
+    )
+    if not origin_allowed or not csrf_tokens_match(
         request.cookies.get(CSRF_COOKIE_NAME),
         request.headers.get(CSRF_HEADER_NAME),
     ):

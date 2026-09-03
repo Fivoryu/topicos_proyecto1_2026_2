@@ -35,16 +35,19 @@ class SettlementCubit extends Cubit<SettlementState> {
   final SettlementReader _reader;
   final String groupId;
 
-  Future<void> load() async {
+  Future<void> load({bool propagateFailure = false}) async {
+    if (isClosed) return;
     emit(SettlementState.loading(settlement: state.settlement));
     try {
       final settlement = await _reader.getSettlement(groupId);
+      if (isClosed) return;
       emit(
         settlement.settled || settlement.transfers.isEmpty
             ? SettlementState.empty(settlement)
             : SettlementState.loaded(settlement),
       );
-    } on Object catch (error) {
+    } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       emit(
         isCorruptionFailure(error)
             ? SettlementState.corruptionRecovery(recoveryMessage('settlement'))
@@ -53,8 +56,11 @@ class SettlementCubit extends Cubit<SettlementState> {
                 settlement: state.settlement,
               ),
       );
+      if (propagateFailure) Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<void> reload() => load();
+
+  Future<void> reloadForRefresh() => load(propagateFailure: true);
 }

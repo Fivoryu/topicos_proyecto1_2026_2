@@ -71,6 +71,10 @@ void main() {
         transport.dio.interceptors.whereType<CookieManager>(),
         hasLength(1),
       );
+      expect(
+        adapter.lastRequest?.headers[mobileClientHeaderName],
+        mobileClientMarker,
+      );
       expect(adapter.lastRequest?.headers['X-CSRF-Token'], 'csrf-secret');
       expect(
         adapter.lastRequest?.headers['Cookie'],
@@ -80,7 +84,7 @@ void main() {
   );
 
   test(
-    'maps one 401 to session expiry, clears cookies, and never retries',
+    'maps one 401 to session expiry, clears session cookies, preserves CSRF, and never retries',
     () async {
       final store = SecureCookieStore(backend: FakeSecureStorageBackend());
       SessionFailure? failure;
@@ -94,6 +98,9 @@ void main() {
         body: '{"error_code":"session_expired","message":"expired"}',
         responseHeaders: const {
           'content-type': ['application/json'],
+          'set-cookie': [
+            'cc_csrf=csrf-secret; Domain=api.example.test; Path=/; HttpOnly; Secure',
+          ],
         },
       );
       transport.dio.httpClientAdapter = adapter;
@@ -109,7 +116,15 @@ void main() {
 
       expect(adapter.requestCount, 1);
       expect(failure, SessionFailure.sessionExpired);
-      expect(await transport.cookieJar.loadForRequest(uri), isEmpty);
+      final remainingCookies = await transport.cookieJar.loadForRequest(uri);
+      expect(remainingCookies, hasLength(1));
+      final remainingCsrf = remainingCookies.single;
+      expect(remainingCsrf.name, csrfCookieName);
+      expect(remainingCsrf.value, 'csrf-secret');
+      expect(remainingCsrf.domain, 'api.example.test');
+      expect(remainingCsrf.path, '/');
+      expect(remainingCsrf.httpOnly, isTrue);
+      expect(remainingCsrf.secure, isTrue);
     },
   );
 }

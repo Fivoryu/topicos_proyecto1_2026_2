@@ -16,7 +16,7 @@ export const generatedFetchApi = (
 
 /** Shared generated-client configuration for browser session transport. */
 export const apiConfiguration = new Configuration({
-  basePath: appEnvironment.apiBaseUrl || undefined,
+  basePath: appEnvironment.apiBaseUrl,
   credentials: "include",
   fetchApi: generatedFetchApi,
 });

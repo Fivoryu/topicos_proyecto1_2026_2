@@ -38,7 +38,12 @@ class _SettlementScreenState extends State<SettlementScreen> {
       final state = snapshot.data ?? widget.cubit.state;
       if (state.status != ReadStatus.loaded &&
           state.status != ReadStatus.empty) {
-        return ReadStateMessage(status: state.status, resource: 'settlement');
+        return ReadStateMessage(
+          status: state.status,
+          resource: 'settlement',
+          message: state.message,
+          onRetry: widget.cubit.reload,
+        );
       }
       final settlement = state.settlement;
       if (settlement == null || settlement.settled) {

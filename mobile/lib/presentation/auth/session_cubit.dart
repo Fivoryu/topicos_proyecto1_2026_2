@@ -3,6 +3,8 @@ import 'package:bloc/bloc.dart';
 import '../../data/auth/auth_repository.dart';
 import '../../domain/read_models/read_models.dart';
 
+const _unset = Object();
+
 /// Session lifecycle states exposed to presentation.
 enum SessionStatus {
   unknown,
@@ -14,25 +16,38 @@ enum SessionStatus {
 
 /// Presentation-only identity snapshot; cookie values never live here.
 class SessionState {
-  const SessionState({required this.status, this.role, this.activeGroupId});
+  const SessionState({
+    required this.status,
+    this.role,
+    this.activeGroupId,
+    this.errorMessage,
+  });
 
   const SessionState.unknown()
     : status = SessionStatus.unknown,
       role = null,
-      activeGroupId = null;
+      activeGroupId = null,
+      errorMessage = null;
 
   final SessionStatus status;
   final String? role;
   final String? activeGroupId;
+  final String? errorMessage;
 
   SessionState copyWith({
     SessionStatus? status,
-    String? role,
-    String? activeGroupId,
+    Object? role = _unset,
+    Object? activeGroupId = _unset,
+    Object? errorMessage = _unset,
   }) => SessionState(
     status: status ?? this.status,
-    role: role ?? this.role,
-    activeGroupId: activeGroupId ?? this.activeGroupId,
+    role: identical(role, _unset) ? this.role : role as String?,
+    activeGroupId: identical(activeGroupId, _unset)
+        ? this.activeGroupId
+        : activeGroupId as String?,
+    errorMessage: identical(errorMessage, _unset)
+        ? this.errorMessage
+        : errorMessage as String?,
   );
 }
 
@@ -43,19 +58,23 @@ class SessionCubit extends Cubit<SessionState> {
       super(const SessionState.unknown()) {
     _repository.onUnauthorized = (failure) {
       if (state.status == SessionStatus.authenticated) {
-        emit(state.copyWith(status: SessionStatus.sessionExpired));
+        markSessionExpired();
       }
     };
   }
 
   final AuthRepository _repository;
+  var _transitionVersion = 0;
 
   /// Restore the session from the server; 401 lands in signedOut.
   Future<void> restoreSession() async {
+    final requestVersion = _transitionVersion;
     try {
       final identity = await _repository.session();
+      if (!_isCurrent(requestVersion)) return;
       emit(_authenticated(identity));
     } on Exception {
+      if (!_isCurrent(requestVersion)) return;
       emit(const SessionState(status: SessionStatus.signedOut));
     }
   }
@@ -64,29 +83,49 @@ class SessionCubit extends Cubit<SessionState> {
     required String loginName,
     required String password,
   }) async {
-    emit(state.copyWith(status: SessionStatus.authenticating));
+    final requestVersion = ++_transitionVersion;
+    emit(const SessionState(status: SessionStatus.authenticating));
     try {
       final identity = await _repository.login(
         loginName: loginName,
         password: password,
       );
+      if (!_isCurrent(requestVersion)) return;
       emit(_authenticated(identity));
-    } on Exception {
-      emit(const SessionState(status: SessionStatus.signedOut));
+    } on Object {
+      if (!_isCurrent(requestVersion)) return;
+      emit(
+        const SessionState(
+          status: SessionStatus.signedOut,
+          errorMessage:
+              'Unable to sign in. Check your credentials and connection.',
+        ),
+      );
     }
   }
 
   Future<void> logout() async {
+    ++_transitionVersion;
+    // Clear local identity before waiting on the server so protected state is
+    // disposed even when the logout request is slow or unavailable.
+    if (!isClosed) {
+      emit(const SessionState(status: SessionStatus.signedOut));
+    }
     try {
       await _repository.logout();
-    } on Exception {
+    } on Object {
       // Local logout still clears protected state.
     }
-    emit(const SessionState(status: SessionStatus.signedOut));
   }
 
-  void markSessionExpired() =>
-      emit(state.copyWith(status: SessionStatus.sessionExpired));
+  void markSessionExpired() {
+    ++_transitionVersion;
+    if (isClosed) return;
+    emit(const SessionState(status: SessionStatus.sessionExpired));
+  }
+
+  bool _isCurrent(int requestVersion) =>
+      !isClosed && requestVersion == _transitionVersion;
 
   SessionState _authenticated(SessionIdentityReadModel identity) =>
       SessionState(

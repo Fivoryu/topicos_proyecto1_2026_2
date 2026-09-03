@@ -9,7 +9,7 @@ from types import SimpleNamespace
 from typing import Any, cast
 from uuid import uuid4
 
-from backend.app.application.ports import ExpenseRecord
+from backend.app.application.ports import ExpenseRecord, InvalidationPublisher
 from backend.app.domain.errors import (
     DomainError,
     InvalidParticipantReferenceError,
@@ -80,12 +80,14 @@ class ExpenseService:
         derived_service=None,
         *,
         clock=None,
+        invalidation_publisher: InvalidationPublisher | None = None,
     ):
         self._expenses: Any = expense_repository
         self._participants: Any = participant_repository
         self._unit_of_work: Any = unit_of_work
         self._derived: Any = derived_service
         self._clock: Any = clock
+        self._publisher = invalidation_publisher
 
     def create(
         self,
@@ -120,6 +122,8 @@ class ExpenseService:
             result = self._create_source(expenses, group_id, expense, normalized)
             self._flush(transaction, expenses)
             self._verify_zero_sum(group_id, participants, expenses)
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
         return result or expense
 
     def edit(
@@ -163,6 +167,8 @@ class ExpenseService:
             )
             self._flush(transaction, expenses)
             self._verify_zero_sum(group_id, participants, expenses)
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
         return result or replacement
 
     def delete(
@@ -186,6 +192,8 @@ class ExpenseService:
                 raise ExpenseNotFoundError()
             self._flush(transaction, expenses)
             self._verify_zero_sum(group_id, participants, expenses)
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
 
     def _validate(
         self,

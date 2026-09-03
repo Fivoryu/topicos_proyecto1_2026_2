@@ -32,7 +32,12 @@ class _GroupScreenState extends State<GroupScreen> {
     builder: (context, snapshot) {
       final state = snapshot.data ?? widget.cubit.state;
       if (state.status != ReadStatus.loaded || state.group == null) {
-        return ReadStateMessage(status: state.status, resource: 'group');
+        return ReadStateMessage(
+          status: state.status,
+          resource: 'group',
+          message: state.message,
+          onRetry: widget.cubit.reload,
+        );
       }
       final group = state.group!;
       final policy = switch (group.settlementPolicy) {

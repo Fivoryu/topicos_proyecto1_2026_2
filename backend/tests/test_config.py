@@ -1,3 +1,4 @@
+# pyright: reportMissingImports=false
 """Environment configuration tests for the backend bootstrap."""
 
 
@@ -39,7 +40,10 @@ def test_settings_use_safe_development_defaults(monkeypatch):
     settings = Settings(_env_file=None)
 
     assert settings.database_url.startswith("postgresql+asyncpg://")
-    assert settings.cors_origins == ["http://localhost:5173"]
+    assert settings.cors_origins == [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]
     assert settings.session_ttl == 28_800
     assert settings.demo_owner_password == "change-me-owner"
     assert settings.demo_member_password == "change-me-member"

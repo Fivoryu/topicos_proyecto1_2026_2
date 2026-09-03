@@ -113,16 +113,27 @@ def _wire_request_services(app: FastAPI, session: Session) -> None:
         session_ttl=timedelta(seconds=settings.session_ttl),
     )
     unit_of_work = cast(Any, SqlAlchemyUnitOfWork(session=session))
-    participant_service = ParticipantService(participant_repository, unit_of_work)
+    invalidation_publisher = getattr(app.state, "broadcaster", None)
+    participant_service = ParticipantService(
+        participant_repository,
+        unit_of_work,
+        invalidation_publisher=invalidation_publisher,
+    )
     derived_service = DerivedService(participant_repository, expense_repository)
     expense_service = ExpenseService(
         expense_repository,
         participant_repository,
         unit_of_work,
         derived_service,
+        invalidation_publisher=invalidation_publisher,
     )
     authorization = AuthorizationService(membership_repository, group_repository)
-    group_service = GroupService(group_repository, unit_of_work, authorization)
+    group_service = GroupService(
+        group_repository,
+        unit_of_work,
+        authorization,
+        invalidation_publisher=invalidation_publisher,
+    )
     app.state.auth_service = auth_service
     app.state.membership_repository = membership_repository
     app.state.group_repository = group_repository

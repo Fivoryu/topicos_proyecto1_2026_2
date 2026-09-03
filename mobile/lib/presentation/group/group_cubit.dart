@@ -32,11 +32,15 @@ class GroupCubit extends Cubit<GroupState> {
   final GroupReader _reader;
   final String groupId;
 
-  Future<void> load() async {
+  Future<void> load({bool propagateFailure = false}) async {
+    if (isClosed) return;
     emit(GroupState.loading(group: state.group));
     try {
-      emit(GroupState.loaded(await _reader.getGroup(groupId)));
-    } on Object catch (error) {
+      final group = await _reader.getGroup(groupId);
+      if (isClosed) return;
+      emit(GroupState.loaded(group));
+    } on Object catch (error, stackTrace) {
+      if (isClosed) return;
       emit(
         isCorruptionFailure(error)
             ? GroupState.corruptionRecovery(recoveryMessage('group'))
@@ -45,10 +49,13 @@ class GroupCubit extends Cubit<GroupState> {
                 group: state.group,
               ),
       );
+      if (propagateFailure) Error.throwWithStackTrace(error, stackTrace);
     }
   }
 
   Future<void> reload() => load();
+
+  Future<void> reloadForRefresh() => load(propagateFailure: true);
 }
 
 typedef GroupReadCubit = GroupCubit;
