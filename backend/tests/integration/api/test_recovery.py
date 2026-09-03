@@ -42,7 +42,7 @@ def test_corrupted_seed_requires_reset_and_reseed(db_session):
     seed_demo(
         db_session, owner_password="owner-secret", member_password="member-secret"
     )
-    assert db_session.query(Expense).count() == 3
+    assert db_session.query(Expense).count() == 4
 
 
 def test_recovery_document_contains_reset_and_reseed_sequence():

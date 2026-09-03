@@ -40,7 +40,7 @@ async def test_da_03_excluded_participant_is_not_owed(seeded_api):
         balances = await client.get(f"{GROUP_PATH}/balances")
 
     assert login.status_code == 200
-    assert deleted == [204, 204, 204]
+    assert deleted == [204, 204, 204, 204]
     assert created.status_code == 201, created.text
     assert balances.status_code == 200
     rows = balances.json()["participants"]

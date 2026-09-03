@@ -38,7 +38,7 @@ async def test_da_02_multi_contributor_residual_and_zero_sum(seeded_api):
         balances = await client.get(f"{GROUP_PATH}/balances")
 
     assert login.status_code == 200
-    assert deleted == [204, 204, 204]
+    assert deleted == [204, 204, 204, 204]
     assert created.status_code == 201, created.text
     expense = created.json()
     assert expense["amount_cents"] == 10_000

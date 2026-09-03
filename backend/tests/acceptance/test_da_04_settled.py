@@ -37,7 +37,7 @@ async def test_da_04_settled_true_and_no_transfers(seeded_api):
         settlement = await client.get(f"{GROUP_PATH}/settlement")
 
     assert login.status_code == 200
-    assert deleted == [204, 204, 204]
+    assert deleted == [204, 204, 204, 204]
     assert created.status_code == 201, created.text
     assert settlement.status_code == 200
     body = settlement.json()

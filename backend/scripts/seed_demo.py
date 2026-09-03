@@ -52,13 +52,16 @@ DEMO_EXPENSE_IDS = (
     UUID("00000000-0000-4000-8000-000000000021"),
     UUID("00000000-0000-4000-8000-000000000022"),
     UUID("00000000-0000-4000-8000-000000000023"),
+    UUID("00000000-0000-4000-8000-000000000024"),
 )
 
 _PARTICIPANTS = ("Ana", "Beto", "Carla", "Diego")
+# Official Samaipata fixture: description, amount in cents, payer index.
 _EXPENSES = (
-    ("Samaipata - Ana", 96_000, 96_000),
-    ("Samaipata - Beto", 40_000, 40_000),
-    ("Samaipata - Carla", 24_000, 24_000),
+    ("Cabaña", 80_000, 0),
+    ("Entradas a El Fuerte", 16_000, 0),
+    ("Cena", 40_000, 1),
+    ("Gasolina", 24_000, 2),
 )
 
 
@@ -293,12 +296,11 @@ def _validate_seed(session: Session, owner_id: UUID, member_id: UUID) -> None:
     expected_ids = set(DEMO_EXPENSE_IDS)
     if not expected_ids.issubset(by_expense_id):
         _corrupted("The seeded expense set is incomplete.")
-    expected_contributors = (
-        {DEMO_PARTICIPANT_IDS[0]: 96_000},
-        {DEMO_PARTICIPANT_IDS[1]: 40_000},
-        {DEMO_PARTICIPANT_IDS[2]: 24_000},
+    expected_contributors = tuple(
+        {DEMO_PARTICIPANT_IDS[payer_index]: amount_cents}
+        for _description, amount_cents, payer_index in _EXPENSES
     )
-    for position, (description, amount_cents, _contribution) in enumerate(_EXPENSES):
+    for position, (description, amount_cents, _payer_index) in enumerate(_EXPENSES):
         expense = by_expense_id[DEMO_EXPENSE_IDS[position]]
         if (
             expense["amount_cents"] != amount_cents
@@ -376,15 +378,13 @@ def seed_demo(
                 participants_created += 1
         participant_tuple = tuple(participants)
 
-        for position, (description, amount_cents, payer_amount) in enumerate(_EXPENSES):
-            if payer_amount != amount_cents:
-                _corrupted("Seed configuration contains a contribution mismatch.")
+        for position, (description, amount_cents, payer_index) in enumerate(_EXPENSES):
             if _ensure_expense(
                 session,
                 position,
                 description,
                 amount_cents,
-                position + 0,
+                payer_index,
                 participant_tuple,
             ):
                 expenses_created += 1

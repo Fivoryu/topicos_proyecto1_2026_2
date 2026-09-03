@@ -12,6 +12,8 @@ from backend.app.adapters.db.tables import (
     AuthSession,
     Base,
     Expense,
+    ExpenseBeneficiary,
+    ExpenseContribution,
     Group,
     GroupMembership,
     Participant,
@@ -50,11 +52,16 @@ def test_seed_is_idempotent_and_matches_ao_01_state(db_session):
         "expenses": db_session.query(Expense).count(),
     }
 
-    seed_demo(db_session, owner_password="different-secret", member_password="other")
+    second = seed_demo(
+        db_session, owner_password="different-secret", member_password="other"
+    )
 
+    assert second.accounts_created == 0
+    assert second.participants_created == 0
+    assert second.expenses_created == 0
     assert counts_before == {
         "participants": 4,
-        "expenses": 3,
+        "expenses": 4,
     }
     assert db_session.query(Account).count() == 2
     assert db_session.query(AuthSession).count() == 0
@@ -78,6 +85,40 @@ def test_seed_is_idempotent_and_matches_ao_01_state(db_session):
     assert set(DEMO_EXPENSE_IDS) == {
         row.id for row in db_session.scalars(select(Expense))
     }
+    expenses = list(
+        db_session.scalars(select(Expense).order_by(Expense.created_at, Expense.id))
+    )
+    assert [(row.description, row.amount_cents) for row in expenses] == [
+        ("Cabaña", 80_000),
+        ("Entradas a El Fuerte", 16_000),
+        ("Cena", 40_000),
+        ("Gasolina", 24_000),
+    ]
+    expected_payers = [
+        DEMO_PARTICIPANT_IDS[0],
+        DEMO_PARTICIPANT_IDS[0],
+        DEMO_PARTICIPANT_IDS[1],
+        DEMO_PARTICIPANT_IDS[2],
+    ]
+    for expense, payer_id in zip(expenses, expected_payers, strict=True):
+        contributions = list(
+            db_session.scalars(
+                select(ExpenseContribution).where(
+                    ExpenseContribution.expense_id == expense.id
+                )
+            )
+        )
+        assert [(row.participant_id, row.amount_cents) for row in contributions] == [
+            (payer_id, expense.amount_cents)
+        ]
+        beneficiary_ids = set(
+            db_session.scalars(
+                select(ExpenseBeneficiary.participant_id).where(
+                    ExpenseBeneficiary.expense_id == expense.id
+                )
+            )
+        )
+        assert beneficiary_ids == set(DEMO_PARTICIPANT_IDS)
     assert hashes_before == {
         row.login_name: row.password_hash for row in db_session.query(Account)
     }
@@ -94,6 +135,7 @@ def test_seed_is_idempotent_and_matches_ao_01_state(db_session):
         -16_000,
         -40_000,
     ]
+    assert sum(row.balance_cents for row in balances.values()) == 0
     settlement = build_settlement(balances)
     assert [
         (row["from_participant_id"], row["to_participant_id"], row["amount_cents"])
