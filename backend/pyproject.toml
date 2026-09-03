@@ -44,3 +44,8 @@ select = ["E", "F", "I", "UP"]
 [tool.pyright]
 include = ["app", "migrations", "tests"]
 pythonVersion = "3.11"
+
+[tool.setuptools.packages.find]
+where = [".."]
+include = ["backend*"]
+exclude = ["backend.tests*", "backend.migrations*"]

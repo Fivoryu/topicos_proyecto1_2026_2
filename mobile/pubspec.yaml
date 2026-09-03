@@ -9,7 +9,7 @@ environment:
 # This metadata pins the generator used by the later contract-freeze slice.
 openapi_generator:
   cli: openapi-generator-cli
-  cli_version: "7.19.0"
+  cli_version: "7.14.0"
   generator: dart-dio
   input: ../contracts/openapi.json
   output: lib/generated/api

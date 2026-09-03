@@ -42,7 +42,7 @@ def compare_directories(committed: Path, regenerated: Path) -> list[str]:
             differences.append(f"{relative.as_posix()} (missing from committed)")
         elif relative not in regenerated_files:
             differences.append(f"{relative.as_posix()} (missing from regenerated)")
-        elif committed_file.read_bytes() != regenerated_file.read_bytes():
+        elif _normalized_bytes(committed_file) != _normalized_bytes(regenerated_file):
             differences.append(f"{relative.as_posix()} (content differs)")
     return differences
 
@@ -56,7 +56,7 @@ def find_drift(
     """Compare one contract snapshot and one generated-client directory."""
 
     differences: list[str] = []
-    if committed_contract.read_bytes() != exported_contract.read_bytes():
+    if _normalized_bytes(committed_contract) != _normalized_bytes(exported_contract):
         differences.append(f"{committed_contract.name} (content differs)")
     differences.extend(compare_directories(committed_clients, regenerated_clients))
     return differences
@@ -190,6 +190,10 @@ def _relative_files(directory: Path) -> set[Path]:
     return {
         path.relative_to(directory) for path in directory.rglob("*") if path.is_file()
     }
+    
+def _normalized_bytes(path: Path) -> bytes:
+    content = path.read_bytes()
+    return content.replace(b"\r\n", b"\n")
 
 
 def main(argv: Sequence[str] | None = None) -> int:
