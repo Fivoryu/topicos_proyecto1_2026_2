@@ -9,7 +9,7 @@ from typing import Any, cast
 from unicodedata import normalize
 from uuid import uuid4
 
-from backend.app.application.ports import ParticipantRecord
+from backend.app.application.ports import InvalidationPublisher, ParticipantRecord
 from backend.app.domain.errors import (
     DomainError,
     DuplicateParticipantNameError,
@@ -39,9 +39,16 @@ def normalize_participant_name(value: object) -> tuple[str, str]:
 class ParticipantService:
     """Coordinate group-scoped participant mutations through one transaction."""
 
-    def __init__(self, participant_repository, unit_of_work=None):
+    def __init__(
+        self,
+        participant_repository,
+        unit_of_work=None,
+        *,
+        invalidation_publisher: InvalidationPublisher | None = None,
+    ):
         self._participants: Any = participant_repository
         self._unit_of_work: Any = unit_of_work
+        self._publisher = invalidation_publisher
 
     def list(self, group_id: str, actor: object | None = None):
         """List active and archived participants in stable creation order."""
@@ -79,6 +86,8 @@ class ParticipantService:
                 result = adder(group_id, participant)
             except TypeError:
                 result = adder(participant)
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
         return result or participant
 
     def archive(self, group_id: str, participant_id: str, actor: object | None = None):
@@ -88,6 +97,8 @@ class ParticipantService:
         participant = self._require(group_id, participant_id)
         with self._transaction():
             result = self._set_archived(group_id, participant_id, datetime.now(UTC))
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
         return result or participant
 
     def reactivate(
@@ -99,6 +110,8 @@ class ParticipantService:
         participant = self._require(group_id, participant_id)
         with self._transaction():
             result = self._set_archived(group_id, participant_id, None)
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
         return result or participant
 
     def delete(
@@ -117,6 +130,8 @@ class ParticipantService:
             deleted = deleter(group_id, participant_id)
             if deleted is False:
                 raise ParticipantNotFoundError()
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
 
     def rename(
         self,
@@ -150,6 +165,8 @@ class ParticipantService:
                 )
             if result is None:
                 raise ParticipantNotFoundError()
+        if self._publisher is not None:
+            self._publisher.publish(group_id)
         return result
 
     def _require(self, group_id: str, participant_id: str):
