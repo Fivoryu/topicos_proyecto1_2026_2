@@ -1,83 +1,72 @@
 # API client generation and contract freeze
 
-The **frozen contract** is `contracts/openapi.json`. It is the single source of
-truth for every client: FastAPI exports it (`backend/scripts/export_openapi.py`),
-and the pinned OpenAPI generator CLI produces the TypeScript and Dart-Dio
-clients from it.
+The **frozen contract** is `contracts/openapi.json`. FastAPI exports it and the pinned OpenAPI Generator CLI produces the TypeScript and Dart-Dio clients. Generated files are never hand-edited.
 
 ## Pinned toolchain
 
-| Piece | Pin | Location |
+| Piece | Pin / rule | Operational source |
 | --- | --- | --- |
-| OpenAPI Generator CLI | `7.19.0` | `web/openapitools.json` (`generator-cli.version`) and `mobile/pubspec.yaml` (`openapi_generator.cli_version`) |
-| TypeScript generator | `typescript-fetch` | `backend/scripts/check_contract_drift.py` (`_WEB_GENERATOR`) |
-| Dart generator | `dart-dio` with `serializationLibrary=json_serializable` | same file (`_MOBILE_GENERATOR` + property) |
-| Web transport wiring | `credentials: "include"` | `web/src/app/api-client.ts` (adapter level; generated files are never edited) |
+| OpenAPI Generator CLI | `7.14.0` | repository-root `openapitools.json` (the drift script runs from repo root) |
+| Secondary metadata | `7.14.0` | `web/openapitools.json` and `mobile/pubspec.yaml` are aligned to the operational root pin |
+| TypeScript generator | `typescript-fetch` | `backend/scripts/check_contract_drift.py` |
+| Dart generator | `dart-dio`, `serializationLibrary=json_serializable` | same drift script |
+| Browser transport | credentials/cookies through handwritten adapter | `web/src/app/api-client.ts` |
 
-## Commands
+## Reproducible commands
+
+Start from the **repository root**. The generator package is installed with the web dev dependencies, so run the two generation commands from `web/` where their relative input/output paths are unambiguous:
 
 ```bash
-# 1. Export the contract (must be run from the repository root)
+# 1. Export the FastAPI contract (repository root)
 python -m backend.scripts.export_openapi
 
-# 2. Regenerate both clients (also run by the drift check)
-npm --prefix web exec -- openapi-generator-cli generate \
-  -i contracts/openapi.json -g typescript-fetch \
-  -o web/src/generated/api --skip-validate-spec \
+# 2. Enter the web package, which owns the pinned generator dependency
+cd web
+
+# 3. Regenerate the TypeScript client
+npm exec -- openapi-generator-cli generate \
+  -i ../contracts/openapi.json -g typescript-fetch \
+  -o src/generated/api --skip-validate-spec \
   --additional-properties=supportsES6=true
-npm --prefix web exec -- openapi-generator-cli generate \
-  -i contracts/openapi.json -g dart-dio \
-  -o mobile/lib/generated/api --skip-validate-spec \
+
+# 4. Regenerate the Dart-Dio client
+npm exec -- openapi-generator-cli generate \
+  -i ../contracts/openapi.json -g dart-dio \
+  -o ../mobile/lib/generated/api --skip-validate-spec \
   --additional-properties=serializationLibrary=json_serializable
 
-# 3. Build the Dart serialization parts (json_serializable)
+cd ..
+
+# 5. Build Dart serialization parts
 cd mobile/lib/generated/api
 dart pub get
 dart run build_runner build --delete-conflicting-outputs
-cd ../../..
-# Transient artifacts (.dart_tool, .build, pubspec.lock) are not committed.
+cd ../../../..
 
-# 4. Verify drift (export + regenerate into temp dirs + diff)
+# 6. Verify the committed snapshot and both client trees
 python -m backend.scripts.check_contract_drift --cwd .
 ```
 
-Steps 1–4 are exactly what `backend/scripts/check_contract_drift.py` performs
-against temporary directories, so a green drift check proves the committed
-contract and both generated trees are reproducible from source.
+For normal verification, prefer the final drift-check command: it exports and regenerates into temporary directories using the same root `7.14.0` pin, then compares the results without overwriting committed generated files.
+
+The drift script exports/regenerates into temporary directories, normalizes the generated Dart SDK floor exactly as defined by the script, builds serialization parts, and compares bytes against committed output. A green drift check proves reproducibility from the handwritten API source and pinned workflow.
 
 ## No-hand-edit rule
 
-Every file under `web/src/generated/api/` and `mobile/lib/generated/api/` is
-generated output. **Never hand-edit them**: the drift check compares bytes and
-any manual change fails regeneration. Two deterministic, script-owned
-exceptions are applied by `generate_clients` itself (both sides of the
-comparison, so drift stays clean):
+Never manually edit:
 
-- the Dart package's SDK floor is pinned to `>=3.10.0 <4.0.0` (the template
-  emits `>=3.5.0`, which the Dart CFE rejects for path-dep part files under the
-  host SDK);
-- transport wiring (cookies, CSRF header) lives in adapter files outside the
-  generated trees (`web/src/app/api-client.ts`, mobile data adapters).
+- `web/src/generated/api/**`
+- `mobile/lib/generated/api/**`
 
-## Contract-change workflow
+TODO markers inside generated output are generator artifacts, not automatically product scope.
 
-1. Change the FastAPI source (routes/schemas) and the backend tests.
-2. Re-export the contract and review the diff in `contracts/openapi.json`.
-3. Regenerate + rebuild both clients (commands above) and update consumer
-   tests that assert wire shapes.
-4. Run `python -m backend.scripts.check_contract_drift --cwd .` — it must be
-   green before the change is complete.
-5. Record the change in the OpenSpec change's `apply-progress.md`; the contract
-   freeze (gate `T-CF`) re-verifies steps 2–4.
+If the API really changes:
 
-## Frozen shapes (gate T-CF, freeze recorded 2026-08-28)
+1. Change handwritten FastAPI route/schema source and backend tests/specs first.
+2. Export `contracts/openapi.json` and review the contract diff.
+3. Regenerate affected clients through the commands above.
+4. Update consumer tests for the changed wire shape.
+5. Run `python -m backend.scripts.check_contract_drift --cwd .`.
+6. Record the contract change in the owning OpenSpec change.
 
-- Cookie security described (`cc_session` apiKey-in-cookie) plus the
-  `X-CSRF-Token` header requirement on unsafe group/auth operations.
-- Monetary fields are integer cents on the wire (`*_cents`); no floats.
-- Participant rename is name-only (`RenameParticipantRequest = {name: string}`).
-- Stable error envelope: `ErrorResponse` / `FieldError` (FastAPI default
-  validation schemas are stripped from the export; the envelope is the sole
-  error shape).
-- Responses carry the server-derived role (`SessionIdentityResponse`); no
-  client role field exists anywhere in the contract.
+Presentation-only, seed-only, README, or environment-documentation changes do **not** justify generated-client churn.
