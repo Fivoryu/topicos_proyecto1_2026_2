@@ -1,76 +1,104 @@
 # Project Context: Cuentas Claras / Amigo Duradero
 
-## Product
+## Product and delivery target
 
-Finance-friendly group expense app for the Tópicos programming course. MVP supports one active trip/group, participants, equal-split expenses, balances, deterministic settlement transfers, validation, and persistence. Delivery priority is Must before Stretch.
+Cuentas Claras is the group-expense application for the Tópicos programming course. The official Grupo 2 delivery and its under-three-minute Samaipata demonstration are web-centered. The protected FastAPI/PostgreSQL backend is the source of authorization, persistence, monetary results, and settlement. A Flutter/Android client also exists as an independently governed extension under `openspec/changes/mobile-domain-features/`; it is not required to run the official web demo.
 
-## Approved architecture baseline
+## Current source-of-truth precedence
+
+When artifacts disagree, use this order:
+
+1. The official assignment/instructor baseline is the preserved statement of the evaluated problem and required scenario.
+2. Dated OpenSpec proposals, explorations, checkpoint decisions, apply/verify reports, and `docs/requerimiento-docente.md` are historical decision evidence; they are not automatically current implementation guidance.
+3. This project context plus the specs of each currently active OpenSpec change define accepted current scope.
+4. Landed implementation, the exported OpenAPI contract, generated-client drift checks, and passing verification commands are conformance evidence.
+
+Never silently rewrite historical artifacts to make them look current. Add an explicit supersession/status map instead. See `docs/sdd-evolution.md`.
+
+## Delivered architecture baseline
 
 - Backend: FastAPI/Python, PostgreSQL, SQLAlchemy, Alembic.
-- Web: React, Vite, TanStack Query, Tailwind.
-- Mobile: Flutter, Bloc/Cubit, Dio.
-- FastAPI is the monetary authority.
-- OpenAPI generates clients.
-- WebSocket only invalidates/refetches REST; it is not a second source of monetary truth.
+- Web: React, Vite, TanStack Query, Tailwind/CSS.
+- Mobile extension: Flutter, Bloc/Cubit, Dio; current domain work remains owned by `mobile-domain-features`.
+- FastAPI is the authorization and monetary authority.
+- PostgreSQL is the durable store for protected group/session/source data; `localStorage` is not the data authority.
+- Authentication is part of the delivered MVP: seeded owner/member accounts, opaque database-backed sessions, login/logout, CSRF/origin checks, and server-derived roles.
+- OpenAPI defines client contracts. Generated TypeScript and Dart clients are never hand-edited.
+- WebSocket is invalidation-only: clients receive `{"type":"data_changed"}` and refetch authoritative REST data.
+- Successful group-policy, participant, and expense mutations already publish the shared group-scoped invalidation after commit. That behavior is owned by `wire-mutation-websocket-invalidation` and must not be reimplemented by final-delivery work.
 
-## Confirmed checkpoint decisions (T-00, recorded in Engram observation 2587)
+## Independent change ownership
+
+- `cuentas-claras-mvp`: completed implementation history and the main reconciled MVP decisions; keep its artifacts intact.
+- `wire-mutation-websocket-invalidation`: implementation is landed and backend tests are green; its verification report records a strict-TDD evidence-format blocker before archive. Final-delivery treats it as a regression gate, not as implementation scope.
+- `mobile-domain-features`: active, independently governed Flutter/Android domain work with substantial landed implementation and remaining acceptance/tasks. Final-delivery may describe/link its current status but does not implement, accept, revert, or archive it.
+- `final-delivery-alignment`: web-centered handoff alignment: current guidance, official four-expense fixture, Spanish web presentation, setup/demo documentation, and delivery verification.
+
+## Confirmed domain decisions
 
 - **CC-01 — multi-contributor residual:** the complete residual goes to the first stable-creation-order participant in contributor∩beneficiary; if empty, to the first selected beneficiary in stable order. No entry-order or round-robin distribution.
-- **CC-02 — archived zero visibility:** referenced archived participants stay visible in balances and history, including `Bs. 0.00`; they are excluded from new-expense defaults and retained in referencing edit forms.
-- **CC-03 — minimum authentication is Must:** pre-seeded demo owner/member accounts, login, logout, protected sessions, and server-derived `owner`/`member` roles. No public registration, recovery, invitations, or OAuth.
-- **CC-04 — participant rename is Must:** name-only atomic rename that preserves the participant ID, all historical references, and all monetary results, with trim + case-insensitive normalized-name uniqueness.
+- **CC-02 — archived zero visibility:** referenced archived participants stay visible in balances/history, including zero balances; they are excluded from new-expense defaults and retained in referencing edit forms.
+- **CC-03 — minimum authentication is Must:** seeded demo owner/member accounts, login, logout, protected sessions, and server-derived `owner`/`member` roles. No public registration, recovery, invitations, or OAuth.
+- **CC-04 — participant rename is Must:** name-only atomic rename preserves participant ID, historical references, and monetary results, with trim + case-insensitive normalized-name uniqueness.
 
-## Domain decisions
+## Monetary and persistence invariants
 
-- Store monetary values as integer cents; never use floating-point money logic.
-- Equal split with deterministic residual per CC-01.
-- Expenses support multiple contributors whose contributions sum exactly to the expense amount.
-- Referenced participants are archived/protected from deletion; never-used participants may be deleted (CC-02 visibility rules apply).
-- Settlement policy (`owner_only` default, `any_member` optional) is persisted per group; policy changes follow the explicit owner/member operation matrix (owner-sensitive under `owner_only`; either role under `any_member`).
-- Sessions are opaque, database-backed, cookie-transported (`cc_session` HttpOnly + `cc_csrf` CSRF/origin boundary), with fixed expiry and explicit revocation.
-- One group owner; participants are group records, not login accounts.
-- Include realistic demo history plus the minimum demo accounts.
-- Must-before-Stretch delivery.
+- Store and calculate money as integer cents; never use floating point for domain money.
+- Derived balances must sum to exactly zero cents.
+- Equal-split residual behavior is deterministic per CC-01.
+- Expenses may have multiple contributors; submitted contribution totals are validated by the server.
+- Settlement transfers are server-derived and deterministic; clients only render them.
+- Referenced participants are archived/protected from deletion; never-used participants may be deleted.
+- One group owner; participants are domain records, not login accounts.
+- Refresh persistence comes from PostgreSQL and the protected server session, not client-side durable state.
+
+## Official Samaipata delivery fixture
+
+All four participants benefit from all four expenses:
+
+1. Ana — Cabaña — `80000` cents.
+2. Ana — Entradas a El Fuerte — `16000` cents.
+3. Beto — Cena — `40000` cents.
+4. Carla — Gasolina — `24000` cents.
+
+Expected balances: Ana `+56000`, Beto `0`, Carla `-16000`, Diego `-40000`. Expected ordered transfers: Diego → Ana `40000`, then Carla → Ana `16000`.
 
 ## Constraints and non-goals
 
-- Do not implement product code during initialization.
-- Preserve `docs/requerimiento-docente.md` unchanged.
-- Public registration, password recovery, invitations, external OAuth, cloud collaboration, multiple currencies, custom splits, OCR, payments, and advanced analytics remain outside the MVP as specified in the reconciled proposal. Minimum seeded-account authentication (CC-03) and name-only participant rename (CC-04) are confirmed MVP scope, not non-goals.
+- Preserve `docs/requerimiento-docente.md` as historical baseline evidence.
+- Do not absorb work owned by another OpenSpec change.
+- Do not revive discarded Stretch work solely because generated code contains TODO markers.
+- Public registration, password recovery, invitations, external OAuth, multiple currencies, custom splits, OCR, payments, and advanced analytics remain outside the final-delivery scope.
+- Do not redesign the web UI during delivery polish; change presentation copy/formatting only as required.
+- Do not change API schemas or regenerate clients unless a real handwritten contract change requires it.
 
-## SDD session configuration
+## Spec-Driven Development rule
 
-- Artifact store: both (OpenSpec + Engram)
-- Execution mode: auto
-- Delivery strategy: exception-ok
-- Remaining-plan size-exception decision: the user explicitly selected `exception-ok`; PRs 9, 12, 15, 17, 19, 20, and 22 are eligible only when native line accounting shows actual authored work above 600 lines.
-- Review budget: 600 changed lines
-- Strict TDD: enabled by session policy; repository test runners are detected and recorded in `openspec/config.yaml`.
+Accepted understanding changes **specs before product code**. For a behavior change: inspect current state → update/validate proposal/spec/design/tasks → add or update acceptance/tests → implement the smallest change → run focused and full regression gates → only then sync/archive the OpenSpec change. A task is complete only when its specified behavior and verification are complete.
 
-## Testing discovery
+## Verification commands
 
-Testing discovery was re-run after the T-01 backend, T-02 web, and T-03 mobile bootstrap. All three repository test entry points are now detected and passed once from the checkout root:
+Run from the repository root unless noted:
 
-| Area | Detected runner and version | Repository command | T-04 result |
-| --- | --- | --- | --- |
-| Backend | pytest 9.1.1 on Python 3.14.6 (`backend/pyproject.toml`) | `python -m pytest backend/tests -q` | 10 passed |
-| Web | `npm` test script invoking Vitest 3.0.5 on Node v22.23.0 (`web/package.json`) | `npm --prefix web run test` | 1 file, 2 tests passed |
-| Mobile | Flutter test runner from Flutter 3.41.8 / Dart 3.11.5 (`mobile/pubspec.yaml`) | `cd mobile && flutter test --no-pub` | 5 tests passed |
+```bash
+python -m pytest backend/tests/integration/api/test_ws_mutation_invalidation.py -q
+python -m pytest backend/tests -q
+python -m ruff check backend
+npm --prefix web run test
+npm --prefix web run typecheck
+npm --prefix web run build
+python -m backend.scripts.check_contract_drift --cwd .
+```
 
-### Strict-TDD command table
+The mobile extension has its own independent gate:
 
-The focused selector is supplied by the task under test; the unqualified command is the
-recorded full-suite command.
+```bash
+cd mobile && flutter test --no-pub
+```
 
-| Cycle stage | Backend | Web | Mobile |
-| --- | --- | --- | --- |
-| RED | `python -m pytest backend/tests -q -k <case>` | `npm --prefix web run test -- <file>` | `cd mobile && flutter test --no-pub <file>` |
-| GREEN | `python -m pytest backend/tests -q` | `npm --prefix web run test` | `cd mobile && flutter test --no-pub` |
-| TRIANGULATE | `python -m pytest backend/tests -q -k <case>` | `npm --prefix web run test -- <file>` | `cd mobile && flutter test --no-pub <file>` |
-| REFACTOR | `python -m pytest backend/tests -q` | `npm --prefix web run test` | `cd mobile && flutter test --no-pub` |
+OpenSpec lifecycle checks for final delivery:
 
-For T-04, RED is not manufactured because this work unit changes runner documentation rather
-than behavior. The three unqualified GREEN/REFACTOR commands above are the recorded discovery
-commands and each passed once.
-
-T-04 is a runner-discovery and documentation task, so it does not manufacture a RED failure or change product behavior. The recorded GREEN evidence is the one successful run of each command above; the existing T-01/T-02/T-03 RED, GREEN, TRIANGULATE, and REFACTOR evidence remains in `openspec/changes/cuentas-claras-mvp/apply-progress.md`. The testing status in `openspec/config.yaml` is `detected` because all three recorded commands passed.
+```bash
+openspec validate final-delivery-alignment --strict
+openspec status --change final-delivery-alignment
+```

@@ -4,10 +4,11 @@ project:
   stack:
     backend: "FastAPI/Python + PostgreSQL/SQLAlchemy/Alembic"
     web: "React/Vite/TanStack Query/Tailwind"
-    mobile: "Flutter/Bloc-Cubit/Dio"
+    mobile: "Flutter/Bloc-Cubit/Dio (independent extension)"
   monetary_authority: FastAPI
+  persistence_authority: PostgreSQL
   api_contract: OpenAPI
-  realtime_policy: "WebSocket invalidates/refetches REST only"
+  realtime_policy: "Successful source mutations publish one group-scoped data_changed after commit; clients refetch REST only"
 sdd:
   artifact_store: both
   execution_mode: auto
@@ -15,35 +16,40 @@ sdd:
   chain_strategy: stacked-to-main
   review_budget_changed_lines: 600
   strict_tdd: true
+  current_change: final-delivery-alignment
+  source_of_truth:
+    current_context: openspec/project-context.md
+    evolution_map: docs/sdd-evolution.md
+    historical_baseline: docs/requerimiento-docente.md
+  independent_changes:
+    - cuentas-claras-mvp
+    - wire-mutation-websocket-invalidation
+    - mobile-domain-features
   phase_rules:
-    - "Define and approve proposal, specs, design, context, and tasks before product code."
-    - "Implement incrementally, one task at a time, with acceptance checks."
-    - "Preserve docs/requerimiento-docente.md as the baseline source."
+    - "Update accepted specs before behavior-changing product code."
+    - "Preserve historical artifacts and record supersession/status externally instead of rewriting history."
+    - "Implement incrementally with focused acceptance checks and full regression gates."
+    - "Never hand-edit generated OpenAPI clients; change handwritten API sources and regenerate through the pinned workflow."
+    - "Final-delivery-alignment must not implement, accept, revert, or archive independently governed mobile/WebSocket work."
 testing:
-  runner: "pytest 9.1.1, Vitest 3.0.5, Flutter test"
+  runner: "pytest, Vitest, Flutter test"
   capabilities:
     backend:
-      runner: "pytest 9.1.1"
-      runtime: "Python 3.14.6"
       command: "python -m pytest backend/tests -q"
+      focused_invalidation: "python -m pytest backend/tests/integration/api/test_ws_mutation_invalidation.py -q"
+      lint: "python -m ruff check backend"
     web:
-      script: "test"
-      runner: "Vitest 3.0.5"
-      runtime: "Node v22.23.0"
-      command: "npm --prefix web run test"
+      test: "npm --prefix web run test"
+      typecheck: "npm --prefix web run typecheck"
+      build: "npm --prefix web run build"
+    contract:
+      drift: "python -m backend.scripts.check_contract_drift --cwd ."
     mobile:
-      runner: "Flutter test 3.41.8"
-      runtime: "Dart 3.11.5"
+      ownership: mobile-domain-features
       command: "cd mobile && flutter test --no-pub"
   strict_tdd:
-    red: >-
-      Write the focused failing test, then run the affected runner command.
-    green: >-
-      Run the affected runner command and require the focused behavior plus
-      existing suite to pass.
-    triangulate: >-
-      Re-run the focused command with edge cases and invalid-state coverage.
-    refactor: >-
-      Run the affected runner command again after cleanup; retain green
-      evidence.
+    red: "Write the focused failing test and run the affected focused command."
+    green: "Implement the smallest behavior and make the focused test pass."
+    triangulate: "Add/re-run edge and invalid-state coverage."
+    refactor: "Clean up without changing behavior, then run the affected full suite."
   status: detected
