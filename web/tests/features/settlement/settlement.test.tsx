@@ -55,9 +55,9 @@ describe("settlement panel", () => {
       transfers: [],
     });
 
-    expect(await screen.findByText(/everyone is settled/i)).toBeInTheDocument();
+    expect(await screen.findByText(/todos están saldados/i)).toBeInTheDocument();
     expect(
-      screen.queryByRole("list", { name: /transfers/i }),
+      screen.queryByRole("list", { name: /transferencias/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -84,16 +84,11 @@ describe("settlement panel", () => {
       ],
     });
 
-    const list = await screen.findByRole("list", { name: /transfers/i });
+    const list = await screen.findByRole("list", { name: /transferencias/i });
     expect(
       within(list)
         .getAllByRole("listitem")
         .map((item) => item.textContent),
-    ).toEqual([
-      expect.stringContaining("Diego"),
-      expect.stringContaining("Carla"),
-    ]);
-    expect(within(list).getByText("Bs. 400.00")).toBeInTheDocument();
-    expect(within(list).getByText("Bs. 160.00")).toBeInTheDocument();
+    ).toEqual(["Diego → Ana: Bs. 400,00", "Carla → Ana: Bs. 160,00"]);
   });
 });

@@ -86,13 +86,15 @@ describe("group settings", () => {
     expect(
       await screen.findByRole("heading", { name: "Samaipata" }),
     ).toBeInTheDocument();
+    expect(screen.getByText(/cuenta propietaria/i)).toBeInTheDocument();
     expect(screen.getByText("owner-1")).toBeInTheDocument();
-    expect(screen.getAllByText(/owner only/i)).not.toHaveLength(0);
+    expect(screen.getAllByText(/política de liquidación/i)).not.toHaveLength(0);
+    expect(screen.getAllByText(/solo propietario/i)).not.toHaveLength(0);
 
-    fireEvent.change(screen.getByLabelText(/settlement policy/i), {
+    fireEvent.change(screen.getByLabelText(/política de liquidación/i), {
       target: { value: "any_member" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /save policy/i }));
+    fireEvent.click(screen.getByRole("button", { name: /guardar política/i }));
 
     await waitFor(() =>
       expect(client.updatePolicy).toHaveBeenCalledWith(
@@ -112,10 +114,10 @@ describe("group settings", () => {
 
     await screen.findByRole("heading", { name: "Samaipata" });
     expect(
-      screen.queryByLabelText(/settlement policy/i),
+      screen.queryByLabelText(/política de liquidación/i),
     ).not.toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /save policy/i }),
+      screen.queryByRole("button", { name: /guardar política/i }),
     ).not.toBeInTheDocument();
   });
 
@@ -128,11 +130,11 @@ describe("group settings", () => {
     renderSettings(client, memberSession);
 
     await screen.findByRole("heading", { name: "Samaipata" });
-    expect(screen.getByLabelText(/settlement policy/i)).toBeInTheDocument();
-    fireEvent.change(screen.getByLabelText(/settlement policy/i), {
+    expect(screen.getByLabelText(/política de liquidación/i)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText(/política de liquidación/i), {
       target: { value: "owner_only" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /save policy/i }));
+    fireEvent.click(screen.getByRole("button", { name: /guardar política/i }));
 
     await waitFor(() =>
       expect(client.updatePolicy).toHaveBeenCalledWith(
@@ -159,13 +161,13 @@ describe("group settings", () => {
     renderSettings(client);
 
     await screen.findByRole("heading", { name: "Samaipata" });
-    fireEvent.change(screen.getByLabelText(/settlement policy/i), {
+    fireEvent.change(screen.getByLabelText(/política de liquidación/i), {
       target: { value: "any_member" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /save policy/i }));
+    fireEvent.click(screen.getByRole("button", { name: /guardar política/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      /forbidden: only the owner can change this policy/i,
+      /forbidden: no tienes permisos para realizar esta acción/i,
     );
     expect(
       screen.getByRole("heading", { name: "Samaipata" }),

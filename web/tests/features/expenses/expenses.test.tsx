@@ -99,34 +99,34 @@ describe("expenses panel", () => {
     renderPanel(client);
 
     expect(
-      await screen.findByRole("heading", { name: "Expenses" }),
+      await screen.findByRole("heading", { name: "Gastos" }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/beneficiary Ana/i)).toBeChecked();
-    expect(screen.getByLabelText(/beneficiary Carla/i)).toBeChecked();
+    expect(screen.getByLabelText(/beneficiario Ana/i)).toBeChecked();
+    expect(screen.getByLabelText(/beneficiario Carla/i)).toBeChecked();
     expect(
-      screen.queryByLabelText(/beneficiary Beto/i),
+      screen.queryByLabelText(/beneficiario Beto/i),
     ).not.toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText(/expense description/i), {
+    fireEvent.change(screen.getByLabelText(/descripción del gasto/i), {
       target: { value: "Lunch" },
     });
-    fireEvent.change(screen.getByLabelText(/expense amount/i), {
+    fireEvent.change(screen.getByLabelText(/monto del gasto/i), {
       target: { value: "10.00" },
     });
-    fireEvent.change(screen.getByLabelText(/contributor 1 participant/i), {
+    fireEvent.change(screen.getByLabelText(/^pagador 1$/i), {
       target: { value: "p1" },
     });
-    fireEvent.change(screen.getByLabelText(/contributor 1 amount/i), {
+    fireEvent.change(screen.getByLabelText(/monto del pagador 1/i), {
       target: { value: "6.00" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /add contributor/i }));
-    fireEvent.change(screen.getByLabelText(/contributor 2 participant/i), {
+    fireEvent.click(screen.getByRole("button", { name: /agregar pagador/i }));
+    fireEvent.change(screen.getByLabelText(/^pagador 2$/i), {
       target: { value: "p3" },
     });
-    fireEvent.change(screen.getByLabelText(/contributor 2 amount/i), {
+    fireEvent.change(screen.getByLabelText(/monto del pagador 2/i), {
       target: { value: "4" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /create expense/i }));
+    fireEvent.click(screen.getByRole("button", { name: /crear gasto/i }));
 
     await waitFor(() =>
       expect(client.createExpense).toHaveBeenCalledWith("group-demo", {
@@ -146,9 +146,9 @@ describe("expenses panel", () => {
     client.listExpenses = vi.fn().mockResolvedValue([]);
     renderPanel(client);
 
-    const amount = await screen.findByLabelText(/expense amount/i);
+    const amount = await screen.findByLabelText(/monto del gasto/i);
     fireEvent.change(amount, { target: { value: "10.001" } });
-    fireEvent.click(screen.getByRole("button", { name: /create expense/i }));
+    fireEvent.click(screen.getByRole("button", { name: /crear gasto/i }));
 
     expect(client.createExpense).not.toHaveBeenCalled();
     expect(amount).toHaveValue("10.001");
@@ -165,10 +165,10 @@ describe("expenses panel", () => {
     renderPanel(client, emptyParticipants);
 
     expect(
-      await screen.findByText(/add participants first/i),
+      await screen.findByText(/agrega participantes/i),
     ).toBeInTheDocument();
     expect(
-      screen.queryByRole("button", { name: /create expense/i }),
+      screen.queryByRole("button", { name: /crear gasto/i }),
     ).not.toBeInTheDocument();
     expect(client.createExpense).not.toHaveBeenCalled();
   });
@@ -178,10 +178,12 @@ describe("expenses panel", () => {
     renderPanel(client);
 
     const row = await screen.findByTestId("expense-e1");
-    fireEvent.click(within(row).getByRole("button", { name: /edit expense/i }));
+    expect(within(row).getByText("Bs. 100,00")).toBeInTheDocument();
+    expect(within(row).getByText(/pagado por Ana, Beto \(archivado\)/i)).toBeInTheDocument();
+    fireEvent.click(within(row).getByRole("button", { name: /editar gasto/i }));
 
     const archivedBeneficiary =
-      await screen.findByLabelText(/beneficiary Beto/i);
+      await screen.findByLabelText(/beneficiario Beto/i);
     expect(archivedBeneficiary).toBeChecked();
     expect(archivedBeneficiary).not.toBeDisabled();
     expect(screen.getByDisplayValue("Dinner")).toBeInTheDocument();
@@ -200,12 +202,12 @@ describe("expenses panel", () => {
     client.listExpenses = vi.fn().mockResolvedValue([]);
     renderPanel(client);
 
-    const description = await screen.findByLabelText(/expense description/i);
+    const description = await screen.findByLabelText(/descripción del gasto/i);
     fireEvent.change(description, { target: { value: "Dinner" } });
-    fireEvent.change(screen.getByLabelText(/expense amount/i), {
+    fireEvent.change(screen.getByLabelText(/monto del gasto/i), {
       target: { value: "10.00" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /create expense/i }));
+    fireEvent.click(screen.getByRole("button", { name: /crear gasto/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
       /contribution_mismatch/i,

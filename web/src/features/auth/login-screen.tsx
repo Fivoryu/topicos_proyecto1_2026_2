@@ -3,7 +3,7 @@ import { type FormEvent, useState } from "react";
 import { useSession } from "../../app/auth/session-provider";
 
 export function LoginScreen() {
-  const { status, errorCode, errorMessage, notice, login } = useSession();
+  const { status, errorCode, notice, login } = useSession();
   const [loginName, setLoginName] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -14,26 +14,33 @@ export function LoginScreen() {
     await login({ loginName, password });
   }
 
-  const visibleError = errorCode
-    ? `${errorCode}: ${errorMessage ?? "Authentication failed."}`
+  const authMessages: Record<string, string> = {
+    invalid_credentials: "El usuario o la contraseña son incorrectos.",
+    unauthorized: "Debes iniciar sesión para continuar.",
+    session_expired: "Tu sesión expiró. Inicia sesión nuevamente.",
+    forbidden: "No tienes permisos para realizar esta acción.",
+    csrf_failed: "La solicitud de seguridad no fue aceptada. Recarga la página e intenta nuevamente.",
+  };
+  const visibleError = errorCode && !notice
+    ? `${errorCode}: ${authMessages[errorCode] ?? "No se pudo iniciar sesión."}`
     : null;
 
   return (
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="login-title">
         <p className="auth-eyebrow">Cuentas Claras</p>
-        <h1 id="login-title">Sign in to Cuentas Claras</h1>
+        <h1 id="login-title">Inicia sesión en Cuentas Claras</h1>
         <p className="auth-intro">
-          Use your seeded account to access the group.
+          Usa tu cuenta de demostración para acceder al grupo.
         </p>
         {notice && (
           <p className="auth-notice" role="status">
             {notice}
           </p>
         )}
-        <form aria-label="Sign in" onSubmit={submit}>
+        <form aria-label="Iniciar sesión" onSubmit={submit}>
           <div className="auth-field">
-            <label htmlFor="login-name">Login name</label>
+            <label htmlFor="login-name">Usuario</label>
             <input
               id="login-name"
               name="login_name"
@@ -46,7 +53,7 @@ export function LoginScreen() {
             />
           </div>
           <div className="auth-field">
-            <label htmlFor="login-password">Password</label>
+            <label htmlFor="login-password">Contraseña</label>
             <div className="password-field">
               <input
                 id="login-password"
@@ -61,12 +68,12 @@ export function LoginScreen() {
               <button
                 type="button"
                 className="password-toggle"
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
                 aria-pressed={showPassword}
                 onClick={() => setShowPassword((visible) => !visible)}
                 disabled={isLoading}
               >
-                {showPassword ? "Hide" : "Show"}
+                {showPassword ? "Ocultar" : "Mostrar"}
               </button>
             </div>
           </div>
@@ -81,7 +88,7 @@ export function LoginScreen() {
             disabled={isLoading}
             aria-busy={isLoading}
           >
-            {isLoading ? "Signing in…" : "Sign in"}
+            {isLoading ? "Ingresando…" : "Iniciar sesión"}
           </button>
         </form>
       </section>

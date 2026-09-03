@@ -78,13 +78,13 @@ describe("participants panel", () => {
   it("keeps the server stable order and shows archived status", async () => {
     renderPanel(baseClient());
 
-    const list = await screen.findByRole("list", { name: /participants/i });
+    const list = await screen.findByRole("list", { name: /participantes/i });
     expect(
       within(list)
         .getAllByRole("listitem")
         .map((item) => item.getAttribute("data-participant-id")),
     ).toEqual(["p1", "p2", "p3"]);
-    expect(within(list).getByText(/Beto.*archived/i)).toBeInTheDocument();
+    expect(within(list).getByText(/Beto.*archivado/i)).toBeInTheDocument();
   });
 
   it("keeps an invalid add editable without changing the list", async () => {
@@ -92,9 +92,9 @@ describe("participants panel", () => {
     renderPanel(client);
 
     await screen.findByText("Ana");
-    const input = screen.getByLabelText(/new participant name/i);
+    const input = screen.getByLabelText(/nombre del nuevo participante/i);
     fireEvent.change(input, { target: { value: "   " } });
-    fireEvent.click(screen.getByRole("button", { name: /add participant/i }));
+    fireEvent.click(screen.getByRole("button", { name: /agregar participante/i }));
 
     expect(client.addParticipant).not.toHaveBeenCalled();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
@@ -118,9 +118,9 @@ describe("participants panel", () => {
     renderPanel(client);
 
     await screen.findByText("Ana");
-    const input = screen.getByLabelText(/new participant name/i);
+    const input = screen.getByLabelText(/nombre del nuevo participante/i);
     fireEvent.change(input, { target: { value: " ana " } });
-    fireEvent.click(screen.getByRole("button", { name: /add participant/i }));
+    fireEvent.click(screen.getByRole("button", { name: /agregar participante/i }));
 
     expect(
       await screen.findByText(/duplicate_participant_name/i),
@@ -153,7 +153,7 @@ describe("participants panel", () => {
     renderPanel(client);
 
     await screen.findByText("Ana");
-    fireEvent.click(screen.getByRole("button", { name: /archive Ana/i }));
+    fireEvent.click(screen.getByRole("button", { name: /archivar Ana/i }));
     await waitFor(() =>
       expect(client.archiveParticipant).toHaveBeenCalledWith(
         "group-demo",
@@ -162,7 +162,7 @@ describe("participants panel", () => {
     );
 
     fireEvent.click(
-      await screen.findByRole("button", { name: /reactivate Ana/i }),
+      await screen.findByRole("button", { name: /reactivar Ana/i }),
     );
     await waitFor(() =>
       expect(client.reactivateParticipant).toHaveBeenCalledWith(
@@ -186,10 +186,10 @@ describe("participants panel", () => {
     renderPanel(client);
 
     await screen.findByText("Ana");
-    fireEvent.click(screen.getByRole("button", { name: /delete Ana/i }));
+    fireEvent.click(screen.getByRole("button", { name: /eliminar Ana/i }));
 
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      /participant_in_use.*archive this participant/i,
+      /participant_in_use.*archiva este participante/i,
     );
     expect(screen.getByText("Ana")).toBeInTheDocument();
   });
@@ -198,9 +198,9 @@ describe("participants panel", () => {
     const client = baseClient();
     renderPanel(client);
 
-    const input = await screen.findByRole("textbox", { name: /rename Ana/i });
+    const input = await screen.findByRole("textbox", { name: /renombrar Ana/i });
     fireEvent.change(input, { target: { value: "  " } });
-    fireEvent.click(screen.getByRole("button", { name: /rename Ana/i }));
+    fireEvent.click(screen.getByRole("button", { name: /renombrar Ana/i }));
 
     expect(client.renameParticipant).not.toHaveBeenCalled();
     expect(input).toHaveValue("  ");
@@ -226,9 +226,9 @@ describe("participants panel", () => {
       );
     renderPanel(client);
 
-    const input = await screen.findByRole("textbox", { name: /rename Beto/i });
+    const input = await screen.findByRole("textbox", { name: /renombrar Beto/i });
     fireEvent.change(input, { target: { value: " ana " } });
-    fireEvent.click(screen.getByRole("button", { name: /rename Beto/i }));
+    fireEvent.click(screen.getByRole("button", { name: /renombrar Beto/i }));
 
     expect(
       await screen.findByText(/duplicate_participant_name/i),
@@ -236,7 +236,7 @@ describe("participants panel", () => {
     expect(input).toHaveAttribute("aria-invalid", "true");
     expect(document.activeElement).toBe(input);
     expect(
-      within(screen.getByRole("list")).getByText(/Beto.*archived/i),
+      within(screen.getByRole("list")).getByText(/Beto.*archivado/i),
     ).toBeInTheDocument();
   });
 
@@ -272,9 +272,9 @@ describe("participants panel", () => {
     }
 
     renderPanel(client, <BalanceProbe />);
-    const input = await screen.findByRole("textbox", { name: /rename Ana/i });
+    const input = await screen.findByRole("textbox", { name: /renombrar Ana/i });
     fireEvent.change(input, { target: { value: "Ana L." } });
-    fireEvent.click(screen.getByRole("button", { name: /rename Ana/i }));
+    fireEvent.click(screen.getByRole("button", { name: /renombrar Ana/i }));
 
     await waitFor(() =>
       expect(client.renameParticipant).toHaveBeenCalledWith(

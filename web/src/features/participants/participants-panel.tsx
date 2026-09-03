@@ -119,7 +119,7 @@ export function ParticipantsPanel({
     if (!addName.trim()) {
       setInputError(
         "add",
-        "invalid_participant_name: Enter a participant name.",
+        "invalid_participant_name: Ingresa un nombre de participante.",
       );
       setFocusErrorKey("add");
       return;
@@ -135,7 +135,7 @@ export function ParticipantsPanel({
     const name = renameNames[participant.id] ?? participant.name;
     const key = `rename:${participant.id}`;
     if (!name.trim()) {
-      setInputError(key, "invalid_participant_name: Enter a participant name.");
+      setInputError(key, "invalid_participant_name: Ingresa un nombre de participante.");
       setFocusErrorKey(key);
       return;
     }
@@ -153,11 +153,11 @@ export function ParticipantsPanel({
     setInputError(`rename:${participant.id}`, null);
   }
   if (participantsQuery.isPending)
-    return <section className="feature-card">Loading participants…</section>;
+    return <section className="feature-card">Cargando participantes…</section>;
   if (participantsQuery.isError || !participantsQuery.data) {
     return (
       <section className="feature-card" role="alert">
-        Unable to load participants. Please try again.
+        No se pudieron cargar los participantes. Intenta nuevamente.
       </section>
     );
   }
@@ -165,14 +165,14 @@ export function ParticipantsPanel({
     <section className="feature-card" aria-labelledby="participants-title">
       <div className="feature-heading">
         <div>
-          <p className="feature-eyebrow">Group people</p>
-          <h2 id="participants-title">Participants</h2>
+          <p className="feature-eyebrow">Personas del grupo</p>
+          <h2 id="participants-title">Participantes</h2>
         </div>
-        <span>{participantsQuery.data.length} total</span>
+        <span>{participantsQuery.data.length} en total</span>
       </div>
       <form className="feature-form participant-add-form" onSubmit={submitAdd}>
         <div className="feature-field">
-          <label htmlFor="new-participant-name">New participant name</label>
+          <label htmlFor="new-participant-name">Nombre del nuevo participante</label>
           <input
             ref={addInputRef}
             id="new-participant-name"
@@ -192,7 +192,7 @@ export function ParticipantsPanel({
           disabled={mutation.isPending}
           aria-busy={mutation.isPending}
         >
-          {mutation.isPending ? "Adding…" : "Add participant"}
+          {mutation.isPending ? "Agregando…" : "Agregar participante"}
         </button>
       </form>
       {errors.add && (
@@ -200,7 +200,7 @@ export function ParticipantsPanel({
           {errors.add}
         </p>
       )}
-      <ul className="participant-list" aria-label="Participants">
+      <ul className="participant-list" aria-label="Participantes">
         {participantsQuery.data.map((participant) => {
           const renameKey = `rename:${participant.id}`;
           const lifecycleKey = `${participant.archived ? "reactivate" : "archive"}:${participant.id}`;
@@ -219,16 +219,16 @@ export function ParticipantsPanel({
               <div className="participant-heading">
                 <strong>
                   {participant.name}
-                  {participant.archived ? " (archived)" : ""}
+                  {participant.archived ? " (archivado)" : ""}
                 </strong>
-                <span>{participant.archived ? "Archived" : "Active"}</span>
+                <span>{participant.archived ? "Archivado" : "Activo"}</span>
               </div>
               <form
                 className="feature-form participant-rename-form"
                 onSubmit={(event) => submitRename(event, participant)}
               >
                 <div className="feature-field">
-                  <label htmlFor={inputId}>Rename {participant.name}</label>
+                  <label htmlFor={inputId}>Renombrar {participant.name}</label>
                   <input
                     ref={(input) => {
                       renameInputRefs.current[participant.id] = input;
@@ -241,7 +241,7 @@ export function ParticipantsPanel({
                     disabled={mutation.isPending}
                   />
                   <span id={`${inputId}-helper`} className="feature-help">
-                    identity and balances remain stable
+                    la identidad y los balances se conservan
                   </span>
                 </div>
                 <button
@@ -251,8 +251,8 @@ export function ParticipantsPanel({
                   aria-busy={mutation.isPending}
                 >
                   {mutation.isPending
-                    ? "Working…"
-                    : `Rename ${participant.name}`}
+                    ? "Procesando…"
+                    : `Renombrar ${participant.name}`}
                 </button>
               </form>
               {renameError && (
@@ -273,7 +273,7 @@ export function ParticipantsPanel({
                   }
                   disabled={mutation.isPending}
                 >
-                  {participant.archived ? "Reactivate" : "Archive"}{" "}
+                  {participant.archived ? "Reactivar" : "Archivar"}{" "}
                   {participant.name}
                 </button>
                 <button
@@ -284,14 +284,14 @@ export function ParticipantsPanel({
                   }
                   disabled={mutation.isPending}
                 >
-                  Delete {participant.name}
+                  Eliminar {participant.name}
                 </button>
               </div>
               {(lifecycleError || deleteError) && (
                 <p className="feature-error" role="alert" aria-live="polite">
                   {lifecycleError ?? deleteError}
                   {deleteError?.startsWith("participant_in_use") &&
-                    " Archive this participant instead to preserve history."}
+                    " Archiva este participante para conservar el historial."}
                 </p>
               )}
             </li>

@@ -9,7 +9,11 @@ import type {
   ExpenseWriteRequest,
   ParticipantResponse,
 } from "../../generated/api";
-import { formatFeatureError, readFeatureError } from "../api-error";
+import {
+  featureErrorMessage,
+  formatFeatureError,
+  readFeatureError,
+} from "../api-error";
 import {
   generatedParticipantClient,
   type ParticipantFeatureClient,
@@ -78,7 +82,7 @@ function editForm(expense: ExpenseResponse): ExpenseForm {
 
 function invalidAmountText(value: string): string | null {
   if (!value.trim() || /\.\d{3,}/.test(value)) {
-    return "invalid_amount: Enter a positive amount with no more than two decimals.";
+    return "invalid_amount: Ingresa un monto positivo con máximo dos decimales.";
   }
   return null;
 }
@@ -100,7 +104,7 @@ function displayParticipant(participant: {
   archived: boolean;
 }): string {
   return participant.archived
-    ? `${participant.name} (archived)`
+    ? `${participant.name} (archivado)`
     : participant.name;
 }
 
@@ -208,7 +212,7 @@ export function ExpensesPanel({
         const problem = await readFeatureError(error);
         const next: FeatureErrors = { form: formatFeatureError(problem) };
         problem.fieldErrors.forEach(({ field, message }) => {
-          next[field] = `${problem.code}: ${message}`;
+          next[field] = `${problem.code}: ${message ? featureErrorMessage(problem) : "Dato no válido."}`;
         });
         if (!problem.fieldErrors.length) {
           if (problem.code === "invalid_amount") next.amount = next.form;
@@ -302,12 +306,12 @@ export function ExpensesPanel({
   }
 
   if (participantsQuery.isPending || expensesQuery.isPending) {
-    return <section className="feature-card">Loading expenses…</section>;
+    return <section className="feature-card">Cargando gastos…</section>;
   }
   if (participantsQuery.isError || expensesQuery.isError) {
     return (
       <section className="feature-card" role="alert">
-        Unable to load expenses. Please try again.
+        No se pudieron cargar los gastos. Intenta nuevamente.
       </section>
     );
   }
@@ -320,13 +324,13 @@ export function ExpensesPanel({
     >
       <div className="feature-heading">
         <div>
-          <p className="feature-eyebrow">Group spending</p>
-          <h2 id="expenses-title">Expenses</h2>
+          <p className="feature-eyebrow">Gastos del grupo</p>
+          <h2 id="expenses-title">Gastos</h2>
         </div>
-        <span>{expensesQuery.data?.length ?? 0} recorded</span>
+        <span>{expensesQuery.data?.length ?? 0} registrados</span>
       </div>
 
-      <ul className="expense-list" aria-label="Expense list">
+      <ul className="expense-list" aria-label="Lista de gastos">
         {expensesQuery.data?.map((expenseToShow) => (
           <li
             className="expense-row"
@@ -340,7 +344,7 @@ export function ExpensesPanel({
               </span>
             </div>
             <p className="feature-help">
-              Paid by{" "}
+              Pagado por{" "}
               {expenseToShow.contributors
                 .map((contributor) => displayParticipant(contributor))
                 .join(", ")}
@@ -352,7 +356,7 @@ export function ExpensesPanel({
                 onClick={() => startEdit(expenseToShow)}
                 disabled={mutation.isPending}
               >
-                Edit expense
+                Editar gasto
               </button>
               <button
                 type="button"
@@ -360,21 +364,21 @@ export function ExpensesPanel({
                 onClick={() => deleteExpense(expenseToShow)}
                 disabled={mutation.isPending}
               >
-                Delete expense
+                Eliminar gasto
               </button>
             </div>
           </li>
         ))}
       </ul>
       {!expensesQuery.data?.length && (
-        <p className="feature-help">No expenses recorded yet.</p>
+        <p className="feature-help">Aún no hay gastos registrados.</p>
       )}
 
       {hasParticipants ? (
         <form className="feature-form expense-form" onSubmit={submit}>
-          <h3>{editingId ? "Edit expense" : "Record an expense"}</h3>
+          <h3>{editingId ? "Editar gasto" : "Registrar un gasto"}</h3>
           <div className="feature-field">
-            <label htmlFor="expense-description">Expense description</label>
+            <label htmlFor="expense-description">Descripción del gasto</label>
             <input
               id="expense-description"
               value={form.description}
@@ -387,7 +391,7 @@ export function ExpensesPanel({
             />
           </div>
           <div className="feature-field">
-            <label htmlFor="expense-amount">Expense amount</label>
+            <label htmlFor="expense-amount">Monto del gasto</label>
             <input
               ref={amountInputRef}
               id="expense-amount"
@@ -416,7 +420,7 @@ export function ExpensesPanel({
           </div>
 
           <fieldset className="expense-fieldset">
-            <legend>Contributors</legend>
+            <legend>Pagadores</legend>
             {form.contributors.map((contributor, index) => {
               const participantError =
                 errors[`contributors.${index}.participantId`];
@@ -429,7 +433,7 @@ export function ExpensesPanel({
                 >
                   <div className="feature-field">
                     <label htmlFor={`contributor-${index}-participant`}>
-                      Contributor {index + 1} participant
+                      Pagador {index + 1}
                     </label>
                     <select
                       id={`contributor-${index}-participant`}
@@ -451,7 +455,7 @@ export function ExpensesPanel({
                   </div>
                   <div className="feature-field">
                     <label htmlFor={`contributor-${index}-amount`}>
-                      Contributor {index + 1} amount
+                      Monto del pagador {index + 1}
                     </label>
                     <input
                       id={`contributor-${index}-amount`}
@@ -481,7 +485,7 @@ export function ExpensesPanel({
                       }
                       disabled={mutation.isPending}
                     >
-                      Remove contributor
+                      Quitar pagador
                     </button>
                   )}
                 </div>
@@ -513,12 +517,12 @@ export function ExpensesPanel({
               }
               disabled={mutation.isPending}
             >
-              Add contributor
+              Agregar pagador
             </button>
           </fieldset>
 
           <fieldset className="expense-fieldset">
-            <legend>Beneficiaries</legend>
+            <legend>Beneficiarios</legend>
             {formParticipants.map((participant) => (
               <label className="checkbox-field" key={participant.id}>
                 <input
@@ -536,7 +540,7 @@ export function ExpensesPanel({
                   }}
                   disabled={mutation.isPending}
                 />
-                Beneficiary {displayParticipant(participant)}
+                Beneficiario {displayParticipant(participant)}
               </label>
             ))}
             {errors.beneficiaries && (
@@ -566,10 +570,10 @@ export function ExpensesPanel({
               aria-busy={mutation.isPending}
             >
               {mutation.isPending
-                ? "Saving…"
+                ? "Guardando…"
                 : editingId
-                  ? "Save expense"
-                  : "Create expense"}
+                  ? "Guardar gasto"
+                  : "Crear gasto"}
             </button>
             {editingId && (
               <button
@@ -578,14 +582,14 @@ export function ExpensesPanel({
                 onClick={cancelEdit}
                 disabled={mutation.isPending}
               >
-                Cancel edit
+                Cancelar edición
               </button>
             )}
           </div>
         </form>
       ) : (
         <p className="feature-empty" role="status">
-          Add participants first before recording an expense.
+          Agrega participantes antes de registrar un gasto.
         </p>
       )}
     </section>

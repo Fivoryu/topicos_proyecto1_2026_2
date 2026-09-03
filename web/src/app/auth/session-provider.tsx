@@ -102,7 +102,7 @@ async function normalizeAuthError(error: unknown): Promise<AuthError | Error> {
   }
   return error instanceof Error
     ? error
-    : new Error("Authentication request failed.");
+    : new Error("La solicitud de autenticación falló.");
 }
 
 async function callAuth<T>(operation: () => Promise<T>): Promise<T> {
@@ -131,8 +131,8 @@ export const generatedAuthClient: AuthClient = {
 
 function protectedMessage(state: ProtectedState): string {
   return state === "sessionExpired"
-    ? "Your session expired. Please sign in again."
-    : "You have been signed out. Please sign in again.";
+    ? "Tu sesión expiró. Inicia sesión nuevamente."
+    : "Tu sesión se cerró. Inicia sesión nuevamente.";
 }
 
 export interface SessionProviderProps {
@@ -270,7 +270,7 @@ export function SessionProvider({
         session: null,
         errorCode: null,
         errorMessage: null,
-        notice: "You have been logged out. Please sign in again.",
+        notice: "Cerraste sesión correctamente. Inicia sesión nuevamente.",
       });
     }
   }, [authClient, queryClient]);
@@ -299,7 +299,7 @@ export function SessionProvider({
 export function useSession(): SessionContextValue {
   const context = useContext(SessionContext);
   if (!context) {
-    throw new Error("useSession must be used inside SessionProvider.");
+    throw new Error("useSession debe usarse dentro de SessionProvider.");
   }
   return context;
 }

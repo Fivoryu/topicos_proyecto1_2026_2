@@ -78,20 +78,20 @@ describe("protected route and session bootstrap", () => {
         queryFn: fetchGroup,
         enabled: isAuthenticated,
       });
-      return <p>Protected group data</p>;
+      return <p>Datos protegidos del grupo</p>;
     }
 
     renderProtected(client, <ProtectedQuery />);
 
     expect(fetchGroup).not.toHaveBeenCalled();
     expect(
-      screen.getByRole("heading", { name: /sign in/i }),
+      screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Protected group data")).not.toBeInTheDocument();
+    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
 
     bootstrap.resolve(session);
     await waitFor(() => expect(fetchGroup).toHaveBeenCalledTimes(1));
-    expect(screen.getByText("Protected group data")).toBeInTheDocument();
+    expect(screen.getByText("Datos protegidos del grupo")).toBeInTheDocument();
   });
 
   it("shows no anonymous protected shell while the session probe is pending", () => {
@@ -100,14 +100,14 @@ describe("protected route and session bootstrap", () => {
       getSession: vi.fn().mockReturnValue(bootstrap.promise),
     });
 
-    renderProtected(client, <p>Protected group data</p>);
+    renderProtected(client, <p>Datos protegidos del grupo</p>);
 
     expect(
-      screen.getByRole("heading", { name: /sign in/i }),
+      screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Protected group data")).not.toBeInTheDocument();
+    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/participants|balances|settlement/i),
+      screen.queryByText(/participantes|balances|liquidación/i),
     ).not.toBeInTheDocument();
   });
 
@@ -136,13 +136,13 @@ describe("protected route and session bootstrap", () => {
         ),
     });
 
-    renderProtected(client, <p>Protected group data</p>);
+    renderProtected(client, <p>Datos protegidos del grupo</p>);
 
-    expect(await screen.findByText(/session expired/i)).toBeInTheDocument();
+    expect(await screen.findByText(/sesión expiró/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /sign in/i }),
+      screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Protected group data")).not.toBeInTheDocument();
+    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
   });
 
   it("routes a protected 401 received mid-session to login", async () => {
@@ -171,21 +171,21 @@ describe("protected route and session bootstrap", () => {
               .catch(() => undefined)
           }
         >
-          Load protected data
+          Cargar datos protegidos
         </button>
       );
     }
 
     renderProtected(client, <ProtectedRequest />);
     fireEvent.click(
-      await screen.findByRole("button", { name: /load protected data/i }),
+      await screen.findByRole("button", { name: /cargar datos protegidos/i }),
     );
 
     expect(await screen.findByRole("status")).toHaveTextContent(
-      /session expired/i,
+      /sesión expiró/i,
     );
     expect(
-      screen.getByRole("heading", { name: /sign in/i }),
+      screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
   });
 });
@@ -209,17 +209,17 @@ describe("login and logout", () => {
         ),
     });
 
-    renderProtected(client, <p>Protected group data</p>);
-    const loginName = await screen.findByLabelText(/login name/i);
+    renderProtected(client, <p>Datos protegidos del grupo</p>);
+    const loginName = await screen.findByLabelText(/usuario/i);
     fireEvent.change(loginName, { target: { value: "demo.member" } });
-    fireEvent.change(screen.getByLabelText(/^password$/i), {
+    fireEvent.change(screen.getByLabelText(/^contraseña$/i), {
       target: { value: "wrong-password" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
+    fireEvent.click(screen.getByRole("button", { name: /^iniciar sesión$/i }));
 
     expect(await screen.findByText(/invalid_credentials/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/login name/i)).toHaveValue("demo.member");
-    expect(screen.queryByText("Protected group data")).not.toBeInTheDocument();
+    expect(screen.getByLabelText(/usuario/i)).toHaveValue("demo.member");
+    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
   });
 
   it("toggles password visibility and disables the submit while login is loading", async () => {
@@ -233,27 +233,27 @@ describe("login and logout", () => {
       login: vi.fn().mockReturnValue(login.promise),
     });
 
-    renderProtected(client, <p>Protected group data</p>);
-    await screen.findByLabelText(/login name/i);
-    fireEvent.change(screen.getByLabelText(/login name/i), {
+    renderProtected(client, <p>Datos protegidos del grupo</p>);
+    await screen.findByLabelText(/usuario/i);
+    fireEvent.change(screen.getByLabelText(/usuario/i), {
       target: { value: "demo.member" },
     });
-    fireEvent.change(screen.getByLabelText(/^password$/i), {
+    fireEvent.change(screen.getByLabelText(/^contraseña$/i), {
       target: { value: "secret" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /show password/i }));
-    expect(screen.getByLabelText(/^password$/i)).toHaveAttribute(
+    fireEvent.click(screen.getByRole("button", { name: /mostrar contraseña/i }));
+    expect(screen.getByLabelText(/^contraseña$/i)).toHaveAttribute(
       "type",
       "text",
     );
 
-    fireEvent.click(screen.getByRole("button", { name: /sign in/i }));
-    expect(screen.getByRole("button", { name: /signing in/i })).toBeDisabled();
-    expect(screen.getByLabelText(/^password$/i)).toBeDisabled();
+    fireEvent.click(screen.getByRole("button", { name: /^iniciar sesión$/i }));
+    expect(screen.getByRole("button", { name: /ingresando/i })).toBeDisabled();
+    expect(screen.getByLabelText(/^contraseña$/i)).toBeDisabled();
 
     login.resolve(session);
     await waitFor(() =>
-      expect(screen.getByText("Protected group data")).toBeInTheDocument(),
+      expect(screen.getByText("Datos protegidos del grupo")).toBeInTheDocument(),
     );
   });
 
@@ -266,23 +266,24 @@ describe("login and logout", () => {
       const { logout } = useSession();
       return (
         <>
-          <p>Protected group data</p>
+          <p>Datos protegidos del grupo</p>
           <button type="button" onClick={() => void logout()}>
-            Log out
+            Cerrar sesión
           </button>
         </>
       );
     }
 
     renderProtected(client, <ProtectedContent />, { queryClient });
-    await screen.findByText("Protected group data");
-    fireEvent.click(screen.getByRole("button", { name: /log out/i }));
+    await screen.findByText("Datos protegidos del grupo");
+    fireEvent.click(screen.getByRole("button", { name: /cerrar sesión/i }));
 
     await waitFor(() =>
       expect(
-        screen.getByRole("heading", { name: /sign in/i }),
+        screen.getByRole("heading", { name: /inicia sesión/i }),
       ).toBeInTheDocument(),
     );
+    expect(screen.getByRole("status")).toHaveTextContent(/cerraste sesión correctamente/i);
     expect(client.logout).toHaveBeenCalledWith("csrf-token");
     expect(document.cookie).not.toContain("cc_csrf=csrf-token");
     expect(queryClient.getQueryCache().findAll()).toHaveLength(0);

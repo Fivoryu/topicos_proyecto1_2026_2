@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { formatCents } from "../../src/core/cents-formatter";
+import { formatCents, formatSignedCents } from "../../src/core/cents-formatter";
 import {
   type HttpClientError,
   createHttpClient,
@@ -25,19 +25,25 @@ afterEach(() => {
 
 describe("cents formatter", () => {
   it.each([
-    [0, "Bs. 0.00"],
-    [5, "Bs. 0.05"],
-    [99, "Bs. 0.99"],
-    [1000, "Bs. 10.00"],
-    [1234567, "Bs. 12,345.67"],
-    [160000, "Bs. 1,600.00"],
-    [-16000, "-Bs. 160.00"],
+    [0, "Bs. 0,00"],
+    [5, "Bs. 0,05"],
+    [99, "Bs. 0,99"],
+    [1000, "Bs. 10,00"],
+    [1234567, "Bs. 12.345,67"],
+    [160000, "Bs. 1.600,00"],
+    [-16000, "-Bs. 160,00"],
   ])("formats %s integer cents without rounding", (value, expected) => {
     expect(formatCents(value)).toBe(expected);
   });
 
   it("formats a lexical integer without converting it through floating point", () => {
-    expect(formatCents("9007199254740991")).toBe("Bs. 90,071,992,547,409.91");
+    expect(formatCents("9007199254740991")).toBe("Bs. 90.071.992.547.409,91");
+  });
+
+  it("adds a plus sign only for positive balance values", () => {
+    expect(formatSignedCents(56000)).toBe("+Bs. 560,00");
+    expect(formatSignedCents(0)).toBe("Bs. 0,00");
+    expect(formatSignedCents(-16000)).toBe("-Bs. 160,00");
   });
 });
 

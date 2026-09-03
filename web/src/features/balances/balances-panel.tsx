@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "../../app/auth/session-provider";
-import { formatCents } from "../../core/cents-formatter";
+import { formatCents, formatSignedCents } from "../../core/cents-formatter";
 import { groupQueryKey } from "../../core/query-client";
 import type { BalanceParticipantResponse } from "../../generated/api";
 import { generatedBalanceClient, type BalanceFeatureClient } from "./api";
@@ -17,9 +17,9 @@ function balanceState(balanceCents: number): "credit" | "debt" | "neutral" {
 }
 
 function stateLabel(state: ReturnType<typeof balanceState>): string {
-  if (state === "credit") return "Credit";
-  if (state === "debt") return "Debt";
-  return "Neutral";
+  if (state === "credit") return "Le deben";
+  if (state === "debt") return "Debe";
+  return "Saldado";
 }
 
 function stateIcon(state: ReturnType<typeof balanceState>): string {
@@ -34,7 +34,7 @@ function groupIdFor(configured: string | undefined, server: unknown): string {
 
 function participantLabel(participant: BalanceParticipantResponse): string {
   return participant.archived
-    ? `${participant.name} (archived)`
+    ? `${participant.name} (archivado)`
     : participant.name;
 }
 
@@ -51,12 +51,12 @@ export function BalancesPanel({
   });
 
   if (balancesQuery.isPending) {
-    return <section className="feature-card">Loading balances…</section>;
+    return <section className="feature-card">Cargando balances…</section>;
   }
   if (balancesQuery.isError || !balancesQuery.data) {
     return (
       <section className="feature-card" role="alert">
-        Unable to load balances. Please try again.
+        No se pudieron cargar los balances. Intenta nuevamente.
       </section>
     );
   }
@@ -68,7 +68,7 @@ export function BalancesPanel({
     >
       <div className="feature-heading">
         <div>
-          <p className="feature-eyebrow">Server-derived totals</p>
+          <p className="feature-eyebrow">Totales calculados por el servidor</p>
           <h2 id="balances-title">Balances</h2>
         </div>
         <button
@@ -78,18 +78,18 @@ export function BalancesPanel({
           disabled={balancesQuery.isFetching}
           aria-busy={balancesQuery.isFetching}
         >
-          {balancesQuery.isFetching ? "Refreshing…" : "Refresh balances"}
+          {balancesQuery.isFetching ? "Actualizando…" : "Actualizar balances"}
         </button>
       </div>
       <div className="table-scroll">
         <table className="balance-table" aria-label="Balances">
           <thead>
             <tr>
-              <th scope="col">Participant</th>
-              <th scope="col">Paid</th>
-              <th scope="col">Owed</th>
+              <th scope="col">Participante</th>
+              <th scope="col">Pagó</th>
+              <th scope="col">Le corresponde</th>
               <th scope="col">Balance</th>
-              <th scope="col">Position</th>
+              <th scope="col">Estado</th>
             </tr>
           </thead>
           <tbody>
@@ -105,7 +105,7 @@ export function BalancesPanel({
                     {formatCents(participant.owedCents)}
                   </td>
                   <td className={`tabular-figures balance-${state}`}>
-                    {formatCents(participant.balanceCents)}
+                    {formatSignedCents(participant.balanceCents)}
                   </td>
                   <td className={`balance-state balance-${state}`}>
                     <span aria-hidden="true">{stateIcon(state)}</span>{" "}

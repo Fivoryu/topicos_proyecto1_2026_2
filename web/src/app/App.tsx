@@ -34,15 +34,15 @@ function ProtectedShell() {
         data-testid="protected-shell"
       >
         <p className="shell-eyebrow">Cuentas Claras</p>
-        <h1 id="shell-title">Your group is protected</h1>
-        <p>Signed in as {session.account.loginName}</p>
-        <p>Role: {session.role}</p>
+        <h1 id="shell-title">Tu grupo está protegido</h1>
+        <p>Sesión iniciada como {session.account.loginName}</p>
+        <p>Rol: {session.role === "owner" ? "Propietario" : "Miembro"}</p>
         <button
           type="button"
           className="auth-submit"
           onClick={() => void logout()}
         >
-          Log out
+          Cerrar sesión
         </button>
       </section>
       <div className="feature-grid">

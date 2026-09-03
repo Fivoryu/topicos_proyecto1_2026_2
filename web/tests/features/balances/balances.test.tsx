@@ -58,10 +58,10 @@ const balances: BalancesResponse = {
     {
       participantId: "p4",
       name: "Diego",
-      archived: true,
+      archived: false,
       paidCents: 0,
-      owedCents: 0,
-      balanceCents: 0,
+      owedCents: 40000,
+      balanceCents: -40000,
     },
   ],
 };
@@ -86,7 +86,7 @@ function renderPanel(client: BalanceFeatureClient) {
 }
 
 describe("balances panel", () => {
-  it("renders server balances in stable order with archived zero and non-color meaning", async () => {
+  it("renders the official server balances in stable order with Spanish non-color meaning", async () => {
     const client: BalanceFeatureClient = {
       getBalances: vi.fn().mockResolvedValue(balances),
     };
@@ -98,14 +98,47 @@ describe("balances panel", () => {
         .getAllByRole("row")
         .slice(1)
         .map((row) => within(row).getByRole("rowheader").textContent),
-    ).toEqual(["Ana", "Beto", "Carla", "Diego (archived)"]);
-    expect(within(table).getByText("Bs. 560.00")).toBeInTheDocument();
-    expect(within(table).getAllByText("Bs. 0.00")).toHaveLength(4);
-    expect(within(table).getByText("-Bs. 160.00")).toBeInTheDocument();
-    expect(within(table).getByText(/Credit/)).toBeInTheDocument();
-    expect(within(table).getByText(/Debt/)).toBeInTheDocument();
-    expect(within(table).getAllByText(/Neutral/)).toHaveLength(2);
+    ).toEqual(["Ana", "Beto", "Carla", "Diego"]);
+    expect(within(table).getByText("+Bs. 560,00")).toBeInTheDocument();
+    const betoRow = within(table)
+      .getAllByRole("row")
+      .find((row) => within(row).queryByRole("rowheader", { name: "Beto" }));
+    expect(betoRow).toBeDefined();
+    expect(within(betoRow!).getByText("Bs. 0,00")).toBeInTheDocument();
+    expect(within(table).getByText("-Bs. 160,00")).toBeInTheDocument();
+    expect(within(table).getByText("-Bs. 400,00")).toBeInTheDocument();
+    expect(within(table).getByText(/Le deben/)).toBeInTheDocument();
+    expect(within(table).getAllByText(/^Debe$/)).toHaveLength(2);
+    expect(within(table).getByText(/Saldado/)).toBeInTheDocument();
     expect(within(table).getByText("↑")).toBeInTheDocument();
+  });
+
+  it("keeps a referenced archived zero-balance participant visible", async () => {
+    const archivedZero: BalancesResponse = {
+      ...balances,
+      participants: balances.participants.map((participant) =>
+        participant.participantId === "p4"
+          ? {
+              ...participant,
+              archived: true,
+              owedCents: 0,
+              balanceCents: 0,
+            }
+          : participant,
+      ),
+    };
+    const client: BalanceFeatureClient = {
+      getBalances: vi.fn().mockResolvedValue(archivedZero),
+    };
+    renderPanel(client);
+
+    const table = await screen.findByRole("table", { name: /balances/i });
+    const diegoRow = within(table)
+      .getAllByRole("row")
+      .find((row) => within(row).queryByText(/Diego \(archivado\)/i));
+    expect(diegoRow).toBeDefined();
+    expect(within(diegoRow!).getAllByText("Bs. 0,00")).toHaveLength(3);
+    expect(within(diegoRow!).getByText(/Saldado/)).toBeInTheDocument();
   });
 
   it("uses REST on startup and when the WebSocket is unavailable", async () => {
@@ -116,7 +149,7 @@ describe("balances panel", () => {
 
     await screen.findByRole("table", { name: /balances/i });
     expect(client.getBalances).toHaveBeenCalledWith("group-demo");
-    fireEvent.click(screen.getByRole("button", { name: /refresh balances/i }));
+    fireEvent.click(screen.getByRole("button", { name: /actualizar balances/i }));
     await waitFor(() => expect(client.getBalances).toHaveBeenCalledTimes(2));
   });
 });

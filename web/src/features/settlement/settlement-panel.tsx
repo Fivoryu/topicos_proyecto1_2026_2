@@ -26,12 +26,12 @@ export function SettlementPanel({
   });
 
   if (settlementQuery.isPending) {
-    return <section className="feature-card">Loading settlement…</section>;
+    return <section className="feature-card">Cargando liquidación…</section>;
   }
   if (settlementQuery.isError || !settlementQuery.data) {
     return (
       <section className="feature-card" role="alert">
-        Unable to load settlement. Please try again.
+        No se pudo cargar la liquidación. Intenta nuevamente.
       </section>
     );
   }
@@ -44,32 +44,32 @@ export function SettlementPanel({
     >
       <div className="feature-heading">
         <div>
-          <p className="feature-eyebrow">Server-derived transfers</p>
-          <h2 id="settlement-title">Settlement</h2>
+          <p className="feature-eyebrow">Transferencias calculadas por el servidor</p>
+          <h2 id="settlement-title">Liquidación</h2>
         </div>
         <span>
           {settlement.settlementPolicy === "owner_only"
-            ? "Owner only"
-            : "Any member"}
+            ? "Solo propietario"
+            : "Cualquier miembro"}
         </span>
       </div>
       {settlement.settled ? (
         <p className="feature-empty" role="status">
-          Everyone is settled.
+          Todos están saldados.
         </p>
       ) : (
-        <ol className="transfer-list" aria-label="Transfers">
+        <ol className="transfer-list" aria-label="Transferencias">
           {settlement.transfers.map((transfer, index) => (
             <li
               className="transfer-row"
               key={`${transfer.fromParticipantId}-${transfer.toParticipantId}-${index}`}
             >
               <span>
-                <strong>{transfer.fromName}</strong> pays{" "}
-                <strong>{transfer.toName}</strong>
-              </span>
-              <span className="tabular-figures">
-                {formatCents(transfer.amountCents)}
+                <strong>{transfer.fromName}</strong> →{" "}
+                <strong>{transfer.toName}</strong>:{" "}
+                <span className="tabular-figures">
+                  {formatCents(transfer.amountCents)}
+                </span>
               </span>
             </li>
           ))}

@@ -23,11 +23,11 @@ describe("Cuentas Claras web shell", () => {
     render(<App />);
 
     expect(
-      screen.getByRole("heading", { name: /sign in/i }),
+      screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
-    expect(screen.getByLabelText(/login name/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/usuario/i)).toBeInTheDocument();
     expect(
-      screen.queryByText(/participants|balances|settlement/i),
+      screen.queryByText(/participantes|balances|liquidación/i),
     ).not.toBeInTheDocument();
     expect(screen.queryByTestId("protected-shell")).not.toBeInTheDocument();
   });
@@ -49,7 +49,10 @@ describe("Cuentas Claras web shell", () => {
       expect.stringContaining("/api/v1/auth/session"),
       expect.objectContaining({ credentials: "include" }),
     );
-    expect(screen.getByText(/role: owner/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /tu grupo está protegido/i })).toBeInTheDocument();
+    expect(screen.getByText(/sesión iniciada como demo\.owner/i)).toBeInTheDocument();
+    expect(screen.getByText(/rol: propietario/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /cerrar sesión/i })).toBeInTheDocument();
     expect(screen.queryByLabelText(/role/i)).not.toBeInTheDocument();
   });
 });

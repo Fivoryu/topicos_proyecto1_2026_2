@@ -11,7 +11,7 @@ export interface GroupSettingsProps {
   groupId?: string;
 }
 const policyLabel = (policy: GroupResponseSettlementPolicyEnum) =>
-  policy === "owner_only" ? "Owner only" : "Any member";
+  policy === "owner_only" ? "Solo propietario" : "Cualquier miembro";
 
 export function GroupSettings({
   client = generatedGroupClient,
@@ -49,11 +49,11 @@ export function GroupSettings({
       setMutationError(formatFeatureError(await readFeatureError(error))),
   });
   if (groupQuery.isPending)
-    return <section className="feature-card">Loading group…</section>;
+    return <section className="feature-card">Cargando grupo…</section>;
   if (groupQuery.isError || !groupQuery.data) {
     return (
       <section className="feature-card" role="alert">
-        Unable to load the group. Please try again.
+        No se pudo cargar el grupo. Intenta nuevamente.
       </section>
     );
   }
@@ -69,22 +69,22 @@ export function GroupSettings({
   }
   return (
     <section className="feature-card" aria-labelledby="group-settings-title">
-      <p className="feature-eyebrow">Active group</p>
+      <p className="feature-eyebrow">Grupo activo</p>
       <h2 id="group-settings-title">{group.name}</h2>
       <dl className="group-details">
         <div>
-          <dt>Owner account</dt>
+          <dt>Cuenta propietaria</dt>
           <dd>{group.ownerAccountId}</dd>
         </div>
         <div>
-          <dt>Settlement policy</dt>
+          <dt>Política de liquidación</dt>
           <dd>{policyLabel(group.settlementPolicy)}</dd>
         </div>
       </dl>
       {canUpdate && (
         <form className="feature-form" onSubmit={submitPolicy}>
           <div className="feature-field">
-            <label htmlFor="settlement-policy">Settlement policy</label>
+            <label htmlFor="settlement-policy">Política de liquidación</label>
             <select
               id="settlement-policy"
               value={selectedPolicy}
@@ -96,8 +96,8 @@ export function GroupSettings({
               }}
               disabled={updatePolicy.isPending}
             >
-              <option value="owner_only">Owner only</option>
-              <option value="any_member">Any member</option>
+              <option value="owner_only">Solo propietario</option>
+              <option value="any_member">Cualquier miembro</option>
             </select>
           </div>
           <button
@@ -106,7 +106,7 @@ export function GroupSettings({
             disabled={updatePolicy.isPending}
             aria-busy={updatePolicy.isPending}
           >
-            {updatePolicy.isPending ? "Saving…" : "Save policy"}
+            {updatePolicy.isPending ? "Guardando…" : "Guardar política"}
           </button>
         </form>
       )}
