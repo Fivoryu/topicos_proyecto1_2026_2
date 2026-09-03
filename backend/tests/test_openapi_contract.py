@@ -143,6 +143,18 @@ def test_drift_comparison_handles_added_and_removed_generated_files(
     ]
 
 
+def test_drift_comparison_ignores_platform_line_endings(tmp_path: Path) -> None:
+    committed = tmp_path / "committed"
+    regenerated = tmp_path / "regenerated"
+    committed.mkdir()
+    regenerated.mkdir()
+
+    (committed / "client.ts").write_bytes(b"line one\r\nline two\r\n")
+    (regenerated / "client.ts").write_bytes(b"line one\nline two\n")
+
+    assert check_contract_drift.compare_directories(committed, regenerated) == []
+
+
 @pytest.mark.parametrize("method", ["post", "patch", "delete"])
 def test_export_marks_unsafe_group_operations_with_csrf(
     tmp_path: Path, method: str
@@ -161,14 +173,3 @@ def test_export_marks_unsafe_group_operations_with_csrf(
 
     assert operations
     assert all(_required_header(operation, "X-CSRF-Token") for operation in operations)
-
-def test_drift_comparison_ignores_platform_line_endings(tmp_path: Path) -> None:
-    committed = tmp_path / "committed"
-    regenerated = tmp_path / "regenerated"
-    committed.mkdir()
-    regenerated.mkdir()
-
-    (committed / "client.ts").write_bytes(b"line one\r\nline two\r\n")
-    (regenerated / "client.ts").write_bytes(b"line one\nline two\n")
-
-    assert check_contract_drift.compare_directories(committed, regenerated) == []

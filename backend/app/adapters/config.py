@@ -14,7 +14,7 @@ class Settings(BaseSettings):
     """Runtime settings for the API and its development/demo environment."""
 
     database_url: str = (
-        "postgresql+asyncpg://postgres:postgres@localhost:5432/cuentas_claras"
+        "postgresql+asyncpg://postgres:postgres@localhost:5433/cuentas_claras"
     )
     cors_origins: list[str] = Field(
         default_factory=lambda: [
@@ -60,10 +60,26 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, value: Any) -> list[str]:
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
-        if isinstance(value, (list, tuple)):
-            return [str(origin).strip() for origin in value if str(origin).strip()]
-        raise TypeError("CORS_ORIGINS must be a comma-separated string or list")
+            origins = [origin.strip() for origin in value.split(",") if origin.strip()]
+        elif isinstance(value, (list, tuple)):
+            origins = [str(origin).strip() for origin in value if str(origin).strip()]
+        else:
+            raise TypeError("CORS_ORIGINS must be a comma-separated string or list")
+
+        local_origins = ("http://localhost:5173", "http://127.0.0.1:5173")
+        if any(origin in local_origins for origin in origins):
+            normalized: list[str] = []
+            local_inserted = False
+            for origin in origins:
+                if origin in local_origins:
+                    if not local_inserted:
+                        normalized.extend(local_origins)
+                        local_inserted = True
+                    continue
+                if origin not in normalized:
+                    normalized.append(origin)
+            return normalized
+        return origins
 
 
 @lru_cache

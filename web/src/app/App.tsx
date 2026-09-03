@@ -1,5 +1,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { Icon } from "../components/icons";
+import { Button, StatusBadge } from "../components/ui";
 import { connectGroupWebSocket } from "../core/websocket";
 import { BalancesPanel } from "../features/balances";
 import { ExpensesPanel } from "../features/expenses";
@@ -8,6 +10,41 @@ import { ParticipantsPanel } from "../features/participants";
 import { SettlementPanel } from "../features/settlement";
 import { SessionProvider, useSession } from "./auth/session-provider";
 import { ProtectedRoute } from "./routes/protected-route";
+
+const navItems = [
+  { href: "#gastos", label: "Gastos", icon: "receipt" as const },
+  { href: "#balances", label: "Balances", icon: "chart" as const },
+  { href: "#liquidacion", label: "Liquidación", icon: "settlement" as const },
+  { href: "#participantes", label: "Participantes", icon: "users" as const },
+  { href: "#grupo", label: "Grupo", icon: "home" as const },
+];
+
+function Brand() {
+  return (
+    <a className="brand" href="#gastos" aria-label="Ir a gastos de Cuentas Claras">
+      <span className="brand-mark" aria-hidden="true">
+        <Icon name="wallet" />
+      </span>
+      <span>
+        <strong>Cuentas Claras</strong>
+        <small>Gastos compartidos</small>
+      </span>
+    </a>
+  );
+}
+
+function Navigation() {
+  return (
+    <nav className="app-nav" aria-label="Secciones del grupo">
+      {navItems.map((item) => (
+        <a key={item.href} href={item.href} className="nav-link">
+          <Icon name={item.icon} />
+          <span>{item.label}</span>
+        </a>
+      ))}
+    </nav>
+  );
+}
 
 function ProtectedShell() {
   const { session, logout } = useSession();
@@ -22,35 +59,92 @@ function ProtectedShell() {
     return connection.close;
   }, [queryClient, session]);
 
-  if (!session) {
-    return null;
-  }
+  if (!session) return null;
+
+  const roleLabel = session.role === "owner" ? "Propietario" : "Miembro";
 
   return (
-    <main className="shell-page">
-      <section
-        className="shell-card"
-        aria-labelledby="shell-title"
-        data-testid="protected-shell"
-      >
-        <p className="shell-eyebrow">Cuentas Claras</p>
-        <h1 id="shell-title">Tu grupo está protegido</h1>
-        <p>Sesión iniciada como {session.account.loginName}</p>
-        <p>Rol: {session.role === "owner" ? "Propietario" : "Miembro"}</p>
-        <button
-          type="button"
-          className="auth-submit"
-          onClick={() => void logout()}
-        >
-          Cerrar sesión
-        </button>
-      </section>
-      <div className="feature-grid">
-        <GroupSettings groupId={session.activeGroupId} />
-        <ParticipantsPanel groupId={session.activeGroupId} />
-        <ExpensesPanel groupId={session.activeGroupId} />
-        <BalancesPanel groupId={session.activeGroupId} />
-        <SettlementPanel groupId={session.activeGroupId} />
+    <main className="app-shell" data-testid="protected-shell">
+      <aside className="app-sidebar">
+        <Brand />
+        <Navigation />
+        <div className="sidebar-account">
+          <div className="account-avatar" aria-hidden="true">
+            {session.account.loginName.slice(0, 1).toUpperCase()}
+          </div>
+          <div className="account-copy">
+            <strong>{session.account.loginName}</strong>
+            <StatusBadge tone={session.role === "owner" ? "info" : "neutral"}>
+              {roleLabel}
+            </StatusBadge>
+          </div>
+        </div>
+      </aside>
+
+      <div className="app-workspace">
+        <header className="workspace-header">
+          <div className="mobile-brand-row">
+            <Brand />
+          </div>
+          <div className="workspace-heading">
+            <div className="workspace-title-block">
+              <p className="workspace-eyebrow">
+                <Icon name="shield" /> Sesión segura
+              </p>
+              <h1 id="shell-title">Control de gastos</h1>
+              <p className="workspace-subtitle">
+                Registra gastos, revisa balances y liquida el grupo desde un solo lugar.
+              </p>
+            </div>
+            <div className="workspace-actions">
+              <div className="workspace-account-summary">
+                <span className="connection-dot" aria-hidden="true" />
+                <span>{session.account.loginName}</span>
+                <StatusBadge tone={session.role === "owner" ? "info" : "neutral"}>
+                  {roleLabel}
+                </StatusBadge>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="workspace-logout"
+                onClick={() => void logout()}
+              >
+                <Icon name="logout" />
+                <span>Cerrar sesión</span>
+              </Button>
+            </div>
+          </div>
+          <div className="mobile-nav-scroll">
+            <Navigation />
+          </div>
+        </header>
+
+        <div className="dashboard-layout" aria-labelledby="shell-title">
+          <div className="dashboard-main-column">
+            <div id="gastos" className="dashboard-slot dashboard-slot-expenses">
+              <ExpensesPanel groupId={session.activeGroupId} />
+            </div>
+
+            <div className="dashboard-summary-grid">
+              <div id="balances" className="dashboard-slot dashboard-slot-balances">
+                <BalancesPanel groupId={session.activeGroupId} />
+              </div>
+              <div id="liquidacion" className="dashboard-slot dashboard-slot-settlement">
+                <SettlementPanel groupId={session.activeGroupId} />
+              </div>
+            </div>
+          </div>
+
+          <aside className="dashboard-side-column" aria-label="Administración del grupo">
+            <div id="participantes" className="dashboard-slot dashboard-slot-participants">
+              <ParticipantsPanel groupId={session.activeGroupId} />
+            </div>
+            <div id="grupo" className="dashboard-slot dashboard-slot-group">
+              <GroupSettings groupId={session.activeGroupId} />
+            </div>
+          </aside>
+        </div>
       </div>
     </main>
   );

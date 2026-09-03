@@ -29,6 +29,12 @@ def _executable(name: str, windows_name: str | None = None) -> str:
     return resolved
 
 
+def _normalized_bytes(path: Path) -> bytes:
+    """Read bytes while normalizing platform line endings for reproducible drift checks."""
+
+    return path.read_bytes().replace(b"\r\n", b"\n")
+
+
 def compare_directories(committed: Path, regenerated: Path) -> list[str]:
     """Return deterministic content and presence differences between directories."""
 
@@ -190,10 +196,6 @@ def _relative_files(directory: Path) -> set[Path]:
     return {
         path.relative_to(directory) for path in directory.rglob("*") if path.is_file()
     }
-    
-def _normalized_bytes(path: Path) -> bytes:
-    content = path.read_bytes()
-    return content.replace(b"\r\n", b"\n")
 
 
 def main(argv: Sequence[str] | None = None) -> int:

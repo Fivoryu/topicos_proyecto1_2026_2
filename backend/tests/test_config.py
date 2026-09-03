@@ -19,7 +19,11 @@ def test_settings_read_typed_environment_values(monkeypatch):
     assert settings.database_url == (
         "postgresql+asyncpg://postgres:secret@localhost:5432/cuentas_claras"
     )
-    assert settings.cors_origins == ["http://localhost:5173", "https://demo.example"]
+    assert settings.cors_origins == [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "https://demo.example",
+    ]
     assert settings.session_ttl == 3600
     assert settings.demo_owner_password == "owner-password"
     assert settings.demo_member_password == "member-password"

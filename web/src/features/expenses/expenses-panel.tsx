@@ -322,276 +322,311 @@ export function ExpensesPanel({
       className="feature-card expenses-card"
       aria-labelledby="expenses-title"
     >
-      <div className="feature-heading">
+      <div className="feature-heading expenses-heading-bar">
         <div>
-          <p className="feature-eyebrow">Gastos del grupo</p>
+          <p className="feature-eyebrow">Actividad principal</p>
           <h2 id="expenses-title">Gastos</h2>
+          <p className="feature-help expenses-heading-help">
+            Registra un gasto y el servidor actualizará balances y liquidación.
+          </p>
         </div>
         <span>{expensesQuery.data?.length ?? 0} registrados</span>
       </div>
 
-      <ul className="expense-list" aria-label="Lista de gastos">
-        {expensesQuery.data?.map((expenseToShow) => (
-          <li
-            className="expense-row"
-            data-testid={`expense-${expenseToShow.id}`}
-            key={expenseToShow.id}
-          >
-            <div className="expense-heading">
-              <strong>{expenseToShow.description}</strong>
-              <span className="tabular-figures">
-                {formatCents(expenseToShow.amountCents)}
-              </span>
-            </div>
-            <p className="feature-help">
-              Pagado por{" "}
-              {expenseToShow.contributors
-                .map((contributor) => displayParticipant(contributor))
-                .join(", ")}
-            </p>
-            <div className="participant-actions">
-              <button
-                type="button"
-                className="feature-button feature-button-secondary"
-                onClick={() => startEdit(expenseToShow)}
-                disabled={mutation.isPending}
-              >
-                Editar gasto
-              </button>
-              <button
-                type="button"
-                className="feature-button feature-button-danger"
-                onClick={() => deleteExpense(expenseToShow)}
-                disabled={mutation.isPending}
-              >
-                Eliminar gasto
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
-      {!expensesQuery.data?.length && (
-        <p className="feature-help">Aún no hay gastos registrados.</p>
-      )}
+      <div className="expense-workspace">
+        <div className="expense-editor">
+          {hasParticipants ? (
+            <form className="feature-form expense-form" onSubmit={submit}>
+              <div className="expense-form-title">
+                <div>
+                  <p className="feature-eyebrow">{editingId ? "Edición" : "Nuevo gasto"}</p>
+                  <h3>{editingId ? "Editar gasto" : "Registrar gasto"}</h3>
+                </div>
+                {editingId && (
+                  <button
+                    type="button"
+                    className="feature-button feature-button-ghost"
+                    onClick={cancelEdit}
+                    disabled={mutation.isPending}
+                  >
+                    Cancelar
+                  </button>
+                )}
+              </div>
 
-      {hasParticipants ? (
-        <form className="feature-form expense-form" onSubmit={submit}>
-          <h3>{editingId ? "Editar gasto" : "Registrar un gasto"}</h3>
-          <div className="feature-field">
-            <label htmlFor="expense-description">Descripción del gasto</label>
-            <input
-              id="expense-description"
-              value={form.description}
-              onChange={(event) => {
-                updateForm({ description: event.target.value });
-                setFieldError("description", null);
-                setFieldError("form", null);
-              }}
-              disabled={mutation.isPending}
-            />
-          </div>
-          <div className="feature-field">
-            <label htmlFor="expense-amount">Monto del gasto</label>
-            <input
-              ref={amountInputRef}
-              id="expense-amount"
-              inputMode="decimal"
-              value={form.amount}
-              onChange={(event) => {
-                updateForm({ amount: event.target.value });
-                setFieldError("amount", null);
-                setFieldError("form", null);
-              }}
-              aria-invalid={Boolean(errorText(errors, "amount"))}
-              aria-describedby={
-                errorText(errors, "amount") ? fieldErrorId("amount") : undefined
-              }
-              disabled={mutation.isPending}
-            />
-            {errorText(errors, "amount") && (
-              <p
-                id={fieldErrorId("amount")}
-                className="feature-error"
-                role="alert"
-              >
-                {errorText(errors, "amount")}
-              </p>
-            )}
-          </div>
-
-          <fieldset className="expense-fieldset">
-            <legend>Pagadores</legend>
-            {form.contributors.map((contributor, index) => {
-              const participantError =
-                errors[`contributors.${index}.participantId`];
-              const amountError =
-                errors[`contributors.${index}.amount`] ?? errors.contributors;
-              return (
-                <div
-                  className="contributor-row"
-                  key={`${index}-${contributor.participantId}`}
-                >
-                  <div className="feature-field">
-                    <label htmlFor={`contributor-${index}-participant`}>
-                      Pagador {index + 1}
-                    </label>
-                    <select
-                      id={`contributor-${index}-participant`}
-                      value={contributor.participantId}
-                      onChange={(event) =>
-                        updateContributor(index, {
-                          participantId: event.target.value,
-                        })
-                      }
-                      aria-invalid={Boolean(participantError)}
-                      disabled={mutation.isPending}
+              <div className="expense-basic-fields">
+                <div className="feature-field">
+                  <label htmlFor="expense-description">Descripción del gasto</label>
+                  <input
+                    id="expense-description"
+                    value={form.description}
+                    onChange={(event) => {
+                      updateForm({ description: event.target.value });
+                      setFieldError("description", null);
+                      setFieldError("form", null);
+                    }}
+                    placeholder="Ej. Cena, gasolina, entradas…"
+                    disabled={mutation.isPending}
+                  />
+                </div>
+                <div className="feature-field expense-amount-field">
+                  <label htmlFor="expense-amount">Monto del gasto</label>
+                  <input
+                    ref={amountInputRef}
+                    id="expense-amount"
+                    inputMode="decimal"
+                    value={form.amount}
+                    onChange={(event) => {
+                      updateForm({ amount: event.target.value });
+                      setFieldError("amount", null);
+                      setFieldError("form", null);
+                    }}
+                    placeholder="0.00"
+                    aria-invalid={Boolean(errorText(errors, "amount"))}
+                    aria-describedby={
+                      errorText(errors, "amount") ? fieldErrorId("amount") : undefined
+                    }
+                    disabled={mutation.isPending}
+                  />
+                  {errorText(errors, "amount") && (
+                    <p
+                      id={fieldErrorId("amount")}
+                      className="feature-error"
+                      role="alert"
                     >
-                      {formParticipants.map((participant) => (
-                        <option key={participant.id} value={participant.id}>
-                          {displayParticipant(participant)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div className="feature-field">
-                    <label htmlFor={`contributor-${index}-amount`}>
-                      Monto del pagador {index + 1}
-                    </label>
-                    <input
-                      id={`contributor-${index}-amount`}
-                      inputMode="decimal"
-                      value={contributor.amount}
-                      onChange={(event) =>
-                        updateContributor(index, { amount: event.target.value })
-                      }
-                      aria-invalid={Boolean(amountError)}
-                      aria-describedby={
-                        amountError ? fieldErrorId("contributors") : undefined
-                      }
-                      disabled={mutation.isPending}
-                    />
-                  </div>
-                  {form.contributors.length > 1 && (
-                    <button
-                      type="button"
-                      className="feature-button feature-button-secondary"
-                      onClick={() =>
-                        setForm((current) => ({
-                          ...current,
-                          contributors: current.contributors.filter(
-                            (_, contributorIndex) => contributorIndex !== index,
-                          ),
-                        }))
-                      }
-                      disabled={mutation.isPending}
-                    >
-                      Quitar pagador
-                    </button>
+                      {errorText(errors, "amount")}
+                    </p>
                   )}
                 </div>
-              );
-            })}
-            {errors.contributors && (
-              <p
-                id={fieldErrorId("contributors")}
-                className="feature-error"
-                role="alert"
-              >
-                {errors.contributors}
-              </p>
-            )}
-            <button
-              type="button"
-              className="feature-button feature-button-secondary"
-              onClick={() =>
-                setForm((current) => ({
-                  ...current,
-                  contributors: [
-                    ...current.contributors,
-                    {
-                      participantId: formParticipants[0]?.id ?? "",
-                      amount: "",
-                    },
-                  ],
-                }))
-              }
-              disabled={mutation.isPending}
-            >
-              Agregar pagador
-            </button>
-          </fieldset>
+              </div>
 
-          <fieldset className="expense-fieldset">
-            <legend>Beneficiarios</legend>
-            {formParticipants.map((participant) => (
-              <label className="checkbox-field" key={participant.id}>
-                <input
-                  type="checkbox"
-                  checked={form.beneficiaryIds.includes(participant.id)}
-                  onChange={(event) => {
-                    const beneficiaryIds = event.target.checked
-                      ? [...form.beneficiaryIds, participant.id]
-                      : form.beneficiaryIds.filter(
-                          (id) => id !== participant.id,
-                        );
-                    updateForm({ beneficiaryIds });
-                    setFieldError("beneficiaries", null);
-                    setFieldError("form", null);
-                  }}
+              <div className="expense-detail-grid">
+                <fieldset className="expense-fieldset">
+                  <legend>Pagadores</legend>
+                  {form.contributors.map((contributor, index) => {
+                    const participantError =
+                      errors[`contributors.${index}.participantId`];
+                    const amountError =
+                      errors[`contributors.${index}.amount`] ?? errors.contributors;
+                    return (
+                      <div
+                        className="contributor-row"
+                        key={`${index}-${contributor.participantId}`}
+                      >
+                        <div className="feature-field">
+                          <label htmlFor={`contributor-${index}-participant`}>
+                            Pagador {index + 1}
+                          </label>
+                          <select
+                            id={`contributor-${index}-participant`}
+                            value={contributor.participantId}
+                            onChange={(event) =>
+                              updateContributor(index, {
+                                participantId: event.target.value,
+                              })
+                            }
+                            aria-invalid={Boolean(participantError)}
+                            disabled={mutation.isPending}
+                          >
+                            {formParticipants.map((participant) => (
+                              <option key={participant.id} value={participant.id}>
+                                {displayParticipant(participant)}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="feature-field">
+                          <label htmlFor={`contributor-${index}-amount`}>
+                            Monto del pagador {index + 1}
+                          </label>
+                          <input
+                            id={`contributor-${index}-amount`}
+                            inputMode="decimal"
+                            value={contributor.amount}
+                            onChange={(event) =>
+                              updateContributor(index, { amount: event.target.value })
+                            }
+                            aria-invalid={Boolean(amountError)}
+                            aria-describedby={
+                              amountError ? fieldErrorId("contributors") : undefined
+                            }
+                            disabled={mutation.isPending}
+                          />
+                        </div>
+                        {form.contributors.length > 1 && (
+                          <button
+                            type="button"
+                            className="feature-button feature-button-ghost contributor-remove"
+                            onClick={() =>
+                              setForm((current) => ({
+                                ...current,
+                                contributors: current.contributors.filter(
+                                  (_, contributorIndex) => contributorIndex !== index,
+                                ),
+                              }))
+                            }
+                            disabled={mutation.isPending}
+                          >
+                            Quitar
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                  {errors.contributors && (
+                    <p
+                      id={fieldErrorId("contributors")}
+                      className="feature-error"
+                      role="alert"
+                    >
+                      {errors.contributors}
+                    </p>
+                  )}
+                  <button
+                    type="button"
+                    className="feature-button feature-button-secondary expense-inline-action"
+                    onClick={() =>
+                      setForm((current) => ({
+                        ...current,
+                        contributors: [
+                          ...current.contributors,
+                          {
+                            participantId: formParticipants[0]?.id ?? "",
+                            amount: "",
+                          },
+                        ],
+                      }))
+                    }
+                    disabled={mutation.isPending}
+                  >
+                    + Agregar pagador
+                  </button>
+                </fieldset>
+
+                <fieldset className="expense-fieldset beneficiaries-fieldset">
+                  <legend>Beneficiarios</legend>
+                  <div className="beneficiary-grid">
+                    {formParticipants.map((participant) => (
+                      <label className="checkbox-field" key={participant.id}>
+                        <input
+                          type="checkbox"
+                          checked={form.beneficiaryIds.includes(participant.id)}
+                          onChange={(event) => {
+                            const beneficiaryIds = event.target.checked
+                              ? [...form.beneficiaryIds, participant.id]
+                              : form.beneficiaryIds.filter(
+                                  (id) => id !== participant.id,
+                                );
+                            updateForm({ beneficiaryIds });
+                            setFieldError("beneficiaries", null);
+                            setFieldError("form", null);
+                          }}
+                          disabled={mutation.isPending}
+                        />
+                        <span>{displayParticipant(participant)}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {errors.beneficiaries && (
+                    <p
+                      id={fieldErrorId("beneficiaries")}
+                      className="feature-error"
+                      role="alert"
+                    >
+                      {errors.beneficiaries}
+                    </p>
+                  )}
+                </fieldset>
+              </div>
+
+              {errors.form &&
+                !errors.amount &&
+                !errors.contributors &&
+                !errors.beneficiaries && (
+                  <p className="feature-error" role="alert" aria-live="polite">
+                    {errors.form}
+                  </p>
+                )}
+
+              <div className="expense-submit-row">
+                <button
+                  type="submit"
+                  className="feature-button expense-submit-button"
                   disabled={mutation.isPending}
-                />
-                Beneficiario {displayParticipant(participant)}
-              </label>
-            ))}
-            {errors.beneficiaries && (
-              <p
-                id={fieldErrorId("beneficiaries")}
-                className="feature-error"
-                role="alert"
-              >
-                {errors.beneficiaries}
-              </p>
-            )}
-          </fieldset>
+                  aria-busy={mutation.isPending}
+                >
+                  {mutation.isPending
+                    ? "Guardando…"
+                    : editingId
+                      ? "Guardar gasto"
+                      : "Crear gasto"}
+                </button>
+                <span className="feature-help">Los cálculos se actualizan automáticamente.</span>
+              </div>
+            </form>
+          ) : (
+            <p className="feature-empty" role="status">
+              Agrega participantes antes de registrar un gasto.
+            </p>
+          )}
+        </div>
 
-          {errors.form &&
-            !errors.amount &&
-            !errors.contributors &&
-            !errors.beneficiaries && (
-              <p className="feature-error" role="alert" aria-live="polite">
-                {errors.form}
-              </p>
-            )}
-          <div className="participant-actions">
-            <button
-              type="submit"
-              className="feature-button"
-              disabled={mutation.isPending}
-              aria-busy={mutation.isPending}
-            >
-              {mutation.isPending
-                ? "Guardando…"
-                : editingId
-                  ? "Guardar gasto"
-                  : "Crear gasto"}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                className="feature-button feature-button-secondary"
-                onClick={cancelEdit}
-                disabled={mutation.isPending}
-              >
-                Cancelar edición
-              </button>
-            )}
+        <div className="expense-history">
+          <div className="expense-history-heading">
+            <div>
+              <p className="feature-eyebrow">Historial</p>
+              <h3>Gastos registrados</h3>
+            </div>
+            <span className="history-count">{expensesQuery.data?.length ?? 0}</span>
           </div>
-        </form>
-      ) : (
-        <p className="feature-empty" role="status">
-          Agrega participantes antes de registrar un gasto.
-        </p>
-      )}
+
+          <ul className="expense-list" aria-label="Lista de gastos">
+            {expensesQuery.data?.map((expenseToShow) => (
+              <li
+                className="expense-row"
+                data-testid={`expense-${expenseToShow.id}`}
+                key={expenseToShow.id}
+              >
+                <div className="expense-heading">
+                  <div>
+                    <strong>{expenseToShow.description}</strong>
+                    <p className="feature-help">
+                      Pagado por{" "}
+                      {expenseToShow.contributors
+                        .map((contributor) => displayParticipant(contributor))
+                        .join(", ")}
+                    </p>
+                  </div>
+                  <span className="tabular-figures">
+                    {formatCents(expenseToShow.amountCents)}
+                  </span>
+                </div>
+                <div className="expense-row-actions">
+                  <button
+                    type="button"
+                    className="feature-button feature-button-secondary"
+                    onClick={() => startEdit(expenseToShow)}
+                    disabled={mutation.isPending}
+                  >
+                    Editar gasto
+                  </button>
+                  <button
+                    type="button"
+                    className="feature-button feature-button-danger"
+                    onClick={() => deleteExpense(expenseToShow)}
+                    disabled={mutation.isPending}
+                  >
+                    Eliminar gasto
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+          {!expensesQuery.data?.length && (
+            <p className="feature-empty">Aún no hay gastos registrados.</p>
+          )}
+        </div>
+      </div>
     </section>
   );
 }

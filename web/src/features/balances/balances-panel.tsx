@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "../../app/auth/session-provider";
+import { Button, ErrorCard, LoadingCard, Panel, PanelHeading, StatusBadge } from "../../components/ui";
 import { formatCents, formatSignedCents } from "../../core/cents-formatter";
 import { groupQueryKey } from "../../core/query-client";
 import type { BalanceParticipantResponse } from "../../generated/api";
@@ -51,36 +52,28 @@ export function BalancesPanel({
   });
 
   if (balancesQuery.isPending) {
-    return <section className="feature-card">Cargando balances…</section>;
+    return <LoadingCard>Cargando balances…</LoadingCard>;
   }
   if (balancesQuery.isError || !balancesQuery.data) {
-    return (
-      <section className="feature-card" role="alert">
-        No se pudieron cargar los balances. Intenta nuevamente.
-      </section>
-    );
+    return <ErrorCard>No se pudieron cargar los balances. Intenta nuevamente.</ErrorCard>;
   }
 
   return (
-    <section
-      className="feature-card balances-card"
-      aria-labelledby="balances-title"
-    >
-      <div className="feature-heading">
-        <div>
-          <p className="feature-eyebrow">Totales calculados por el servidor</p>
-          <h2 id="balances-title">Balances</h2>
-        </div>
-        <button
+    <Panel className="balances-card" labelledBy="balances-title">
+      <PanelHeading
+        eyebrow="Totales calculados por el servidor"
+        title="Balances"
+        titleId="balances-title"
+        action={<Button
           type="button"
-          className="feature-button feature-button-secondary"
+          variant="secondary"
           onClick={() => void balancesQuery.refetch()}
           disabled={balancesQuery.isFetching}
           aria-busy={balancesQuery.isFetching}
         >
           {balancesQuery.isFetching ? "Actualizando…" : "Actualizar balances"}
-        </button>
-      </div>
+        </Button>}
+      />
       <div className="table-scroll">
         <table className="balance-table" aria-label="Balances">
           <thead>
@@ -97,19 +90,21 @@ export function BalancesPanel({
               const state = balanceState(participant.balanceCents);
               return (
                 <tr key={participant.participantId}>
-                  <th scope="row">{participantLabel(participant)}</th>
-                  <td className="tabular-figures">
+                  <th scope="row" data-label="Participante">{participantLabel(participant)}</th>
+                  <td className="tabular-figures" data-label="Pagó">
                     {formatCents(participant.paidCents)}
                   </td>
-                  <td className="tabular-figures">
+                  <td className="tabular-figures" data-label="Le corresponde">
                     {formatCents(participant.owedCents)}
                   </td>
-                  <td className={`tabular-figures balance-${state}`}>
+                  <td className={`tabular-figures balance-${state}`} data-label="Balance">
                     {formatSignedCents(participant.balanceCents)}
                   </td>
-                  <td className={`balance-state balance-${state}`}>
-                    <span aria-hidden="true">{stateIcon(state)}</span>{" "}
-                    {stateLabel(state)}
+                  <td className={`balance-state balance-${state}`} data-label="Estado">
+                    <StatusBadge tone={state === "credit" ? "success" : state === "debt" ? "danger" : "neutral"}>
+                      <span aria-hidden="true">{stateIcon(state)}</span>{" "}
+                      {stateLabel(state)}
+                    </StatusBadge>
                   </td>
                 </tr>
               );
@@ -117,6 +112,6 @@ export function BalancesPanel({
           </tbody>
         </table>
       </div>
-    </section>
+    </Panel>
   );
 }

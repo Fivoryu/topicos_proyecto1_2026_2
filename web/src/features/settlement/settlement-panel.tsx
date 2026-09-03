@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "../../app/auth/session-provider";
+import { ErrorCard, LoadingCard, Panel, PanelHeading, StatusBadge } from "../../components/ui";
 import { formatCents } from "../../core/cents-formatter";
 import { groupQueryKey } from "../../core/query-client";
 import { generatedSettlementClient, type SettlementFeatureClient } from "./api";
@@ -26,33 +27,27 @@ export function SettlementPanel({
   });
 
   if (settlementQuery.isPending) {
-    return <section className="feature-card">Cargando liquidación…</section>;
+    return <LoadingCard>Cargando liquidación…</LoadingCard>;
   }
   if (settlementQuery.isError || !settlementQuery.data) {
-    return (
-      <section className="feature-card" role="alert">
-        No se pudo cargar la liquidación. Intenta nuevamente.
-      </section>
-    );
+    return <ErrorCard>No se pudo cargar la liquidación. Intenta nuevamente.</ErrorCard>;
   }
 
   const settlement = settlementQuery.data;
   return (
-    <section
-      className="feature-card settlement-card"
-      aria-labelledby="settlement-title"
-    >
-      <div className="feature-heading">
-        <div>
-          <p className="feature-eyebrow">Transferencias calculadas por el servidor</p>
-          <h2 id="settlement-title">Liquidación</h2>
-        </div>
-        <span>
-          {settlement.settlementPolicy === "owner_only"
-            ? "Solo propietario"
-            : "Cualquier miembro"}
-        </span>
-      </div>
+    <Panel className="settlement-card" labelledBy="settlement-title">
+      <PanelHeading
+        eyebrow="Transferencias calculadas por el servidor"
+        title="Liquidación"
+        titleId="settlement-title"
+        action={
+          <StatusBadge tone="info">
+            {settlement.settlementPolicy === "owner_only"
+              ? "Solo propietario"
+              : "Cualquier miembro"}
+          </StatusBadge>
+        }
+      />
       {settlement.settled ? (
         <p className="feature-empty" role="status">
           Todos están saldados.
@@ -64,10 +59,10 @@ export function SettlementPanel({
               className="transfer-row"
               key={`${transfer.fromParticipantId}-${transfer.toParticipantId}-${index}`}
             >
-              <span>
+              <span className="transfer-copy">
                 <strong>{transfer.fromName}</strong> →{" "}
                 <strong>{transfer.toName}</strong>:{" "}
-                <span className="tabular-figures">
+                <span className="tabular-figures transfer-amount">
                   {formatCents(transfer.amountCents)}
                 </span>
               </span>
@@ -75,6 +70,6 @@ export function SettlementPanel({
           ))}
         </ol>
       )}
-    </section>
+    </Panel>
   );
 }

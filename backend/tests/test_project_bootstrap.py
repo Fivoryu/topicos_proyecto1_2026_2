@@ -68,3 +68,15 @@ def test_cors_origins_environment_override_remains_explicit(monkeypatch):
         "https://frontend.example",
         "https://admin.example",
     ]
+
+
+def test_local_cors_override_keeps_both_loopback_hosts(monkeypatch):
+    from backend.app.adapters.config import Settings
+
+    monkeypatch.setenv("CORS_ORIGINS", "http://localhost:5173")
+    settings = Settings(_env_file=None)
+
+    assert settings.cors_origins == [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+    ]

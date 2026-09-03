@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "../../app/auth/session-provider";
+import { Button, ErrorCard, LoadingCard, Panel, PanelHeading, StatusBadge } from "../../components/ui";
 import { groupQueryKey } from "../../core/query-client";
 import type { GroupResponseSettlementPolicyEnum } from "../../generated/api";
 import { formatFeatureError, readFeatureError } from "../api-error";
@@ -48,14 +49,9 @@ export function GroupSettings({
     onError: async (error: unknown) =>
       setMutationError(formatFeatureError(await readFeatureError(error))),
   });
-  if (groupQuery.isPending)
-    return <section className="feature-card">Cargando grupo…</section>;
+  if (groupQuery.isPending) return <LoadingCard>Cargando grupo…</LoadingCard>;
   if (groupQuery.isError || !groupQuery.data) {
-    return (
-      <section className="feature-card" role="alert">
-        No se pudo cargar el grupo. Intenta nuevamente.
-      </section>
-    );
+    return <ErrorCard>No se pudo cargar el grupo. Intenta nuevamente.</ErrorCard>;
   }
   const group = groupQuery.data;
   const canUpdate =
@@ -68,9 +64,13 @@ export function GroupSettings({
     updatePolicy.mutate(selectedPolicy);
   }
   return (
-    <section className="feature-card" aria-labelledby="group-settings-title">
-      <p className="feature-eyebrow">Grupo activo</p>
-      <h2 id="group-settings-title">{group.name}</h2>
+    <Panel className="group-card" labelledBy="group-settings-title">
+      <PanelHeading
+        eyebrow="Grupo activo"
+        title={group.name}
+        titleId="group-settings-title"
+        action={<StatusBadge tone="success">Activo</StatusBadge>}
+      />
       <dl className="group-details">
         <div>
           <dt>Cuenta propietaria</dt>
@@ -100,14 +100,13 @@ export function GroupSettings({
               <option value="any_member">Cualquier miembro</option>
             </select>
           </div>
-          <button
+          <Button
             type="submit"
-            className="feature-button"
             disabled={updatePolicy.isPending}
             aria-busy={updatePolicy.isPending}
           >
             {updatePolicy.isPending ? "Guardando…" : "Guardar política"}
-          </button>
+          </Button>
         </form>
       )}
       {mutationError && (
@@ -115,7 +114,7 @@ export function GroupSettings({
           {mutationError}
         </p>
       )}
-    </section>
+    </Panel>
   );
 }
 export { GroupSettings as GroupFeature };
