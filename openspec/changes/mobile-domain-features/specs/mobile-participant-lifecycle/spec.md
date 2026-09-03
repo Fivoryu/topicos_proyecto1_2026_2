@@ -4,7 +4,7 @@
 
 Allow authorized users to manage participant lifecycle through existing server operations while preserving IDs, history, authorization, and archived-participant rules.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Participant creation
 

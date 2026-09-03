@@ -4,7 +4,7 @@
 
 Expose the supported group settlement-policy mutation and provide consistent authoritative refresh, invalidation, accessibility, and recovery behavior across the mobile domain.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Supported settlement-policy mutation
 

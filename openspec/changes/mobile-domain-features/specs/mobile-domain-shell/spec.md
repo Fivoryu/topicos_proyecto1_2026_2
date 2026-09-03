@@ -4,7 +4,7 @@
 
 Provide an authenticated Flutter shell that exposes the one active group's server-backed domain views without bypassing session protection or inventing monetary results.
 
-## Requirements
+## ADDED Requirements
 
 ### Requirement: Authenticated domain composition
 

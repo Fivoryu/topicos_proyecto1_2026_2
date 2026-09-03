@@ -34,7 +34,7 @@ The system MUST expose one WebSocket channel per group that sends only an invali
 - THEN no `data_changed` frame is published
 - AND the existing error and rollback behavior is preserved
 
-#### Scenario: WebSocket failure degrades to REST
+#### Scenario: WS failure degrades to REST
 
 - GIVEN the WebSocket channel failing to connect or a subscriber failing during delivery
 - WHEN the user refreshes or performs a mutation
