@@ -33,9 +33,10 @@ Each settlement transfer MUST be rendered as `<deudor> → <acreedor>: <monto>` 
 - **THEN** the view displays a natural Spanish settled message and no transfer list
 
 ### Requirement: Presentation polish preserves existing functionality
-Translation and clarity changes MUST preserve the current responsive visual system and all existing participant, expense, balance, settlement, authentication, refresh-persistence, archived-reference, validation, and invalidation behavior. The web client MUST continue displaying server-derived money and roles through handwritten integration code without manually modifying generated OpenAPI files.
+Translation and clarity changes MUST preserve the current responsive visual system and all existing participant, expense, balance, settlement, authentication, refresh-persistence, archived-reference, validation, and invalidation behavior. In particular, backend mutations MUST continue publishing the exact group-scoped post-commit invalidation-only frame through the shared broadcaster, and the web client MUST continue using its existing API-base resolution and WebSocket-triggered REST refetch behavior. The web client MUST continue displaying server-derived money and roles through handwritten integration code without manually modifying generated OpenAPI files.
 
 #### Scenario: Existing interaction suite runs after translation
 - **WHEN** web tests and the production build run after the text updates
 - **THEN** add/list participants, create/edit/delete expenses, default and excluded beneficiaries, archived references, balances, settlement, session lifecycle, and refresh behavior remain operational
+- **AND** existing backend mutation-invalidation, group-isolation, web API-base, and WebSocket tests pass without modification
 - **AND** generated client trees contain no manual presentation edits
