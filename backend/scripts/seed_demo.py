@@ -165,6 +165,8 @@ def _ensure_participant(
     if participant is not None:
         if participant.group_id != DEMO_GROUP_ID:
             _corrupted("A stable demo participant belongs to another group.")
+        if participant.name != name or participant.normalized_name != name.casefold():
+            _corrupted("A stable demo participant has an unexpected name.")
         return participant, False
 
     participant = session.scalar(

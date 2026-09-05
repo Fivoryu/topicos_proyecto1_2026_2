@@ -162,3 +162,48 @@ def test_seed_fails_closed_when_existing_source_is_corrupted(db_session):
             member_password="member-secret",
         )
     assert failure.value.code == "persistence_corrupted"
+
+
+def test_seed_fails_closed_when_stable_participant_name_is_corrupted(db_session):
+    seed_demo(
+        db_session, owner_password="owner-secret", member_password="member-secret"
+    )
+    participant = db_session.get(Participant, DEMO_PARTICIPANT_IDS[0])
+    assert participant is not None
+    participant.name = "Anónimo"
+    db_session.commit()
+
+    with pytest.raises(PersistenceCorruptedError) as failure:
+        seed_demo(
+            db_session,
+            owner_password="owner-secret",
+            member_password="member-secret",
+        )
+
+    assert failure.value.code == "persistence_corrupted"
+    assert db_session.get(Participant, DEMO_PARTICIPANT_IDS[0]).name == "Anónimo"
+
+
+def test_seed_fails_closed_when_stable_participant_normalization_is_corrupted(
+    db_session,
+):
+    seed_demo(
+        db_session, owner_password="owner-secret", member_password="member-secret"
+    )
+    participant = db_session.get(Participant, DEMO_PARTICIPANT_IDS[0])
+    assert participant is not None
+    participant.normalized_name = "anonimo"
+    db_session.commit()
+
+    with pytest.raises(PersistenceCorruptedError) as failure:
+        seed_demo(
+            db_session,
+            owner_password="owner-secret",
+            member_password="member-secret",
+        )
+
+    assert failure.value.code == "persistence_corrupted"
+    assert (
+        db_session.get(Participant, DEMO_PARTICIPANT_IDS[0]).normalized_name
+        == "anonimo"
+    )
