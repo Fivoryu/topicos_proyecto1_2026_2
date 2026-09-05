@@ -1,29 +1,49 @@
 :root {
-  color-scheme: dark;
-  --surface-base: #070b14;
-  --surface-sidebar: #0a1020;
-  --surface-card: #11192a;
-  --surface-card-raised: #162238;
-  --surface-soft: #0e1727;
-  --surface-input: #0b1322;
-  --content-primary: #f4f7fb;
-  --content-secondary: #c7d2e3;
-  --content-muted: #8fa0b8;
-  --brand-primary: #67e8f9;
-  --brand-primary-strong: #22d3ee;
-  --brand-secondary: #818cf8;
-  --brand-glow: rgb(34 211 238 / 16%);
-  --finance-credit: #5eead4;
-  --finance-debt: #fb7185;
-  --state-success: #34d399;
-  --state-warning: #fbbf24;
-  --state-error: #fb7185;
-  --border-default: #22304a;
-  --border-strong: #344764;
-  --focus-ring: #67e8f9;
-  --shadow-card: 0 20px 60px rgb(0 0 0 / 24%);
-  --radius-sm: 0.65rem;
-  --radius-md: 0.95rem;
-  --radius-lg: 1.25rem;
-  --radius-xl: 1.6rem;
+  color-scheme: light;
+
+  --surface-base: #f4f0e8;
+  --surface-sidebar: #173c32;
+  --surface-sidebar-raised: #214b3f;
+  --surface-card: #fffdf8;
+  --surface-card-raised: #f8f4ec;
+  --surface-soft: #f1ece2;
+  --surface-input: #fffefa;
+
+  --content-primary: #1d2d26;
+  --content-secondary: #52635b;
+  --content-muted: #78847c;
+  --content-on-dark: #f7f4ec;
+  --content-on-dark-muted: #c4d2c8;
+  --content-on-dark-accent: #f7d9cf;
+
+  --brand-primary: #b65340;
+  --brand-primary-strong: #9e4232;
+  --brand-primary-soft: #f2ded7;
+  --brand-primary-on-dark: #e19a83;
+  --brand-secondary: #8f5a4b;
+  --brand-glow: rgb(182 83 64 / 16%);
+
+  --finance-credit: #147563;
+  --finance-debt: #ad4f5a;
+  --state-success: #147563;
+  --state-warning: #986528;
+  --state-error: #ad4f5a;
+
+  --border-default: #e2dbcf;
+  --border-strong: #cfc4b4;
+  --border-on-dark: rgb(247 244 236 / 16%);
+  --focus-ring: #9e4232;
+
+  --shadow-card:
+    0 16px 38px rgb(74 61 44 / 7%),
+    0 2px 8px rgb(74 61 44 / 4%);
+  --shadow-lift:
+    0 20px 42px rgb(74 61 44 / 11%),
+    0 4px 12px rgb(74 61 44 / 5%);
+
+  --ease-ledger: cubic-bezier(0.22, 0.8, 0.24, 1);
+  --radius-sm: 0.45rem;
+  --radius-md: 0.7rem;
+  --radius-lg: 1rem;
+  --radius-xl: 1.45rem;
 }
