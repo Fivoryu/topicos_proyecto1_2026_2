@@ -18,6 +18,8 @@ from backend.scripts.export_openapi import export_contract  # noqa: E402
 
 _WEB_GENERATOR = "typescript-fetch"
 _MOBILE_GENERATOR = "dart-dio"
+_LEGACY_DART_SDK = "sdk: '>=3.5.0 <4.0.0'"
+_HOST_DART_SDK = "sdk: '>=3.10.0 <4.0.0'"
 
 
 def _executable(name: str, windows_name: str | None = None) -> str:
@@ -30,7 +32,8 @@ def _executable(name: str, windows_name: str | None = None) -> str:
 
 
 def _normalized_bytes(path: Path) -> bytes:
-    """Read bytes while normalizing platform line endings for reproducible drift checks."""
+    """Read bytes while normalizing platform line endings for reproducible
+    drift checks."""
 
     return path.read_bytes().replace(b"\r\n", b"\n")
 
@@ -124,7 +127,31 @@ def _run_generator(
     subprocess.run(command, cwd=repository_root, check=True)
 
 
-def _normalize_mobile_pubspec(mobile_output: Path) -> None:
+def _confined_generated_path(
+    temporary_root: Path, candidate: Path, *, operation: str
+) -> Path:
+    """Return a canonical generated path confined to the temporary root."""
+
+    try:
+        resolved_root = temporary_root.resolve()
+        resolved_candidate = candidate.resolve()
+    except (OSError, RuntimeError) as exc:
+        raise RuntimeError(
+            f"cannot validate generated path for {operation}: {candidate}"
+        ) from exc
+    try:
+        resolved_candidate.relative_to(resolved_root)
+    except ValueError as exc:
+        raise RuntimeError(
+            f"refusing to {operation} path outside generated temporary root: "
+            f"{candidate}"
+        ) from exc
+    return resolved_candidate
+
+
+def _normalize_mobile_pubspec(
+    mobile_output: Path, temporary_root: Path | None = None
+) -> None:
     """Pin the generated package's SDK floor to the host app's floor.
 
     The dart-dio json_serializable template emits a >=3.5 floor, but the Dart
@@ -135,14 +162,36 @@ def _normalize_mobile_pubspec(mobile_output: Path) -> None:
     output so drift comparisons stay clean.
     """
 
-    path = mobile_output / "pubspec.yaml"
-    source = path.read_text(encoding="utf-8")
-    updated = source.replace("sdk: '>=3.5.0 <4.0.0'", "sdk: '>=3.10.0 <4.0.0'")
+    generated_root = temporary_root or mobile_output.parent
+    path = _confined_generated_path(
+        generated_root,
+        mobile_output / "pubspec.yaml",
+        operation="read generated output",
+    )
+    try:
+        source = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise RuntimeError(
+            f"generated mobile output is malformed or unreadable: {path}"
+        ) from exc
+    if _LEGACY_DART_SDK not in source and _HOST_DART_SDK not in source:
+        raise RuntimeError(
+            f"generated mobile output is malformed: unsupported SDK constraint in "
+            f"{path}"
+        )
+    updated = source.replace(_LEGACY_DART_SDK, _HOST_DART_SDK)
     if updated != source:
-        path.write_text(updated, encoding="utf-8", newline="")
+        try:
+            path.write_text(updated, encoding="utf-8", newline="")
+        except OSError as exc:
+            raise RuntimeError(
+                f"cannot normalize generated mobile output: {path}"
+            ) from exc
 
 
-def _build_mobile_parts(mobile_output: Path) -> None:
+def _build_mobile_parts(
+    mobile_output: Path, temporary_root: Path | None = None
+) -> None:
     """Run the package's pub get and build_runner so .g.dart files exist."""
 
     dart = _executable("dart")
@@ -152,10 +201,31 @@ def _build_mobile_parts(mobile_output: Path) -> None:
         cwd=mobile_output,
         check=True,
     )
+    generated_root = temporary_root or mobile_output.parent
     for transient in ("pubspec.lock",):
-        (mobile_output / transient).unlink(missing_ok=True)
+        path = _confined_generated_path(
+            generated_root,
+            mobile_output / transient,
+            operation="remove generated file",
+        )
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise RuntimeError(f"cannot clean generated file: {path}") from exc
     for transient in (".dart_tool", ".build"):
-        shutil.rmtree(mobile_output / transient, ignore_errors=True)
+        path = _confined_generated_path(
+            generated_root,
+            mobile_output / transient,
+            operation="remove generated directory",
+        )
+        try:
+            shutil.rmtree(path)
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise RuntimeError(f"cannot clean generated directory: {path}") from exc
 
 
 def run_drift_check(repository_root: Path = _REPOSITORY_ROOT) -> list[str]:
@@ -176,7 +246,7 @@ def run_drift_check(repository_root: Path = _REPOSITORY_ROOT) -> list[str]:
             regenerated_mobile,
             repository_root,
         )
-        _build_mobile_parts(regenerated_mobile)
+        _build_mobile_parts(regenerated_mobile, temporary_root)
         differences = find_drift(
             committed_contract,
             exported_contract,
