@@ -66,7 +66,7 @@ Copia `backend/.env.example` a `backend/.env` y define contraseñas demo locales
 Variables principales:
 
 ```text
-DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/cuentas_claras
+DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5433/cuentas_claras
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 SESSION_TTL=28800
 DEMO_OWNER_PASSWORD=<valor-local>

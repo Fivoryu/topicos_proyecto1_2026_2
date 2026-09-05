@@ -1,75 +1,70 @@
-# Demo-Readiness Specification
+# demo-readiness Specification
 
 ## Purpose
 
-Define the demo surface: an idempotent realistic seed that loads the Samaipata acceptance history and the minimum owner/member demo accounts, a reproducible under-three-minute protected walkthrough (login → record → balances → settlement → refresh → logout) that proves persistence, and automated acceptance evidence covering DA-01 through DA-05 plus auth and rename cases (DA-06, DA-07) with exact expected results.
+Define the exact official Samaipata data, outcomes, and short protected walkthrough used as the final reproducible demonstration and acceptance baseline.
 
 ## Requirements
 
-### Requirement: Idempotent realistic demo seed with demo accounts
+### Requirement: Official Samaipata seed contains four separate expenses
 
-The system MUST provide a seed operation that loads the Samaipata history into a fresh environment: at least one owner account and one member account for the seeded group; participants Ana, Beto, Carla, and Diego in stable creation order; expenses of `96000` paid by Ana, `40000` paid by Beto, and `24000` paid by Carla, each split among all four participants; group settings with `settlementPolicy: owner_only`. Demo credentials MUST be development/demo-only, supplied through the seed/runbook and not production credentials. Running the seed MUST be idempotent and MUST produce exactly the DA-01/AO-01 expected results.
+A fresh demo seed MUST create participants Ana, Beto, Carla, and Diego in stable order and exactly four official expense records: `Cabaña` for `80000` cents contributed by Ana; `Entradas a El Fuerte` for `16000` cents contributed by Ana; `Cena` for `40000` cents contributed by Beto; and `Gasolina` for `24000` cents contributed by Carla. All four participants MUST be beneficiaries of every expense, and Diego MUST contribute to none.
 
-#### Scenario: AO-09 — fresh environment loads the seed
+#### Scenario: Fresh seed has the official source records
 
-- GIVEN an empty PostgreSQL database and a restarted backend
-- WHEN the seed is executed
-- THEN the owner and member demo accounts and the three Samaipata expenses exist as specified
-- AND an owner or member login succeeds with the seeded demo credentials
-- AND balances are Ana `+56000`, Beto `0`, Carla `-16000`, Diego `-40000`
-- AND settlement is Diego → Ana `40000`, Carla → Ana `16000` in that order
+- **WHEN** the demo seed runs against an empty migrated database
+- **THEN** the four participants and four separately identifiable expenses exist with the specified descriptions, amounts, contributors, and all-participant beneficiary sets
+- **AND** no aggregated `96000` Ana expense or additional `10000` walkthrough expense is part of the seeded official history
+
+### Requirement: Seeded balances and settlement match the official result
+
+The canonical seeded history MUST derive balances of Ana `+56000`, Beto `0`, Carla `-16000`, and Diego `-40000` cents, whose sum is exactly zero. Settlement MUST contain exactly two ordered transfers: Diego to Ana for `40000` cents, followed by Carla to Ana for `16000` cents; Beto MUST have no transfer.
+
+#### Scenario: Official balances are derived from four records
+
+- **WHEN** balances are requested for the freshly seeded Samaipata group
+- **THEN** Ana is `+56000`, Beto is `0`, Carla is `-16000`, and Diego is `-40000` cents
+- **AND** the four balances sum exactly to `0`
+
+#### Scenario: Official settlement is derived
+
+- **WHEN** settlement is requested for the freshly seeded Samaipata group
+- **THEN** the transfers are Diego to Ana `40000` and Carla to Ana `16000` cents in that order
+- **AND** no transfer includes Beto
+
+### Requirement: Official seed remains deterministic and idempotent
+
+The four official expenses, participants, group, and demo accounts MUST use stable identities and the seed MUST remain fail-closed. Re-running the seed on its unchanged canonical state MUST create no duplicate records, change no password hashes, and preserve the exact official balances and settlement. Recovery from the superseded three-expense demo fixture MUST be documented as a local demo reset and reseed rather than an unrequested production data migration.
 
 #### Scenario: Seed re-run is a no-op
 
-- GIVEN a database already seeded once
-- WHEN the seed is executed again
-- THEN no duplicate accounts, participants, or expenses appear
-- AND all derived results are unchanged
+- **WHEN** the seed runs twice without intervening mutations
+- **THEN** the second run creates zero accounts, participants, and expenses
+- **AND** exactly four official expenses and the same derived results remain
 
-### Requirement: Under-three-minute demonstrable protected web flow
+#### Scenario: Existing seeded source is inconsistent
 
-A fresh environment MUST let the presenter complete the core demonstration in under three minutes: open the web app, sign in with a seeded owner or member account, view participants, record one additional expense through the form, view balances and settlement, refresh the page, show identical derived results, and sign out (AO-09). A written demo script MUST document the exact steps and timing.
+- **WHEN** stable demo identities contain source data that does not match the canonical four-expense fixture
+- **THEN** the seed fails explicitly without silently fabricating results or deleting unrelated data
+- **AND** the delivery instructions provide the local reset, migration, and reseed path
 
-#### Scenario: Login → record → balance → settle → refresh → logout in time
+### Requirement: Under-three-minute demo presents the official state directly
 
-- GIVEN the seeded web app and the demo script
-- WHEN the presenter follows the scripted steps, ending with logout
-- THEN the walkthrough completes in under three minutes
-- AND the post-refresh balances and settlement match the pre-refresh values
-- AND after logout, protected group data is no longer accessible with the logged-out session
+The primary demo script MUST fit within three minutes and guide the presenter through sign-in, the four participants, the four official expenses, official balances, official settlement, and a page refresh that preserves the same source and derived data. The main path MUST NOT add the former `Bs. 100,00` rehearsal expense or otherwise mutate the official result.
 
-### Requirement: DA-01..DA-05 acceptance evidence
+#### Scenario: Presenter completes the official walkthrough
 
-The automated test suite MUST include acceptance cases named DA-01 through DA-05 with the exact expected behaviors: DA-01 Samaipata balances and transfers; DA-02 rounding with `10000` split three ways (`3334`/`3333`/`3333`) and an exact-zero sum; DA-03 exclusion with `30000` among three of four participants; DA-04 everyone-settled with an empty transfer list; DA-05 persistence across refresh. The suite MUST run the datasets through the API (not only pure functions) and MUST record pass/fail evidence for the demo handoff.
+- **WHEN** the presenter follows the primary script against a freshly seeded environment
+- **THEN** the UI shows Ana, Beto, Carla, and Diego; the four official expenses; balances `+56000`, `0`, `-16000`, and `-40000`; and transfers `40000` and `16000` cents
+- **AND** refresh retains the authenticated state, records, balances, and settlement
+- **AND** the walkthrough completes in under three minutes without creating another expense
 
-#### Scenario: DA cases pass end to end
+### Requirement: Automated evidence protects the official fixture
 
-- GIVEN the bootstrapped test runners
-- WHEN the DA-01..DA-05 acceptance suite runs against the API and seed
-- THEN each case asserts its exact expected balances, transfers, or persistence result
-- AND all five pass with evidence captured in the handoff report
+Automated seed and acceptance coverage MUST assert all four separate expense shapes, idempotent rerun behavior, exact balances, exact zero sum, and exact ordered transfers while retaining the existing mathematical and edge-case suites.
 
-### Requirement: Auth and rename acceptance evidence
+#### Scenario: Official fixture regression test runs
 
-The automated test suite MUST include acceptance cases DA-06 (protected sessions and roles) and DA-07 (participant rename) with exact expected behaviors: DA-06 — seeded owner and member logins succeed, invalid credentials are rejected, protected reads/mutations without a valid session are rejected, logout invalidates the session, and role enforcement follows `owner_only`/`any_member`; DA-07 — a rename preserves the participant ID, all historical references, and all monetary results, while blank and normalized-name-conflict renames are rejected.
-
-#### Scenario: DA-06 — auth and role cases pass end to end
-
-- GIVEN the seeded environment and API
-- WHEN the auth acceptance suite runs
-- THEN owner login and member login each establish a session with the correct role
-- AND invalid credentials, missing/expired/logged-out sessions, and an `owner_only` member policy change are rejected with the documented envelopes
-- AND logout invalidates the session
-
-#### Scenario: DA-07 — rename cases pass end to end
-
-- GIVEN the seeded environment and API
-- WHEN the rename acceptance suite runs
-- THEN renaming Ana preserves her ID, expense references, and `+56000` balance
-- AND a blank rename and a rename conflicting with an existing normalized name are rejected without state change
-- AND renaming an archived participant changes only the display name
-
-## Non-goals
-
-- No demo data beyond the realistic Samaipata history, the minimum seeded accounts, and the small additional scripted expense; no analytics or metrics over demo runs.
-- The three-minute constraint applies to the Must walkthrough; mobile read-mostly parity is shown separately if time permits.
+- **WHEN** the affected backend test suites execute
+- **THEN** they fail if any official description, amount, contributor, beneficiary set, participant balance, transfer amount, transfer order, or seeded expense count differs
+- **AND** existing residual, exclusion, settled, persistence, authorization, rename, and money tests remain passing
