@@ -50,6 +50,13 @@ void main() {
         );
       }
     });
+
+    test('rejects checked integer accumulation beyond the cent bound', () {
+      expect(
+        () => ExpenseAmount.parse('999999999999999999999999999999.99'),
+        throwsA(isA<InvalidExpenseAmountException>()),
+      );
+    });
   });
 
   test('write drafts copy and expose unmodifiable collections', () {

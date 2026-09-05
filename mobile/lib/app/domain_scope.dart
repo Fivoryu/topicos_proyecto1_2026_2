@@ -8,8 +8,10 @@ import '../data/refresh/refresh_coordinator.dart';
 import '../data/websocket/data_changed_listener.dart';
 import '../domain/read_models/read_models.dart';
 import '../presentation/balances/balances_cubit.dart';
+import '../presentation/expenses/expense_mutation_cubit.dart';
 import '../presentation/expenses/expenses_cubit.dart';
 import '../presentation/group/group_cubit.dart';
+import '../presentation/group/group_policy_mutation_cubit.dart';
 import '../presentation/participants/participants_cubit.dart';
 import '../presentation/participants/participants_mutation_cubit.dart';
 import '../presentation/settlement/settlement_cubit.dart';
@@ -23,17 +25,23 @@ class DomainReaders {
     required this.balances,
     required this.settlement,
     this.participantsWriter,
+    this.expensesWriter,
+    this.groupWriter,
   });
 
   factory DomainReaders.fromTransport(AuthTransport transport) {
+    final groupRepository = GroupRepository.fromTransport(transport);
     final participantsRepository = ParticipantsRepository.fromTransport(
       transport,
     );
+    final expensesRepository = ExpensesRepository.fromTransport(transport);
     return DomainReaders(
-      group: GroupRepository.fromTransport(transport),
+      group: groupRepository,
+      groupWriter: groupRepository,
       participants: participantsRepository,
       participantsWriter: participantsRepository,
-      expenses: ExpensesRepository.fromTransport(transport),
+      expenses: expensesRepository,
+      expensesWriter: expensesRepository,
       balances: BalancesRepository.fromTransport(transport),
       settlement: SettlementRepository.fromTransport(transport),
     );
@@ -51,9 +59,11 @@ class DomainReaders {
   }
 
   final GroupReader group;
+  final GroupWriter? groupWriter;
   final ParticipantsReader participants;
   final ParticipantsWriter? participantsWriter;
   final ExpensesReader expenses;
+  final ExpensesWriter? expensesWriter;
   final BalancesReader balances;
   final SettlementReader settlement;
 }
@@ -104,6 +114,26 @@ class DomainScope {
                 refreshCoordinator.refresh(RefreshImpact.participant),
             onPostMutationRefreshRetry: refreshCoordinator.retry,
           );
+    final expenseWriter = readers?.expensesWriter;
+    expenseMutationCubit = expenseWriter == null
+        ? null
+        : ExpenseMutationCubit(
+            writer: expenseWriter,
+            groupId: groupId,
+            onMutationSuccess: () =>
+                refreshCoordinator.refresh(RefreshImpact.expense),
+            onPostMutationRefreshRetry: refreshCoordinator.retry,
+          );
+    final policyWriter = readers?.groupWriter;
+    policyMutationCubit = policyWriter == null
+        ? null
+        : GroupPolicyMutationCubit(
+            writer: policyWriter,
+            groupId: groupId,
+            onMutationSuccess: () =>
+                refreshCoordinator.refresh(RefreshImpact.policy),
+            onPostMutationRefreshRetry: refreshCoordinator.retry,
+          );
     listener?.bindOnDataChanged(
       () => refreshCoordinator.refresh(RefreshImpact.unknown),
     );
@@ -126,6 +156,10 @@ class DomainScope {
   final GroupCubit groupCubit;
   final ParticipantsCubit participantsCubit;
   late final ParticipantsMutationCubit? participantsMutationCubit;
+  late final ExpenseMutationCubit? expenseMutationCubit;
+  late final GroupPolicyMutationCubit? policyMutationCubit;
+  GroupPolicyMutationCubit? get groupPolicyMutationCubit => policyMutationCubit;
+  GroupPolicyMutationCubit? get groupMutationCubit => policyMutationCubit;
   final ExpensesCubit expensesCubit;
   final BalancesCubit balancesCubit;
   final SettlementCubit settlementCubit;
@@ -137,6 +171,8 @@ class DomainScope {
     _closed = true;
     await _listener?.close();
     await participantsMutationCubit?.close();
+    await expenseMutationCubit?.close();
+    await policyMutationCubit?.close();
     await refreshCoordinator.close();
     await Future.wait<void>([
       groupCubit.close(),

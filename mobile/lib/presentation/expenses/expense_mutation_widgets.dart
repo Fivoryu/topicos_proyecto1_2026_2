@@ -21,6 +21,7 @@ class ExpenseWriteForm extends StatefulWidget {
     required this.participants,
     this.expense,
     this.onCancel,
+    this.scrollable = true,
     super.key,
   });
 
@@ -28,6 +29,9 @@ class ExpenseWriteForm extends StatefulWidget {
   final Iterable<ExpenseParticipantOption> participants;
   final ExpenseReadModel? expense;
   final VoidCallback? onCancel;
+
+  /// Whether the form owns its vertical scrolling surface.
+  final bool scrollable;
 
   @override
   State<ExpenseWriteForm> createState() => _ExpenseWriteFormState();
@@ -118,12 +122,15 @@ class _ExpenseWriteFormState extends State<ExpenseWriteForm> {
   Widget build(BuildContext context) => StreamBuilder<_S>(
     stream: widget.cubit.stream,
     initialData: widget.cubit.state,
-    builder: (context, snapshot) => Form(
-      key: _key,
-      child: SingleChildScrollView(
-        child: _content(context, snapshot.data ?? widget.cubit.state),
-      ),
-    ),
+    builder: (context, snapshot) {
+      final content = _content(context, snapshot.data ?? widget.cubit.state);
+      return Form(
+        key: _key,
+        child: widget.scrollable
+            ? SingleChildScrollView(child: content)
+            : content,
+      );
+    },
   );
 
   Widget _content(BuildContext context, _S state) {
@@ -230,6 +237,102 @@ class _ExpenseWriteFormState extends State<ExpenseWriteForm> {
     return ElevatedButton(onPressed: action, style: _style, child: child);
   }
 }
+
+class ExpenseDeleteAction extends StatelessWidget {
+  const ExpenseDeleteAction({
+    required this.cubit,
+    required this.expense,
+    super.key,
+  });
+
+  final ExpenseMutationCubit cubit;
+  final ExpenseReadModel expense;
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    if (cubit.state.isDisabled) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete expense?'),
+        content: Text('Delete ${expense.description}? This cannot be undone.'),
+        actions: [
+          _dialogButton(context, false, 'Cancel'),
+          _dialogButton(context, true, 'Delete'),
+        ],
+      ),
+    );
+    if (confirmed != true || cubit.state.isDisabled) return;
+    unawaited(cubit.delete(expense.id));
+  }
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<_S>(
+    stream: cubit.stream,
+    initialData: cubit.state,
+    builder: (context, snapshot) {
+      final state = snapshot.data ?? cubit.state;
+      final onPressed = state.isDisabled ? null : () => _confirmDelete(context);
+      final action = Semantics(
+        container: true,
+        button: true,
+        enabled: !state.isDisabled,
+        liveRegion: state.isLoading,
+        label: state.isLoading ? 'Deleting expense' : 'Delete expense',
+        hint: 'Opens a confirmation dialog before deleting this expense.',
+        onTap: onPressed,
+        child: ExcludeSemantics(
+          child: OutlinedButton(
+            onPressed: onPressed,
+            style: _style,
+            child: _buttonChild('Delete expense', state.isLoading),
+          ),
+        ),
+      );
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          action,
+          if (state.failure case final failure?)
+            _errorMessage(context, failure),
+          if (state.successMessage case final message?)
+            Semantics(
+              container: true,
+              liveRegion: true,
+              label: 'Expense action completed: $message',
+              child: Text(message),
+            ),
+          if (cubit.canRetryPostMutationRefresh)
+            OutlinedButton(
+              onPressed: state.isLoading
+                  ? null
+                  : () => unawaited(cubit.retryPostMutationRefresh()),
+              style: _style,
+              child: const Text('Retry refresh'),
+            ),
+        ],
+      );
+    },
+  );
+}
+
+Widget _errorMessage(BuildContext context, ExpenseMutationFailure failure) =>
+    Semantics(
+      liveRegion: true,
+      container: true,
+      label: 'Expense action error: ${failure.message}',
+      child: Text(
+        failure.message,
+        style: TextStyle(color: Theme.of(context).colorScheme.error),
+      ),
+    );
+
+Widget _dialogButton(BuildContext context, bool result, String label) =>
+    TextButton(
+      onPressed: () => Navigator.of(context).pop(result),
+      style: _style,
+      child: Text(label),
+    );
 
 ExpenseContributorDraft _draft(_ContributorFields c) => ExpenseContributorDraft(
   participantId: c.id!,

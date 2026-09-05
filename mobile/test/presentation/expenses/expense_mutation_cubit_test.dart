@@ -148,6 +148,53 @@ void main() {
     }
   });
   test(
+    'keeps server authorization and contribution validation authoritative',
+    () async {
+      var refreshCalls = 0;
+      final writer = _Writer()
+        ..createError = _dio(
+          statusCode: 422,
+          data: ErrorResponse(
+            errorCode: 'expense_contribution_mismatch',
+            message: 'Contributions do not match the expense amount.',
+            fieldErrors: [
+              FieldError(
+                field: 'contributors',
+                message: 'Contribution total must match the amount.',
+              ),
+            ],
+          ),
+        )
+        ..editError = _dio(statusCode: 403)
+        ..deleteError = _dio(statusCode: 401);
+      final cubit = _cubit(writer, () async => refreshCalls++);
+      final draft = _draft();
+
+      await cubit.create(draft);
+      expect(writer.draft, same(draft));
+      expect(writer.draft!.amount.text, '12.30');
+      expect(writer.draft!.contributors.single.amount.text, '12.30');
+      expect(cubit.state.failure?.kind, ExpenseMutationFailureKind.validation);
+      expect(
+        cubit.state.failure?.fieldErrors['contributors'],
+        'Contribution total must match the amount.',
+      );
+      expect(refreshCalls, 0);
+
+      await cubit.edit('e', draft);
+      expect(cubit.state.failure?.kind, ExpenseMutationFailureKind.forbidden);
+      expect(refreshCalls, 0);
+
+      await cubit.delete('e');
+      expect(
+        cubit.state.failure?.kind,
+        ExpenseMutationFailureKind.unauthorized,
+      );
+      expect(refreshCalls, 0);
+      expect(writer.calls, ['create:g', 'edit:g:e', 'delete:g:e']);
+    },
+  );
+  test(
     'retries refresh without repeating the writer or losing its result',
     () async {
       var refreshCalls = 0;
@@ -284,18 +331,24 @@ class _Writer implements ExpensesWriter {
   final calls = <String>[];
   ExpenseWriteDraft? draft;
   Completer<ExpenseReadModel>? createPending;
+  Object? createError;
+  Object? editError;
+  Object? deleteError;
   @override
   dynamic noSuchMethod(Invocation invocation) {
     final args = invocation.positionalArguments;
     final name = invocation.memberName;
     if (name == #deleteExpense) {
       calls.add('delete:${args[0]}:${args[1]}');
-      return Future<void>.value();
+      final error = deleteError;
+      return error == null ? Future<void>.value() : Future<void>.error(error);
     }
     final create = name == #createExpense;
     if (!create && name != #editExpense) return super.noSuchMethod(invocation);
     calls.add(create ? 'create:${args[0]}' : 'edit:${args[0]}:${args[1]}');
     draft = args[create ? 1 : 2] as ExpenseWriteDraft;
+    final error = create ? createError : editError;
+    if (error != null) return Future<ExpenseReadModel>.error(error);
     return create
         ? createPending?.future ?? Future.value(_result)
         : Future.value(_result);

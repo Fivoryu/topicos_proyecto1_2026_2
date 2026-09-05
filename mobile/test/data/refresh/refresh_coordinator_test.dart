@@ -68,6 +68,65 @@ void main() {
     expect(calls, hasLength(4));
   });
 
+  test(
+    'completes participant, expense, and policy plans after every REST reload',
+    () async {
+      final plans = {
+        RefreshImpact.participant: {
+          RefreshTarget.participants,
+          RefreshTarget.expenses,
+          RefreshTarget.balances,
+          RefreshTarget.settlement,
+        },
+        RefreshImpact.expense: {
+          RefreshTarget.participants,
+          RefreshTarget.expenses,
+          RefreshTarget.balances,
+          RefreshTarget.settlement,
+        },
+        RefreshImpact.policy: {RefreshTarget.group},
+      };
+
+      for (final entry in plans.entries) {
+        final required = entry.value.toList();
+        final gates = {
+          for (final target in required) target: Completer<void>(),
+        };
+        final calls = <RefreshTarget>[];
+        final coordinator = RefreshCoordinator(
+          reloaders: {
+            for (final target in RefreshTarget.values)
+              target: () async {
+                calls.add(target);
+                await gates[target]?.future;
+              },
+          },
+        );
+
+        var completed = false;
+        final refresh = coordinator.refresh(entry.key);
+        refresh.then((_) => completed = true);
+        await Future<void>.delayed(Duration.zero);
+
+        expect(calls.toSet(), entry.value);
+        expect(coordinator.state.status, RefreshStatus.refreshing);
+        expect(completed, isFalse);
+
+        for (final target in required.take(required.length - 1)) {
+          gates[target]!.complete();
+        }
+        await Future<void>.delayed(Duration.zero);
+        expect(completed, isFalse);
+        expect(coordinator.state.status, RefreshStatus.refreshing);
+
+        gates[required.last]!.complete();
+        await refresh;
+        expect(completed, isTrue);
+        expect(coordinator.state.status, RefreshStatus.ready);
+      }
+    },
+  );
+
   test('queues a new impact without rerunning active targets', () async {
     final gates = {
       for (final target in RefreshTarget.values) target: Completer<void>(),

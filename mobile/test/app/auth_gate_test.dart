@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:openapi/openapi.dart';
 
@@ -323,6 +324,107 @@ void main() {
     expect(scopes.single.settlementCubit.isClosed, isTrue);
 
     await session.close();
+  });
+
+  testWidgets('disposes protected state when session expires during a load', (
+    tester,
+  ) async {
+    final groupResponse = Completer<GroupReadModel>();
+    final unavailable = DomainReaders.unavailable();
+    final session = SessionCubit(
+      repository: AuthRepository(
+        operations: _GateOperations(Future.value(_response(_identity()))),
+        cookieJar: CookieJar(),
+      ),
+    );
+    final scopes = <DomainScope>[];
+
+    await tester.pumpWidget(
+      App(
+        config: const AppConfig(
+          apiBaseUrl: 'http://api.test',
+          groupId: 'configured-group',
+        ),
+        sessionCubit: session,
+        domainScopeFactory: (groupId) {
+          final scope = DomainScope(
+            groupId: groupId,
+            readers: DomainReaders(
+              group: _PendingGroupReader(groupResponse.future),
+              participants: unavailable.participants,
+              expenses: unavailable.expenses,
+              balances: unavailable.balances,
+              settlement: unavailable.settlement,
+            ),
+          );
+          scopes.add(scope);
+          return scope;
+        },
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Loading group…'), findsOneWidget);
+    session.markSessionExpired();
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Your session expired. Please sign in again.'),
+      findsOneWidget,
+    );
+    expect(scopes.single.groupCubit.isClosed, isTrue);
+    expect(scopes.single.participantsCubit.isClosed, isTrue);
+    expect(scopes.single.expensesCubit.isClosed, isTrue);
+    expect(scopes.single.balancesCubit.isClosed, isTrue);
+    expect(scopes.single.settlementCubit.isClosed, isTrue);
+
+    groupResponse.complete(_identityGroup());
+    await tester.pump();
+    await session.close();
+  });
+
+  testWidgets('rejects supplied route group and role at the App boundary', (
+    tester,
+  ) async {
+    const invalidRoutes = [
+      (groupId: 'route-group', role: 'owner'),
+      (groupId: 'server-group', role: 'member'),
+    ];
+
+    for (final route in invalidRoutes) {
+      final session = SessionCubit(
+        repository: AuthRepository(
+          operations: _GateOperations(Future.value(_response(_identity()))),
+          cookieJar: CookieJar(),
+        ),
+      );
+
+      await tester.pumpWidget(
+        App(
+          config: const AppConfig(
+            apiBaseUrl: 'http://api.test',
+            groupId: 'configured-group',
+          ),
+          sessionCubit: session,
+          routeGroupId: route.groupId,
+          routeRole: route.role,
+          domainScopeFactory: (groupId) => DomainScope(groupId: groupId),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final message = find.text(
+        'This route is not authorized for the active session.',
+      );
+      expect(message, findsOneWidget);
+      expect(tester.getSemantics(message).flagsCollection.isLiveRegion, isTrue);
+      expect(find.byType(NavigationBar), findsNothing);
+      expect(find.text('Role: owner'), findsNothing);
+
+      await session.close();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    }
   });
 
   testWidgets('keeps a forbidden protected read in-domain without auth retry', (

@@ -664,6 +664,104 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
     }
   });
+
+  testWidgets(
+    'keeps a server-archived participant visible across participant/history/balance reads',
+    (tester) async {
+      final participantsCubit = ParticipantsCubit(
+        reader: _ParticipantsReader(),
+        groupId: 'group-1',
+      );
+      final expensesCubit = ExpensesCubit(
+        reader: _ExpensesReader(data: const [_archivedExpense]),
+        groupId: 'group-1',
+      );
+      final balancesCubit = BalancesCubit(
+        reader: _BalancesReader(),
+        groupId: 'group-1',
+      );
+      await Future.wait([
+        participantsCubit.load(),
+        expensesCubit.load(),
+        balancesCubit.load(),
+      ]);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ParticipantsScreen(cubit: participantsCubit, loadOnOpen: false),
+        ),
+      );
+      expect(find.text('Former guest'), findsOneWidget);
+      expect(find.text('Archived'), findsOneWidget);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ExpenseHistoryScreen(cubit: expensesCubit, loadOnOpen: false),
+        ),
+      );
+      expect(find.text('Former guest'), findsOneWidget);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: BalancesScreen(cubit: balancesCubit, loadOnOpen: false),
+        ),
+      );
+      expect(find.text('Former guest (archived)'), findsOneWidget);
+      expect(find.text('Bs. 0.00'), findsAtLeastNWidgets(1));
+
+      await participantsCubit.close();
+      await expensesCubit.close();
+      await balancesCubit.close();
+    },
+  );
+
+  testWidgets(
+    'removes a never-used participant only after authoritative refresh',
+    (tester) async {
+      final reader = _MutableParticipantsReader([_neverUsedParticipant]);
+      final readCubit = ParticipantsCubit(reader: reader, groupId: 'group-1');
+      final writer = _PendingDeleteWriter();
+      final mutationCubit = ParticipantsMutationCubit(
+        writer: writer,
+        groupId: 'group-1',
+        onMutationSuccess: () async {
+          reader.data = const [];
+          await readCubit.load(propagateFailure: true);
+        },
+      );
+      await readCubit.load();
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: ParticipantsScreen(
+            cubit: readCubit,
+            loadOnOpen: false,
+            mutationCubit: mutationCubit,
+          ),
+        ),
+      );
+      final delete = find.widgetWithText(OutlinedButton, 'Delete');
+      expect(delete, findsOneWidget);
+      await tester.tap(delete);
+      await tester.pump();
+      await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+      await tester.pump();
+
+      expect(writer.deleteCalls, 1);
+      expect(mutationCubit.state.status, ParticipantsMutationStatus.loading);
+      expect(find.text('Never used'), findsOneWidget);
+      expect(readCubit.state.participants, [_neverUsedParticipant]);
+
+      writer.response.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('Never used'), findsNothing);
+      expect(find.text('Participant deleted.'), findsOneWidget);
+      expect(readCubit.state.status, ReadStatus.empty);
+      await readCubit.close();
+      await mutationCubit.close();
+    },
+  );
 }
 
 class _ReadSurface {
@@ -855,6 +953,37 @@ class _GroupReader implements GroupReader {
       ownerAccountId: 'account-1',
       settlementPolicy: SettlementPolicy.ownerOnly,
     );
+  }
+}
+
+const _neverUsedParticipant = ParticipantReadModel(
+  id: 'never-used',
+  groupId: 'group-1',
+  name: 'Never used',
+  archived: false,
+);
+
+class _MutableParticipantsReader implements ParticipantsReader {
+  _MutableParticipantsReader(this.data);
+
+  List<ParticipantReadModel> data;
+
+  @override
+  Future<List<ParticipantReadModel>> listParticipants(String groupId) async =>
+      data;
+}
+
+class _PendingDeleteWriter implements ParticipantsWriter {
+  final response = Completer<void>();
+  var deleteCalls = 0;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    if (invocation.memberName == #deleteParticipant) {
+      deleteCalls++;
+      return response.future;
+    }
+    throw UnimplementedError(invocation.memberName.toString());
   }
 }
 

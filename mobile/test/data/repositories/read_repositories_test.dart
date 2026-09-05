@@ -174,6 +174,13 @@ class _FakeGroupOperations implements GroupOperations {
     this.groupId = groupId;
     return response(data);
   }
+
+  @override
+  Future<Response<GroupResponse>> updateGroup({
+    required String groupId,
+    required String xCSRFToken,
+    required GroupUpdateRequest groupUpdateRequest,
+  }) async => response(data);
 }
 
 class _FakeParticipantsOperations implements ParticipantsOperations {

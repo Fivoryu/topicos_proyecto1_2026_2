@@ -107,6 +107,50 @@ void main() {
     expect(find.text('Please try again.'), findsOneWidget);
     await cubit.close();
   });
+
+  testWidgets('duplicate lifecycle taps issue one archive command', (
+    tester,
+  ) async {
+    final writer = _Writer()..pending = Completer<void>();
+    final cubit = _cubit(writer);
+    await _pump(
+      tester,
+      ParticipantLifecycleActions(cubit: cubit, participant: participant),
+    );
+
+    final archive = find.widgetWithText(OutlinedButton, 'Archive');
+    await tester.tap(archive);
+    await tester.tap(archive);
+    await tester.pump();
+
+    expect(writer.commands, ['archive']);
+    expect(cubit.state.isDisabled, isTrue);
+    writer.pending!.complete();
+    await tester.pumpAndSettle();
+    await cubit.close();
+  });
+
+  testWidgets('confirmed never-used deletion reports server completion', (
+    tester,
+  ) async {
+    final writer = _Writer();
+    final cubit = _cubit(writer);
+    await _pump(
+      tester,
+      ParticipantLifecycleActions(cubit: cubit, participant: participant),
+    );
+
+    await tester.tap(find.widgetWithText(OutlinedButton, 'Delete'));
+    await tester.pump();
+    await tester.tap(find.widgetWithText(TextButton, 'Delete'));
+    await tester.pumpAndSettle();
+
+    expect(writer.commands, ['delete']);
+    expect(cubit.state.status, ParticipantsMutationStatus.success);
+    expect(cubit.state.result, isNull);
+    expect(cubit.state.successMessage, 'Participant deleted.');
+    await cubit.close();
+  });
 }
 
 Future<void> _action(

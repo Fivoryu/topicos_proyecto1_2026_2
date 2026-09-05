@@ -38,6 +38,20 @@ void main() {
     expect(cubit.state.failure!.kind, MutationFailureKind.validation);
     expect(cubit.state.failure!.fieldErrors['name'], isNotEmpty);
   });
+  test('rejects whitespace-only add and rename without writer calls', () async {
+    final writer = _FakeWriter(participant);
+    final cubit = _cubit(writer);
+
+    await cubit.add(' \n\t ');
+    expect(cubit.state.failure!.kind, MutationFailureKind.validation);
+    expect(cubit.state.failure!.fieldErrors['name'], isNotEmpty);
+
+    await cubit.rename('p-1', '\t \n');
+    expect(writer.commands, isEmpty);
+    expect(cubit.state.failure!.kind, MutationFailureKind.validation);
+    expect(cubit.state.failure!.fieldErrors['name'], isNotEmpty);
+    await cubit.close();
+  });
   test('shows loading/disabled and then the server result', () async {
     final writer = _FakeWriter(participant)
       ..pending = Completer<ParticipantReadModel>();
@@ -345,6 +359,83 @@ void main() {
       MutationFailureKind.corruption,
     );
   });
+  test(
+    'preserves server field errors for normalized active/archived collisions',
+    () async {
+      final duplicate = _dioError(
+        409,
+        ErrorResponse(
+          errorCode: 'duplicate_participant_name',
+          message: 'A participant with this name already exists.',
+          fieldErrors: [
+            FieldError(
+              field: 'name',
+              message: 'Choose a different participant name.',
+            ),
+          ],
+        ),
+      );
+      const archived = ParticipantReadModel(
+        id: 'archived-1',
+        groupId: 'g-1',
+        name: 'Former guest',
+        archived: true,
+      );
+
+      final addWriter = _FakeWriter(archived)..error = duplicate;
+      final addCubit = _cubit(addWriter);
+      await addCubit.add(' Former guest ');
+      expect(addWriter.commands, ['add']);
+      expect(addWriter.names, ['Former guest']);
+      expect(addCubit.state.failure!.kind, MutationFailureKind.validation);
+      expect(
+        addCubit.state.failure!.fieldErrors['name'],
+        'Choose a different participant name.',
+      );
+      await addCubit.close();
+
+      final renameWriter = _FakeWriter(archived)..error = duplicate;
+      final renameCubit = _cubit(renameWriter);
+      await renameCubit.rename('p-1', ' Former guest ');
+      expect(renameWriter.commands, ['rename']);
+      expect(renameWriter.ids, ['p-1']);
+      expect(renameWriter.names, ['Former guest']);
+      expect(renameCubit.state.failure!.kind, MutationFailureKind.validation);
+      expect(
+        renameCubit.state.failure!.message,
+        'A participant with this name already exists.',
+      );
+      expect(renameCubit.state.failure!.fieldErrors['name'], isNotEmpty);
+      await renameCubit.close();
+    },
+  );
+
+  test(
+    'does not refresh or publish after close during an in-flight mutation',
+    () async {
+      final writer = _FakeWriter(participant)
+        ..pending = Completer<ParticipantReadModel>();
+      var refreshCalls = 0;
+      final cubit = ParticipantsMutationCubit(
+        writer: writer,
+        groupId: 'g-1',
+        onMutationSuccess: () async {
+          refreshCalls++;
+        },
+      );
+      final request = cubit.add('Ana');
+      await Future<void>.delayed(Duration.zero);
+      await cubit.close();
+
+      writer.pending!.complete(participant);
+      await request;
+
+      expect(writer.commands, ['add']);
+      expect(refreshCalls, 0);
+      expect(cubit.state.status, ParticipantsMutationStatus.loading);
+    },
+  );
+
   test('ignores late success and failure after close', () async {
     final writer = _FakeWriter(participant)
       ..pending = Completer<ParticipantReadModel>();

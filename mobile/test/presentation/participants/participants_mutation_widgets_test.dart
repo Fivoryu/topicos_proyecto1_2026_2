@@ -87,6 +87,24 @@ void main() {
     await request;
     await cubit.close();
   });
+
+  testWidgets('duplicate form taps issue one add command', (tester) async {
+    final writer = _Writer()..pending = Completer<void>();
+    final cubit = _cubit(writer);
+    await _pump(tester, ParticipantNameForm(cubit: cubit));
+
+    await tester.enterText(find.byType(TextField), 'Ana');
+    final add = find.byType(ElevatedButton);
+    await tester.tap(add);
+    await tester.tap(add);
+    await tester.pump();
+
+    expect(writer.commands, ['add']);
+    expect(cubit.state.isDisabled, isTrue);
+    writer.pending!.complete();
+    await tester.pumpAndSettle();
+    await cubit.close();
+  });
 }
 
 Future<void> _settle(WidgetTester tester) async {

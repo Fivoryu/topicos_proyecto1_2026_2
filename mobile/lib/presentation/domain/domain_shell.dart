@@ -51,12 +51,20 @@ class _DomainShellState extends State<DomainShell> {
   ];
 
   Widget _screen() => switch (_selectedIndex) {
-    0 => GroupScreen(cubit: widget.scope.groupCubit),
+    0 => GroupScreen(
+      cubit: widget.scope.groupCubit,
+      role: widget.role,
+      mutationCubit: widget.scope.policyMutationCubit,
+    ),
     1 => ParticipantsScreen(
       cubit: widget.scope.participantsCubit,
       mutationCubit: widget.scope.participantsMutationCubit,
     ),
-    2 => ExpenseHistoryScreen(cubit: widget.scope.expensesCubit),
+    2 => ExpenseHistoryScreen(
+      cubit: widget.scope.expensesCubit,
+      participantsCubit: widget.scope.participantsCubit,
+      mutationCubit: widget.scope.expenseMutationCubit,
+    ),
     3 => BalancesScreen(cubit: widget.scope.balancesCubit),
     _ => SettlementScreen(cubit: widget.scope.settlementCubit),
   };

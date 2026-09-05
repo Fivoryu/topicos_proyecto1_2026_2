@@ -39,6 +39,24 @@ void main() {
       expect(find.text(error), findsOneWidget);
     }
     expect(writer.calls, isEmpty);
+    expect(find.bySemanticsLabel('Description'), findsOneWidget);
+    expect(find.bySemanticsLabel('Contract amount'), findsOneWidget);
+    expect(
+      t
+          .getSemantics(find.text('Select at least one beneficiary.'))
+          .flagsCollection
+          .isLiveRegion,
+      isTrue,
+    );
+    for (final button in [
+      ...find.byType(ElevatedButton).evaluate(),
+      ...find.byType(OutlinedButton).evaluate(),
+    ]) {
+      expect(
+        t.getSize(find.byWidget(button.widget)).height,
+        greaterThanOrEqualTo(48),
+      );
+    }
     await cubit.close();
   });
 
@@ -119,6 +137,11 @@ void main() {
     await _tap(t, find.widgetWithText(ElevatedButton, 'Save changes'));
     await t.pump();
     expect(writer.calls, ['edit:e-1']);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(
+      t.widget<ElevatedButton>(find.byType(ElevatedButton).last).onPressed,
+      isNull,
+    );
     expect(
       t
           .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, 'Cancel'))
@@ -131,6 +154,139 @@ void main() {
     expect(writer.draft!.beneficiaryIds, ['old']);
     await cubit.close();
   });
+
+  testWidgets(
+    'delete cancellation and dialog dismissal never call the writer',
+    (t) async {
+      final dismissals = <Future<void> Function(WidgetTester)>[
+        (tester) => tester.tap(find.text('Cancel')),
+        (tester) => tester.tapAt(const Offset(1, 1)),
+        (tester) => tester.binding.handlePopRoute(),
+      ];
+      for (final dismiss in dismissals) {
+        final writer = _Writer();
+        final cubit = _cubit(writer);
+        await _pump(t, ExpenseDeleteAction(cubit: cubit, expense: _result));
+        await _tap(t, find.widgetWithText(OutlinedButton, 'Delete expense'));
+        await t.pump();
+        await dismiss(t);
+        await t.pump();
+        expect(writer.calls, isEmpty);
+        await cubit.close();
+      }
+    },
+  );
+
+  testWidgets('confirmed delete runs once with accessible loading feedback', (
+    t,
+  ) async {
+    final writer = _Writer()..pendingDelete = Completer<void>();
+    final cubit = _cubit(writer);
+    await _pump(t, ExpenseDeleteAction(cubit: cubit, expense: _result));
+
+    final action = find.byType(OutlinedButton).first;
+    expect(action, findsOneWidget);
+    expect(find.bySemanticsLabel('Delete expense'), findsOneWidget);
+    expect(t.getSize(action).height, greaterThanOrEqualTo(48));
+    await _tap(t, action);
+    await t.pump();
+    expect(find.text('Delete expense?'), findsOneWidget);
+    await _tap(t, find.widgetWithText(TextButton, 'Delete'));
+    await t.pump();
+
+    expect(writer.calls, ['delete:e-1']);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(t.widget<OutlinedButton>(action).onPressed, isNull);
+    expect(
+      t
+          .getSemantics(find.bySemanticsLabel('Deleting expense'))
+          .flagsCollection
+          .isButton,
+      isTrue,
+    );
+    await t.tap(action);
+    await t.pump();
+    expect(writer.calls, ['delete:e-1']);
+
+    writer.pendingDelete!.complete();
+    await _settle(t);
+    expect(cubit.state.result, isNull);
+    expect(find.text('Expense deleted.'), findsOneWidget);
+    await cubit.close();
+  });
+
+  testWidgets(
+    'delete server failure stays visible with an actionable retry path',
+    (t) async {
+      final writer = _Writer()..deleteError = StateError('delete failed');
+      final cubit = _cubit(writer);
+      await _pump(t, ExpenseDeleteAction(cubit: cubit, expense: _result));
+      await _tap(t, find.widgetWithText(OutlinedButton, 'Delete expense'));
+      await t.pump();
+      await _tap(t, find.widgetWithText(TextButton, 'Delete'));
+      await _settle(t);
+
+      expect(writer.calls, ['delete:e-1']);
+      expect(find.text('Please try again.'), findsOneWidget);
+      expect(
+        t
+            .getSemantics(find.text('Please try again.'))
+            .flagsCollection
+            .isLiveRegion,
+        isTrue,
+      );
+      expect(
+        find.widgetWithText(OutlinedButton, 'Delete expense'),
+        findsOneWidget,
+      );
+      expect(
+        find.widgetWithText(OutlinedButton, 'Retry refresh'),
+        findsNothing,
+      );
+      await cubit.close();
+    },
+  );
+
+  testWidgets(
+    'delete refresh failure exposes live recovery and retries without repeating delete',
+    (t) async {
+      var retryCalls = 0;
+      final writer = _Writer();
+      final cubit = ExpenseMutationCubit(
+        writer: writer,
+        groupId: 'g-1',
+        onMutationSuccess: () async => throw StateError('refresh failed'),
+        onPostMutationRefreshRetry: () async => retryCalls++,
+      );
+      await _pump(t, ExpenseDeleteAction(cubit: cubit, expense: _result));
+      await _tap(t, find.widgetWithText(OutlinedButton, 'Delete expense'));
+      await t.pump();
+      await _tap(t, find.widgetWithText(TextButton, 'Delete'));
+      await _settle(t);
+
+      expect(writer.calls, ['delete:e-1']);
+      expect(find.text('Please try again.'), findsOneWidget);
+      expect(
+        t
+            .getSemantics(find.text('Please try again.'))
+            .flagsCollection
+            .isLiveRegion,
+        isTrue,
+      );
+      expect(
+        find.widgetWithText(OutlinedButton, 'Retry refresh'),
+        findsOneWidget,
+      );
+      await _tap(t, find.widgetWithText(OutlinedButton, 'Retry refresh'));
+      await _settle(t);
+
+      expect(retryCalls, 1);
+      expect(writer.calls, ['delete:e-1']);
+      expect(cubit.state.result, isNull);
+      expect(find.text('Expense deleted.'), findsOneWidget);
+      await cubit.close();
+    },
+  );
 }
 
 ExpenseParticipantOption _option(String id, String name) =>
@@ -153,12 +309,17 @@ class _Writer implements ExpensesWriter {
   final calls = <String>[];
   ExpenseWriteDraft? draft;
   Completer<ExpenseReadModel>? pending;
+  Completer<void>? pendingDelete;
+  Object? deleteError;
 
   @override
   dynamic noSuchMethod(Invocation invocation) {
     final args = invocation.positionalArguments;
     if (invocation.memberName == #deleteExpense) {
-      return Future<void>.value();
+      calls.add('delete:${args[1]}');
+      final error = deleteError;
+      if (error != null) return Future<void>.error(error);
+      return pendingDelete?.future ?? Future<void>.value();
     }
     final editing = invocation.memberName == #editExpense;
     calls.add(editing ? 'edit:${args[1]}' : 'create');

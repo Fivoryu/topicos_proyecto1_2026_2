@@ -59,6 +59,61 @@ void main() {
   );
 
   test(
+    'generated expense adapter keeps exact DTO and operation contracts',
+    () async {
+      final api = _GeneratedExpensesApi();
+      final operations = GeneratedExpensesOperations(api);
+      final request = ExpenseWriteRequest(
+        amount: '1.20',
+        beneficiaryIds: const ['beneficiary-1'],
+        contributors: [
+          ExpenseContributorRequest(
+            amount: '1.20',
+            participantId: 'participant-1',
+          ),
+        ],
+        description: 'Dinner',
+      );
+
+      await operations.createExpense(
+        groupId: 'group-1',
+        xCSRFToken: 'create-token',
+        expenseWriteRequest: request,
+      );
+      await operations.editExpense(
+        groupId: 'group-1',
+        expenseId: 'expense-1',
+        xCSRFToken: 'edit-token',
+        expenseWriteRequest: request,
+      );
+      await operations.deleteExpense(
+        groupId: 'group-1',
+        expenseId: 'expense-1',
+        xCSRFToken: 'delete-token',
+      );
+
+      expect(api.createCall!.$1, 'group-1');
+      expect(api.createCall!.$2, 'create-token');
+      expect(identical(api.createCall!.$3, request), isTrue);
+      expect(api.createCall!.$3, isA<ExpenseWriteRequest>());
+      expect(
+        api.createCall!.$3.contributors.single,
+        isA<ExpenseContributorRequest>(),
+      );
+      expect(api.createCall!.$3.contributors.single.amount, '1.20');
+      expect(
+        api.createCall!.$3.contributors.single.participantId,
+        'participant-1',
+      );
+      expect(api.editCall!.$1, 'group-1');
+      expect(api.editCall!.$2, 'expense-1');
+      expect(api.editCall!.$3, 'edit-token');
+      expect(identical(api.editCall!.$4, request), isTrue);
+      expect(api.deleteCall, ('group-1', 'expense-1', 'delete-token'));
+    },
+  );
+
+  test(
     'delete delegates scope and token and accepts a null 204 body',
     () async {
       final operations = _Operations();
@@ -252,6 +307,66 @@ DioException _dioFailure(int status, Object data) {
       requestOptions: requestOptions,
     ),
   );
+}
+
+class _GeneratedExpensesApi extends ExpensesApi {
+  _GeneratedExpensesApi() : super(Dio());
+
+  (String, String, ExpenseWriteRequest)? createCall;
+  (String, String, String, ExpenseWriteRequest)? editCall;
+  (String, String, String)? deleteCall;
+
+  @override
+  Future<Response<ExpenseResponse>>
+  createExpenseApiV1GroupsGroupIdExpensesPost({
+    required String groupId,
+    required String xCSRFToken,
+    required ExpenseWriteRequest expenseWriteRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    createCall = (groupId, xCSRFToken, expenseWriteRequest);
+    return _response(_expense());
+  }
+
+  @override
+  Future<Response<ExpenseResponse>>
+  editExpenseApiV1GroupsGroupIdExpensesExpenseIdPatch({
+    required String groupId,
+    required String expenseId,
+    required String xCSRFToken,
+    required ExpenseWriteRequest expenseWriteRequest,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    editCall = (groupId, expenseId, xCSRFToken, expenseWriteRequest);
+    return _response(_expense());
+  }
+
+  @override
+  Future<Response<void>>
+  deleteExpenseApiV1GroupsGroupIdExpensesExpenseIdDelete({
+    required String groupId,
+    required String expenseId,
+    required String xCSRFToken,
+    CancelToken? cancelToken,
+    Map<String, dynamic>? headers,
+    Map<String, dynamic>? extra,
+    ValidateStatus? validateStatus,
+    ProgressCallback? onSendProgress,
+    ProgressCallback? onReceiveProgress,
+  }) async {
+    deleteCall = (groupId, expenseId, xCSRFToken);
+    return _response<void>(null, statusCode: 204);
+  }
 }
 
 class _ListOnlyOperations implements ExpensesOperations {
