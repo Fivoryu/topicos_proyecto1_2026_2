@@ -1209,3 +1209,33 @@ Implement the next bounded W3b expense form/action slice (field validation, acti
     ### Next action
 
     Implement bounded W3b-S3b delete confirmation/action and its tests without DomainScope/read-screen composition; keep broad W3b rows unchecked.
+
+## Final continuation: mobile-domain-features completion audit
+
+### Status
+
+All implementation-owned tasks 1–59 are complete. The remaining parent-owned rows are intentionally open because receipt-driven development is disabled for this clone and no native review or native changed-line forecast was authorized or run.
+
+### Completed implementation and evidence
+
+- W1a authenticated shell, protected-scope disposal, route/group/role rejection, five read destinations, distinct authorization messaging, recovery states, safe areas, semantic labels, adaptive navigation, and all-settled read-only settlement are implemented and covered by focused characterization tests.
+- W1b `RefreshCoordinator` owns explicit participant/expense/policy/unknown impact plans, waits for all required REST reloads, coalesces invalidations, retries only failed targets, and keeps WebSocket frames invalidation-only.
+- W2 participant lifecycle supports add, trim/rename, archive, reactivate, protected delete, server errors, refresh/retry, archived visibility, and close/logout guards.
+- W3a preserves lexical money text at an integer-cent boundary, uses existing generated expense operations through non-generated adapters, forwards server validation/corruption/auth failures, and performs no client monetary derivation.
+- W3b supports archived-reference selection, create/edit/delete mutation state, confirmation/cancellation, loading and duplicate guards, authoritative refresh/retry, null delete results, and optional read-screen composition.
+- W4 uses only the generated group PATCH operation and `owner_only`/`any_member`, provides role-aware policy affordances without making client authorization authoritative, refreshes server state, and preserves accessible recovery behavior.
+
+### Verification evidence
+
+- Full mobile safety net after final normalization: `cd mobile && flutter test --no-pub` — **211 passed, 0 failed**.
+- Static analysis: `cd mobile && flutter analyze` — **No issues found**.
+- Check-only normalization: `dart format --output=none --set-exit-if-changed` over 23 changed non-generated Dart files — **0 changed**.
+- Repository hygiene: `git diff --check` passed; generated API output and `mobile/README.md` are unchanged; pre-existing untracked `INICIO_LOCAL.md` was preserved.
+- Runtime/manual harness: **N/A** — no live mobile/backend runtime or emulator boundary was available; no runtime evidence is fabricated.
+
+### Parent-owned deferred actions
+
+- `[ ] Start or reuse one bounded native review ...` remains unchecked because clone-local receipt-driven development is disabled; ordinary repository policy remains the delivery path.
+- `[ ] Confirm the native changed-line forecast ...` remains unchecked because no native review/forecast operation was run; each implementation unit was kept below the documented 400-line boundary by explicit slice scope and recorded worker estimates.
+
+The change is implementation-complete and OpenSpec-valid. If strict native receipt evidence is required before archive/delivery, explicitly enable receipt-driven development and run its native lifecycle; this continuation does not enable it implicitly.
