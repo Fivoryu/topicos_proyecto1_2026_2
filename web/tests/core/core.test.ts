@@ -78,14 +78,12 @@ describe("web transport", () => {
   it("maps a 401 response to a protected signed-out state", async () => {
     const onProtectedState = vi.fn();
     const client = createHttpClient({
-      fetchApi: vi
-        .fn()
-        .mockResolvedValue(
-          response(401, {
-            error_code: "unauthorized",
-            message: "Sign in required.",
-          }),
-        ),
+      fetchApi: vi.fn().mockResolvedValue(
+        response(401, {
+          error_code: "unauthorized",
+          message: "Sign in required.",
+        }),
+      ),
       onProtectedState,
     });
 
@@ -95,6 +93,23 @@ describe("web transport", () => {
       protectedState: "signedOut",
     });
     expect(onProtectedState).toHaveBeenCalledWith("signedOut");
+  });
+
+  it("does not notify protected state for auth 401s", async () => {
+    const onProtectedState = vi.fn();
+    const client = createHttpClient({
+      fetchApi: vi
+        .fn()
+        .mockResolvedValue(response(401, { error_code: "unauthorized" })),
+      onProtectedState,
+    });
+
+    await expect(client.request("/api/v1/auth/session")).rejects.toMatchObject({
+      status: 401,
+      errorCode: "unauthorized",
+      protectedState: "signedOut",
+    });
+    expect(onProtectedState).not.toHaveBeenCalled();
   });
 
   it("preserves session-expired as a distinct protected state", async () => {

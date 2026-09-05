@@ -1,5 +1,11 @@
 import { QueryClient, useQuery } from "@tanstack/react-query";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
@@ -87,7 +93,9 @@ describe("protected route and session bootstrap", () => {
     expect(
       screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Datos protegidos del grupo"),
+    ).not.toBeInTheDocument();
 
     bootstrap.resolve(session);
     await waitFor(() => expect(fetchGroup).toHaveBeenCalledTimes(1));
@@ -105,7 +113,9 @@ describe("protected route and session bootstrap", () => {
     expect(
       screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Datos protegidos del grupo"),
+    ).not.toBeInTheDocument();
     expect(
       screen.queryByText(/participantes|balances|liquidación/i),
     ).not.toBeInTheDocument();
@@ -121,6 +131,51 @@ describe("protected route and session bootstrap", () => {
       ),
     );
     expect(screen.queryByLabelText(/role/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps a completed login authoritative over a stale bootstrap session", async () => {
+    const bootstrap = deferred<typeof session>();
+    const loginSession = {
+      ...session,
+      account: { id: "login-account", loginName: "login.member" },
+      role: "owner" as const,
+    };
+    const client = makeClient({
+      getSession: vi.fn().mockReturnValue(bootstrap.promise),
+      login: vi.fn().mockResolvedValue(loginSession),
+    });
+    function LoginAndStatus() {
+      const { login, session: currentSession } = useSession();
+      return (
+        <button
+          onClick={() =>
+            void login({ loginName: "login.member", password: "secret" })
+          }
+        >
+          {currentSession?.account.id ?? "Login"}
+        </button>
+      );
+    }
+    render(
+      <SessionProvider authClient={client}>
+        <LoginAndStatus />
+      </SessionProvider>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+    await screen.findByRole("button", { name: "login-account" });
+    await act(() => {
+      bootstrap.resolve({
+        ...session,
+        account: { id: "bootstrap-account", loginName: "bootstrap.member" },
+        role: "member",
+      });
+      return bootstrap.promise;
+    });
+
+    expect(
+      screen.getByRole("button", { name: "login-account" }),
+    ).toBeInTheDocument();
   });
 
   it("routes an expired bootstrap session to login with an explicit message", async () => {
@@ -142,7 +197,9 @@ describe("protected route and session bootstrap", () => {
     expect(
       screen.getByRole("heading", { name: /inicia sesión/i }),
     ).toBeInTheDocument();
-    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Datos protegidos del grupo"),
+    ).not.toBeInTheDocument();
   });
 
   it("routes a protected 401 received mid-session to login", async () => {
@@ -219,7 +276,9 @@ describe("login and logout", () => {
 
     expect(await screen.findByText(/invalid_credentials/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/usuario/i)).toHaveValue("demo.member");
-    expect(screen.queryByText("Datos protegidos del grupo")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Datos protegidos del grupo"),
+    ).not.toBeInTheDocument();
   });
 
   it("toggles password visibility and disables the submit while login is loading", async () => {
@@ -241,7 +300,9 @@ describe("login and logout", () => {
     fireEvent.change(screen.getByLabelText(/^contraseña$/i), {
       target: { value: "secret" },
     });
-    fireEvent.click(screen.getByRole("button", { name: /mostrar contraseña/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /mostrar contraseña/i }),
+    );
     expect(screen.getByLabelText(/^contraseña$/i)).toHaveAttribute(
       "type",
       "text",
@@ -253,7 +314,9 @@ describe("login and logout", () => {
 
     login.resolve(session);
     await waitFor(() =>
-      expect(screen.getByText("Datos protegidos del grupo")).toBeInTheDocument(),
+      expect(
+        screen.getByText("Datos protegidos del grupo"),
+      ).toBeInTheDocument(),
     );
   });
 
@@ -283,7 +346,9 @@ describe("login and logout", () => {
         screen.getByRole("heading", { name: /inicia sesión/i }),
       ).toBeInTheDocument(),
     );
-    expect(screen.getByRole("status")).toHaveTextContent(/cerraste sesión correctamente/i);
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /cerraste sesión correctamente/i,
+    );
     expect(client.logout).toHaveBeenCalledWith("csrf-token");
     expect(document.cookie).not.toContain("cc_csrf=csrf-token");
     expect(queryClient.getQueryCache().findAll()).toHaveLength(0);

@@ -118,6 +118,16 @@ function urlFor(baseUrl: string, path: string): string {
   return `${baseUrl.replace(/\/+$/, "")}/${path.replace(/^\/+/, "")}`;
 }
 
+function isAuthPath(path: string): boolean {
+  try {
+    return new URL(path, "http://localhost").pathname.startsWith(
+      "/api/v1/auth/",
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function createHttpClient(options: HttpClientOptions = {}) {
   const baseUrl = options.baseUrl ?? webConfig.apiBaseUrl;
   const fetchApi = options.fetchApi ?? fetch;
@@ -155,7 +165,7 @@ export function createHttpClient(options: HttpClientOptions = {}) {
       payload.field_errors,
       response,
     );
-    if (error.protectedState) {
+    if (error.protectedState && !isAuthPath(path)) {
       stateHandler(error.protectedState);
     }
     throw error;

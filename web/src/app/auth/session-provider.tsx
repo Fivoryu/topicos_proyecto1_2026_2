@@ -6,6 +6,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
 } from "react";
 
@@ -159,9 +160,11 @@ export function SessionProvider({
     errorMessage: null,
     notice: null,
   });
+  const sessionEpoch = useRef(0);
 
   const handleProtectedState = useCallback(
     (state: ProtectedState) => {
+      sessionEpoch.current += 1;
       queryClient.clear();
       setSnapshot({
         status: state,
@@ -181,11 +184,12 @@ export function SessionProvider({
   );
 
   useEffect(() => {
+    const bootstrapEpoch = sessionEpoch.current;
     let active = true;
     void authClient
       .getSession()
       .then((currentSession) => {
-        if (!active) return;
+        if (!active || sessionEpoch.current !== bootstrapEpoch) return;
         setSnapshot({
           status: "authenticated",
           session: currentSession,
@@ -195,9 +199,9 @@ export function SessionProvider({
         });
       })
       .catch((error: unknown) => {
-        if (!active) return;
+        if (!active || sessionEpoch.current !== bootstrapEpoch) return;
         void normalizeAuthError(error).then((authError) => {
-          if (!active) return;
+          if (!active || sessionEpoch.current !== bootstrapEpoch) return;
           const state: ProtectedState =
             authError instanceof AuthError &&
             authError.errorCode === "session_expired"
@@ -218,11 +222,15 @@ export function SessionProvider({
 
     return () => {
       active = false;
+      if (sessionEpoch.current === bootstrapEpoch) {
+        sessionEpoch.current += 1;
+      }
     };
   }, [authClient, handleProtectedState]);
 
   const login = useCallback(
     async ({ loginName, password }: Omit<LoginCredentials, "csrfToken">) => {
+      sessionEpoch.current += 1;
       setSnapshot((current) => ({
         ...current,
         status: "authenticating",
@@ -260,6 +268,7 @@ export function SessionProvider({
   );
 
   const logout = useCallback(async () => {
+    sessionEpoch.current += 1;
     try {
       await authClient.logout(getCsrfToken() ?? "");
     } finally {

@@ -43,17 +43,25 @@ export function LoginScreen() {
             </span>
           </div>
           <div className="auth-showcase-copy">
-            <StatusBadge tone="info">Grupo 2 · Spec-Driven Development</StatusBadge>
-            <h2>Todo el grupo entiende quién pagó, cuánto debe y cómo saldar.</h2>
+            <StatusBadge tone="info">Grupo 2 · Gastos compartidos</StatusBadge>
+            <h2>
+              Todo el grupo entiende quién pagó, cuánto debe y cómo saldar.
+            </h2>
             <p>
               Personas, gastos, totales y pagos sugeridos sincronizados con el
               servidor como única fuente de verdad.
             </p>
           </div>
           <div className="auth-feature-list" aria-hidden="true">
-            <span><Icon name="receipt" /> Gastos claros</span>
-            <span><Icon name="chart" /> Totales exactos</span>
-            <span><Icon name="settlement" /> Cierre simple</span>
+            <span>
+              <Icon name="receipt" /> Gastos claros
+            </span>
+            <span>
+              <Icon name="chart" /> Totales exactos
+            </span>
+            <span>
+              <Icon name="settlement" /> Cierre simple
+            </span>
           </div>
         </section>
 

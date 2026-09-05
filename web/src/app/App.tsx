@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Icon } from "../components/icons";
 import { Button, StatusBadge } from "../components/ui";
@@ -21,7 +21,11 @@ const navItems = [
 
 function Brand() {
   return (
-    <a className="brand" href="#gastos" aria-label="Ir a gastos de Cuentas Claras">
+    <a
+      className="brand"
+      href="#gastos"
+      aria-label="Ir a gastos de Cuentas Claras"
+    >
       <span className="brand-mark" aria-hidden="true">
         <Icon name="wallet" />
       </span>
@@ -33,11 +37,32 @@ function Brand() {
   );
 }
 
+function getCurrentNavHash() {
+  if (typeof window === "undefined") return navItems[0].href;
+  return navItems.some((item) => item.href === window.location.hash)
+    ? window.location.hash
+    : navItems[0].href;
+}
+
 function Navigation() {
+  const [currentHash, setCurrentHash] = useState(getCurrentNavHash);
+
+  useEffect(() => {
+    const updateCurrentHash = () => setCurrentHash(getCurrentNavHash());
+    window.addEventListener("hashchange", updateCurrentHash);
+    return () => window.removeEventListener("hashchange", updateCurrentHash);
+  }, []);
+
   return (
     <nav className="app-nav" aria-label="Secciones del grupo">
       {navItems.map((item) => (
-        <a key={item.href} href={item.href} className="nav-link">
+        <a
+          key={item.href}
+          href={item.href}
+          className="nav-link"
+          aria-current={currentHash === item.href ? "page" : undefined}
+          onClick={() => setCurrentHash(item.href)}
+        >
           <Icon name={item.icon} />
           <span>{item.label}</span>
         </a>
@@ -64,89 +89,115 @@ function ProtectedShell() {
   const roleLabel = session.role === "owner" ? "Propietario" : "Miembro";
 
   return (
-    <main className="app-shell" data-testid="protected-shell">
-      <aside className="app-sidebar">
-        <Brand />
-        <Navigation />
-        <div className="sidebar-account">
-          <div className="account-avatar" aria-hidden="true">
-            {session.account.loginName.slice(0, 1).toUpperCase()}
-          </div>
-          <div className="account-copy">
-            <strong>{session.account.loginName}</strong>
-            <StatusBadge tone={session.role === "owner" ? "info" : "neutral"}>
-              {roleLabel}
-            </StatusBadge>
-          </div>
-        </div>
-      </aside>
-
-      <div className="app-workspace">
-        <header className="workspace-header">
-          <div className="mobile-brand-row">
-            <Brand />
-          </div>
-          <div className="workspace-heading">
-            <div className="workspace-title-block">
-              <p className="workspace-eyebrow">
-                <Icon name="shield" /> Sesión segura
-              </p>
-              <h1 id="shell-title">Control de gastos</h1>
-              <p className="workspace-subtitle">
-                Registra gastos, revisa balances y liquida el grupo desde un solo lugar.
-              </p>
+    <>
+      <a className="skip-link" href="#main-content">
+        Saltar al contenido principal
+      </a>
+      <main
+        id="main-content"
+        className="app-shell"
+        data-testid="protected-shell"
+        tabIndex={-1}
+      >
+        <aside className="app-sidebar">
+          <Brand />
+          <Navigation />
+          <div className="sidebar-account">
+            <div className="account-avatar" aria-hidden="true">
+              {session.account.loginName.slice(0, 1).toUpperCase()}
             </div>
-            <div className="workspace-actions">
-              <div className="workspace-account-summary">
-                <span className="connection-dot" aria-hidden="true" />
-                <span>{session.account.loginName}</span>
-                <StatusBadge tone={session.role === "owner" ? "info" : "neutral"}>
-                  {roleLabel}
-                </StatusBadge>
+            <div className="account-copy">
+              <strong>{session.account.loginName}</strong>
+              <StatusBadge tone={session.role === "owner" ? "info" : "neutral"}>
+                {roleLabel}
+              </StatusBadge>
+            </div>
+          </div>
+        </aside>
+
+        <div className="app-workspace">
+          <header className="workspace-header">
+            <div className="mobile-brand-row">
+              <Brand />
+            </div>
+            <div className="workspace-heading">
+              <div className="workspace-title-block">
+                <p className="workspace-eyebrow">
+                  <Icon name="shield" /> Sesión segura
+                </p>
+                <h1 id="shell-title">Tu grupo está protegido</h1>
+                <p className="workspace-subtitle">
+                  Toda la cuenta del grupo, ordenada para decidir y cerrar sin
+                  sorpresas.
+                </p>
+                <div
+                  className="workspace-session"
+                  aria-label="Datos de la sesión"
+                >
+                  <span>Sesión iniciada como {session.account.loginName}</span>
+                  <span>Rol: {roleLabel}</span>
+                </div>
               </div>
-              <Button
-                type="button"
-                variant="ghost"
-                className="workspace-logout"
-                onClick={() => void logout()}
+              <div className="workspace-actions">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="workspace-logout"
+                  onClick={() => void logout()}
+                >
+                  <Icon name="logout" />
+                  <span>Cerrar sesión</span>
+                </Button>
+              </div>
+            </div>
+            <div className="mobile-nav-scroll">
+              <Navigation />
+            </div>
+          </header>
+
+          <div className="dashboard-layout" aria-labelledby="shell-title">
+            <div className="dashboard-main-column">
+              <div
+                id="gastos"
+                className="dashboard-slot dashboard-slot-expenses"
               >
-                <Icon name="logout" />
-                <span>Cerrar sesión</span>
-              </Button>
-            </div>
-          </div>
-          <div className="mobile-nav-scroll">
-            <Navigation />
-          </div>
-        </header>
-
-        <div className="dashboard-layout" aria-labelledby="shell-title">
-          <div className="dashboard-main-column">
-            <div id="gastos" className="dashboard-slot dashboard-slot-expenses">
-              <ExpensesPanel groupId={session.activeGroupId} />
-            </div>
-
-            <div className="dashboard-summary-grid">
-              <div id="balances" className="dashboard-slot dashboard-slot-balances">
-                <BalancesPanel groupId={session.activeGroupId} />
+                <ExpensesPanel groupId={session.activeGroupId} />
               </div>
-              <div id="liquidacion" className="dashboard-slot dashboard-slot-settlement">
-                <SettlementPanel groupId={session.activeGroupId} />
+
+              <div className="dashboard-summary-grid">
+                <div
+                  id="balances"
+                  className="dashboard-slot dashboard-slot-balances"
+                >
+                  <BalancesPanel groupId={session.activeGroupId} />
+                </div>
+                <div
+                  id="liquidacion"
+                  className="dashboard-slot dashboard-slot-settlement"
+                >
+                  <SettlementPanel groupId={session.activeGroupId} />
+                </div>
               </div>
             </div>
-          </div>
 
-          <aside className="dashboard-side-column" aria-label="Administración del grupo">
-            <div id="participantes" className="dashboard-slot dashboard-slot-participants">
-              <ParticipantsPanel groupId={session.activeGroupId} />
-            </div>
-            <div id="grupo" className="dashboard-slot dashboard-slot-group">
-              <GroupSettings groupId={session.activeGroupId} />
-            </div>
-          </aside>
+            <aside
+              className="dashboard-side-column"
+              aria-label="Administración del grupo"
+            >
+              <div
+                id="participantes"
+                className="dashboard-slot dashboard-slot-participants"
+              >
+                <ParticipantsPanel groupId={session.activeGroupId} />
+              </div>
+              <div id="grupo" className="dashboard-slot dashboard-slot-group">
+                <GroupSettings groupId={session.activeGroupId} />
+              </div>
+            </aside>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </>
   );
 }
 

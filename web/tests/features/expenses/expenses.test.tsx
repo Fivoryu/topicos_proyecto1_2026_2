@@ -179,7 +179,12 @@ describe("expenses panel", () => {
 
     const row = await screen.findByTestId("expense-e1");
     expect(within(row).getByText("Bs. 100,00")).toBeInTheDocument();
-    expect(within(row).getByText(/pagado por Ana, Beto \(archivado\)/i)).toBeInTheDocument();
+    expect(
+      within(row).getByText(/pagado por Ana, Beto \(archivado\)/i),
+    ).toBeInTheDocument();
+    expect(
+      within(row).getByText(/beneficiarios Ana, Beto \(archivado\), Carla/i),
+    ).toBeInTheDocument();
     fireEvent.click(within(row).getByRole("button", { name: /editar gasto/i }));
 
     const archivedBeneficiary =

@@ -212,7 +212,8 @@ export function ExpensesPanel({
         const problem = await readFeatureError(error);
         const next: FeatureErrors = { form: formatFeatureError(problem) };
         problem.fieldErrors.forEach(({ field, message }) => {
-          next[field] = `${problem.code}: ${message ? featureErrorMessage(problem) : "Dato no válido."}`;
+          next[field] =
+            `${problem.code}: ${message ? featureErrorMessage(problem) : "Dato no válido."}`;
         });
         if (!problem.fieldErrors.length) {
           if (problem.code === "invalid_amount") next.amount = next.form;
@@ -339,7 +340,9 @@ export function ExpensesPanel({
             <form className="feature-form expense-form" onSubmit={submit}>
               <div className="expense-form-title">
                 <div>
-                  <p className="feature-eyebrow">{editingId ? "Edición" : "Nuevo gasto"}</p>
+                  <p className="feature-eyebrow">
+                    {editingId ? "Edición" : "Nuevo gasto"}
+                  </p>
                   <h3>{editingId ? "Editar gasto" : "Registrar gasto"}</h3>
                 </div>
                 {editingId && (
@@ -356,7 +359,9 @@ export function ExpensesPanel({
 
               <div className="expense-basic-fields">
                 <div className="feature-field">
-                  <label htmlFor="expense-description">Descripción del gasto</label>
+                  <label htmlFor="expense-description">
+                    Descripción del gasto
+                  </label>
                   <input
                     id="expense-description"
                     value={form.description}
@@ -384,7 +389,9 @@ export function ExpensesPanel({
                     placeholder="0.00"
                     aria-invalid={Boolean(errorText(errors, "amount"))}
                     aria-describedby={
-                      errorText(errors, "amount") ? fieldErrorId("amount") : undefined
+                      errorText(errors, "amount")
+                        ? fieldErrorId("amount")
+                        : undefined
                     }
                     disabled={mutation.isPending}
                   />
@@ -403,139 +410,155 @@ export function ExpensesPanel({
               <div className="expense-detail-grid">
                 <fieldset className="expense-fieldset">
                   <legend>Pagadores</legend>
-                  {form.contributors.map((contributor, index) => {
-                    const participantError =
-                      errors[`contributors.${index}.participantId`];
-                    const amountError =
-                      errors[`contributors.${index}.amount`] ?? errors.contributors;
-                    return (
-                      <div
-                        className="contributor-row"
-                        key={`${index}-${contributor.participantId}`}
+                  <div className="expense-fieldset-body">
+                    {form.contributors.map((contributor, index) => {
+                      const participantError =
+                        errors[`contributors.${index}.participantId`];
+                      const amountError =
+                        errors[`contributors.${index}.amount`] ??
+                        errors.contributors;
+                      return (
+                        <div
+                          className="contributor-row"
+                          key={`${index}-${contributor.participantId}`}
+                        >
+                          <div className="feature-field">
+                            <label htmlFor={`contributor-${index}-participant`}>
+                              Pagador {index + 1}
+                            </label>
+                            <select
+                              id={`contributor-${index}-participant`}
+                              value={contributor.participantId}
+                              onChange={(event) =>
+                                updateContributor(index, {
+                                  participantId: event.target.value,
+                                })
+                              }
+                              aria-invalid={Boolean(participantError)}
+                              disabled={mutation.isPending}
+                            >
+                              {formParticipants.map((participant) => (
+                                <option
+                                  key={participant.id}
+                                  value={participant.id}
+                                >
+                                  {displayParticipant(participant)}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="feature-field">
+                            <label htmlFor={`contributor-${index}-amount`}>
+                              Monto del pagador {index + 1}
+                            </label>
+                            <input
+                              id={`contributor-${index}-amount`}
+                              inputMode="decimal"
+                              value={contributor.amount}
+                              onChange={(event) =>
+                                updateContributor(index, {
+                                  amount: event.target.value,
+                                })
+                              }
+                              aria-invalid={Boolean(amountError)}
+                              aria-describedby={
+                                amountError
+                                  ? fieldErrorId("contributors")
+                                  : undefined
+                              }
+                              disabled={mutation.isPending}
+                            />
+                          </div>
+                          {form.contributors.length > 1 && (
+                            <button
+                              type="button"
+                              className="feature-button feature-button-ghost contributor-remove"
+                              onClick={() =>
+                                setForm((current) => ({
+                                  ...current,
+                                  contributors: current.contributors.filter(
+                                    (_, contributorIndex) =>
+                                      contributorIndex !== index,
+                                  ),
+                                }))
+                              }
+                              disabled={mutation.isPending}
+                            >
+                              Quitar
+                            </button>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {errors.contributors && (
+                      <p
+                        id={fieldErrorId("contributors")}
+                        className="feature-error"
+                        role="alert"
                       >
-                        <div className="feature-field">
-                          <label htmlFor={`contributor-${index}-participant`}>
-                            Pagador {index + 1}
-                          </label>
-                          <select
-                            id={`contributor-${index}-participant`}
-                            value={contributor.participantId}
-                            onChange={(event) =>
-                              updateContributor(index, {
-                                participantId: event.target.value,
-                              })
-                            }
-                            aria-invalid={Boolean(participantError)}
-                            disabled={mutation.isPending}
-                          >
-                            {formParticipants.map((participant) => (
-                              <option key={participant.id} value={participant.id}>
-                                {displayParticipant(participant)}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="feature-field">
-                          <label htmlFor={`contributor-${index}-amount`}>
-                            Monto del pagador {index + 1}
-                          </label>
-                          <input
-                            id={`contributor-${index}-amount`}
-                            inputMode="decimal"
-                            value={contributor.amount}
-                            onChange={(event) =>
-                              updateContributor(index, { amount: event.target.value })
-                            }
-                            aria-invalid={Boolean(amountError)}
-                            aria-describedby={
-                              amountError ? fieldErrorId("contributors") : undefined
-                            }
-                            disabled={mutation.isPending}
-                          />
-                        </div>
-                        {form.contributors.length > 1 && (
-                          <button
-                            type="button"
-                            className="feature-button feature-button-ghost contributor-remove"
-                            onClick={() =>
-                              setForm((current) => ({
-                                ...current,
-                                contributors: current.contributors.filter(
-                                  (_, contributorIndex) => contributorIndex !== index,
-                                ),
-                              }))
-                            }
-                            disabled={mutation.isPending}
-                          >
-                            Quitar
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                  {errors.contributors && (
-                    <p
-                      id={fieldErrorId("contributors")}
-                      className="feature-error"
-                      role="alert"
+                        {errors.contributors}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      className="feature-button feature-button-secondary expense-inline-action"
+                      onClick={() =>
+                        setForm((current) => ({
+                          ...current,
+                          contributors: [
+                            ...current.contributors,
+                            {
+                              participantId: formParticipants[0]?.id ?? "",
+                              amount: "",
+                            },
+                          ],
+                        }))
+                      }
+                      disabled={mutation.isPending}
                     >
-                      {errors.contributors}
-                    </p>
-                  )}
-                  <button
-                    type="button"
-                    className="feature-button feature-button-secondary expense-inline-action"
-                    onClick={() =>
-                      setForm((current) => ({
-                        ...current,
-                        contributors: [
-                          ...current.contributors,
-                          {
-                            participantId: formParticipants[0]?.id ?? "",
-                            amount: "",
-                          },
-                        ],
-                      }))
-                    }
-                    disabled={mutation.isPending}
-                  >
-                    + Agregar pagador
-                  </button>
+                      + Agregar pagador
+                    </button>
+                  </div>
                 </fieldset>
 
                 <fieldset className="expense-fieldset beneficiaries-fieldset">
                   <legend>Beneficiarios</legend>
-                  <div className="beneficiary-grid">
-                    {formParticipants.map((participant) => (
-                      <label className="checkbox-field" key={participant.id}>
-                        <input
-                          type="checkbox"
-                          checked={form.beneficiaryIds.includes(participant.id)}
-                          onChange={(event) => {
-                            const beneficiaryIds = event.target.checked
-                              ? [...form.beneficiaryIds, participant.id]
-                              : form.beneficiaryIds.filter(
-                                  (id) => id !== participant.id,
-                                );
-                            updateForm({ beneficiaryIds });
-                            setFieldError("beneficiaries", null);
-                            setFieldError("form", null);
-                          }}
-                          disabled={mutation.isPending}
-                        />
-                        <span>{displayParticipant(participant)}</span>
-                      </label>
-                    ))}
+                  <div className="expense-fieldset-body">
+                    <div className="beneficiary-grid">
+                      {formParticipants.map((participant) => (
+                        <label className="checkbox-field" key={participant.id}>
+                          <input
+                            type="checkbox"
+                            aria-label={`Beneficiario ${displayParticipant(participant)}`}
+                            checked={form.beneficiaryIds.includes(
+                              participant.id,
+                            )}
+                            onChange={(event) => {
+                              const beneficiaryIds = event.target.checked
+                                ? [...form.beneficiaryIds, participant.id]
+                                : form.beneficiaryIds.filter(
+                                    (id) => id !== participant.id,
+                                  );
+                              updateForm({ beneficiaryIds });
+                              setFieldError("beneficiaries", null);
+                              setFieldError("form", null);
+                            }}
+                            disabled={mutation.isPending}
+                          />
+                          <span>{displayParticipant(participant)}</span>
+                        </label>
+                      ))}
+                    </div>
+                    {errors.beneficiaries && (
+                      <p
+                        id={fieldErrorId("beneficiaries")}
+                        className="feature-error"
+                        role="alert"
+                      >
+                        {errors.beneficiaries}
+                      </p>
+                    )}
                   </div>
-                  {errors.beneficiaries && (
-                    <p
-                      id={fieldErrorId("beneficiaries")}
-                      className="feature-error"
-                      role="alert"
-                    >
-                      {errors.beneficiaries}
-                    </p>
-                  )}
                 </fieldset>
               </div>
 
@@ -561,7 +584,9 @@ export function ExpensesPanel({
                       ? "Guardar gasto"
                       : "Crear gasto"}
                 </button>
-                <span className="feature-help">Los cálculos se actualizan automáticamente.</span>
+                <span className="feature-help">
+                  Los cálculos se actualizan automáticamente.
+                </span>
               </div>
             </form>
           ) : (
@@ -577,7 +602,9 @@ export function ExpensesPanel({
               <p className="feature-eyebrow">Historial</p>
               <h3>Gastos registrados</h3>
             </div>
-            <span className="history-count">{expensesQuery.data?.length ?? 0}</span>
+            <span className="history-count">
+              {expensesQuery.data?.length ?? 0}
+            </span>
           </div>
 
           <ul className="expense-list" aria-label="Lista de gastos">
@@ -594,6 +621,12 @@ export function ExpensesPanel({
                       Pagado por{" "}
                       {expenseToShow.contributors
                         .map((contributor) => displayParticipant(contributor))
+                        .join(", ")}
+                    </p>
+                    <p className="feature-help">
+                      Beneficiarios{" "}
+                      {expenseToShow.beneficiaries
+                        .map((beneficiary) => displayParticipant(beneficiary))
                         .join(", ")}
                     </p>
                   </div>
