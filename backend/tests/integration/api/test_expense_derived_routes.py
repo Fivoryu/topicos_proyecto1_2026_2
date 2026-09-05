@@ -1,8 +1,11 @@
 """Integration coverage for protected expense and derived read routes."""
 
+import asyncio
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
+from threading import Barrier
 from types import SimpleNamespace
+from typing import Any, cast
 
 import pytest
 from backend.app.adapters.security.sessions import (
@@ -30,7 +33,9 @@ from backend.app.domain.balance_service import compute_balances
 from backend.app.domain.expense_rules import _normalise_expense
 from backend.app.domain.settlement_service import build_settlement
 from backend.app.domain.split_service import equal_split
-from fastapi import FastAPI
+from backend.app.main import _wire_request_services
+from backend.app.main import app as production_app
+from fastapi import Depends, FastAPI
 from httpx import ASGITransport, AsyncClient
 
 GROUP_ID = "group-demo"
@@ -446,3 +451,67 @@ async def test_balances_and_settlement_are_server_derived_stable_and_expose_poli
     assert no_session.status_code == 401
     assert no_session.json()["error_code"] == "unauthorized"
     assert len(participants.rows) == 4
+
+
+class _TrackingSession:
+    def __init__(self, marker: int) -> None:
+        self.marker = marker
+        self.closed = False
+
+    def close(self) -> None:
+        self.closed = True
+
+
+class _TrackingSessionFactory:
+    def __init__(self) -> None:
+        self.sessions: list[_TrackingSession] = []
+
+    def __call__(self) -> _TrackingSession:
+        session = _TrackingSession(len(self.sessions))
+        self.sessions.append(session)
+        return session
+
+
+@pytest.mark.asyncio
+async def test_concurrent_http_requests_receive_isolated_service_sessions():
+    """Concurrent REST requests must not share the SQLAlchemy session graph."""
+
+    session_factory = _TrackingSessionFactory()
+    shared_session = session_factory()
+    original_state = dict(production_app.state._state)
+    path = "/__test__/request-scoped-services"
+    rendezvous = Barrier(2)
+
+    def inspect_services(
+        auth_service=Depends(get_auth_service),
+        group_service=Depends(get_group_service),
+    ):
+        rendezvous.wait(timeout=5)
+        return {
+            "auth_session": auth_service._sessions.session.marker,
+            "group_session": group_service._groups.session.marker,
+        }
+
+    production_app.router.add_api_route(path, inspect_services, methods=["GET"])
+    route = production_app.router.routes[-1]
+    _wire_request_services(production_app, cast(Any, shared_session))
+    production_app.state.session_factory = session_factory
+
+    try:
+        async with AsyncClient(
+            transport=ASGITransport(app=production_app), base_url="http://testserver"
+        ) as client:
+            responses = await asyncio.gather(client.get(path), client.get(path))
+
+        assert [response.status_code for response in responses] == [200, 200]
+        payloads = [response.json() for response in responses]
+        assert {payload["auth_session"] for payload in payloads} == {1, 2}
+        assert all(
+            payload["auth_session"] == payload["group_session"] for payload in payloads
+        )
+        assert all(session.closed for session in session_factory.sessions[1:])
+    finally:
+        production_app.router.routes.remove(route)
+        production_app.state._state.clear()
+        production_app.state._state.update(original_state)
+        shared_session.close()

@@ -19,8 +19,15 @@ MISSING = object()
 Identifier = UUID | str
 
 
+def _state_value(request: Request, name: str, default: Any = None) -> Any:
+    value = getattr(request.state, name, None)
+    if value is not None:
+        return value
+    return getattr(request.app.state, name, default)
+
+
 def _required_state(request: Request, name: str) -> Any:
-    value = getattr(request.app.state, name, None)
+    value = _state_value(request, name)
     if value is None:
         raise RuntimeError(f"The API service {name!r} is not configured.")
     return value
@@ -46,8 +53,8 @@ def get_participant_repository(
     request: Request,
     participant_service: Any = Depends(get_participant_service),
 ) -> Any:
-    return getattr(
-        request.app.state,
+    return _state_value(
+        request,
         "participant_repository",
         getattr(participant_service, "_participants", participant_service),
     )
@@ -57,8 +64,8 @@ def get_expense_repository(
     request: Request,
     expense_service: Any = Depends(get_expense_service),
 ) -> Any:
-    return getattr(
-        request.app.state,
+    return _state_value(
+        request,
         "expense_repository",
         getattr(expense_service, "_expenses", expense_service),
     )

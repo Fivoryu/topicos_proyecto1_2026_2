@@ -76,12 +76,21 @@ def _attr(record: object, *names: str, default: object = None) -> object:
     return default
 
 
+def _state_value(request: Request, name: str, default: Any = None) -> Any:
+    """Prefer HTTP request state while retaining app-state compatibility."""
+
+    value = getattr(request.state, name, None)
+    if value is not None:
+        return value
+    return getattr(request.app.state, name, default)
+
+
 def get_auth_service(request: Request) -> AuthService:
     """Resolve the request application's configured auth service."""
 
     return cast(
         AuthService,
-        getattr(request.app.state, "auth_service", _UNAVAILABLE_AUTH_SERVICE),
+        _state_value(request, "auth_service", _UNAVAILABLE_AUTH_SERVICE),
     )
 
 
@@ -91,8 +100,8 @@ def get_membership_repository(
 ) -> Any:
     """Resolve the requested-group membership repository."""
 
-    return getattr(
-        request.app.state,
+    return _state_value(
+        request,
         "membership_repository",
         getattr(auth_service, "_memberships", None),
     )
@@ -104,8 +113,8 @@ def get_group_repository(
 ) -> Any:
     """Resolve the server-owned group repository."""
 
-    return getattr(
-        request.app.state,
+    return _state_value(
+        request,
         "group_repository",
         getattr(auth_service, "_groups", None),
     )

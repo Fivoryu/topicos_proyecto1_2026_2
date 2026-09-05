@@ -1,11 +1,12 @@
 """FastAPI application entrypoint for Cuentas Claras."""
 
+from collections.abc import Awaitable, Callable
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any, cast
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -82,6 +83,7 @@ async def lifespan(_: FastAPI):
     session_factory = sessionmaker(
         bind=sync_engine, expire_on_commit=False, class_=Session
     )
+    app.state.session_factory = session_factory
     session = session_factory()
     _wire_request_services(app, session)
     try:
@@ -92,9 +94,12 @@ async def lifespan(_: FastAPI):
         await dispose_engine()
 
 
-def _wire_request_services(app: FastAPI, session: Session) -> None:
+def _wire_request_services(
+    app: FastAPI, session: Session, *, target_state: Any | None = None
+) -> None:
     """Attach the repository-backed services the request dependencies read."""
 
+    state = app.state if target_state is None else target_state
     account_repository = AccountRepositoryAdapter(session)
     session_repository = SessionRepositoryAdapter(session)
     membership_repository = MembershipRepositoryAdapter(session)
@@ -113,7 +118,11 @@ def _wire_request_services(app: FastAPI, session: Session) -> None:
         session_ttl=timedelta(seconds=settings.session_ttl),
     )
     unit_of_work = cast(Any, SqlAlchemyUnitOfWork(session=session))
-    invalidation_publisher = getattr(app.state, "broadcaster", None)
+    invalidation_publisher = getattr(
+        target_state if target_state is not None else app.state,
+        "broadcaster",
+        getattr(app.state, "broadcaster", None),
+    )
     participant_service = ParticipantService(
         participant_repository,
         unit_of_work,
@@ -134,15 +143,15 @@ def _wire_request_services(app: FastAPI, session: Session) -> None:
         authorization,
         invalidation_publisher=invalidation_publisher,
     )
-    app.state.auth_service = auth_service
-    app.state.membership_repository = membership_repository
-    app.state.group_repository = group_repository
-    app.state.participant_repository = participant_repository
-    app.state.expense_repository = expense_repository
-    app.state.participant_service = participant_service
-    app.state.expense_service = expense_service
-    app.state.derived_service = derived_service
-    app.state.group_service = group_service
+    state.auth_service = auth_service
+    state.membership_repository = membership_repository
+    state.group_repository = group_repository
+    state.participant_repository = participant_repository
+    state.expense_repository = expense_repository
+    state.participant_service = participant_service
+    state.expense_service = expense_service
+    state.derived_service = derived_service
+    state.group_service = group_service
 
 
 settings = get_settings()
@@ -160,6 +169,26 @@ app.add_middleware(
 )
 app.state.settings = settings
 app.state.broadcaster = GroupEventBroadcaster()
+
+
+@app.middleware("http")
+async def _request_scoped_services(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
+    """Give each HTTP request its own synchronous SQLAlchemy service graph."""
+
+    session_factory = getattr(request.app.state, "session_factory", None)
+    if session_factory is None:
+        return await call_next(request)
+
+    session = session_factory()
+    try:
+        _wire_request_services(request.app, session, target_state=request.state)
+        return await call_next(request)
+    finally:
+        session.close()
+
+
 register_error_handlers(app)
 app.include_router(auth_router)
 app.include_router(groups_router)
