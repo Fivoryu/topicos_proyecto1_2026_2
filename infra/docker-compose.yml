@@ -16,5 +16,58 @@ services:
       retries: 5
       start_period: 5s
 
+  backend:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-}"
+      POSTGRES_DB: "${POSTGRES_DB:-cuentas_claras}"
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-postgres}"
+      POSTGRES_USER: "${POSTGRES_USER:-postgres}"
+      CORS_ORIGINS: "${CORS_ORIGINS:-http://localhost:5173}"
+      SESSION_TTL: "${SESSION_TTL:-28800}"
+      # A missing host variable leaves the setting unset so the backend's
+      # local-development default remains active. Set either variable
+      # externally to override that default for a custom deployment.
+      DEMO_OWNER_PASSWORD:
+      DEMO_MEMBER_PASSWORD:
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - >-
+          import urllib.request;
+          urllib.request.urlopen("http://127.0.0.1:8000/health", timeout=3)
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  frontend:
+    build:
+      context: ../web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-}"
+        VITE_GROUP_ID: "${VITE_GROUP_ID:-00000000-0000-4000-8000-000000000001}"
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "5173:80"
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
 volumes:
   postgres_data:
