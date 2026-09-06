@@ -10,6 +10,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   AuthError,
+  generatedAuthClient,
   type AuthClient,
   SessionProvider,
   useSession,
@@ -64,12 +65,112 @@ function SessionStatus() {
   );
 }
 
+function SessionDetails() {
+  const {
+    status,
+    session: currentSession,
+    errorCode,
+    errorMessage,
+    notice,
+  } = useSession();
+  return (
+    <output data-testid="session-details">
+      {status}|{currentSession ? "session" : "none"}|{errorCode ?? "none"}|
+      {errorMessage ?? "none"}|{notice ?? "none"}
+    </output>
+  );
+}
+
 afterEach(() => {
   document.cookie = "cc_csrf=; Max-Age=0; Path=/";
   vi.restoreAllMocks();
 });
 
 describe("protected route and session bootstrap", () => {
+  it("maps a successful 204 before JSON parsing", async () => {
+    const fetchApi = vi
+      .spyOn(globalThis, "fetch")
+      .mockResolvedValue(new Response(null, { status: 204 }));
+
+    await expect(generatedAuthClient.getSession()).resolves.toBeUndefined();
+    expect(fetchApi).toHaveBeenCalledTimes(1);
+  });
+
+  it("maps anonymous 204 to a clean signed-out state without protected queries", async () => {
+    const fetchGroup = vi.fn().mockResolvedValue({ name: "Demo group" });
+    const client = makeClient({
+      getSession: vi.fn().mockResolvedValue(undefined as never),
+    });
+
+    function ProtectedQuery() {
+      const { isAuthenticated } = useSession();
+      useQuery({
+        queryKey: ["group", "group-demo"],
+        queryFn: fetchGroup,
+        enabled: isAuthenticated,
+      });
+      return <p>Datos protegidos del grupo</p>;
+    }
+
+    render(
+      <SessionProvider authClient={client}>
+        <SessionDetails />
+        <ProtectedQuery />
+      </SessionProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("session-details")).toHaveTextContent(
+        "signedOut|none|none|none|none",
+      ),
+    );
+    expect(client.getSession).toHaveBeenCalledTimes(1);
+    expect(fetchGroup).not.toHaveBeenCalled();
+  });
+
+  it("uses the bootstrap CSRF cookie for immediate login", async () => {
+    document.cookie = "cc_csrf=bootstrap-token; Path=/";
+    const client = makeClient({
+      getSession: vi.fn().mockResolvedValue(undefined as never),
+    });
+
+    function LoginButton() {
+      const { login } = useSession();
+      return (
+        <button
+          type="button"
+          onClick={() =>
+            void login({ loginName: "demo.member", password: "secret" })
+          }
+        >
+          Login
+        </button>
+      );
+    }
+
+    render(
+      <SessionProvider authClient={client}>
+        <SessionStatus />
+        <LoginButton />
+      </SessionProvider>,
+    );
+
+    await waitFor(() =>
+      expect(screen.getByTestId("session-status")).toHaveTextContent(
+        "signedOut:none",
+      ),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Login" }));
+
+    await waitFor(() =>
+      expect(client.login).toHaveBeenCalledWith({
+        loginName: "demo.member",
+        password: "secret",
+        csrfToken: "bootstrap-token",
+      }),
+    );
+  });
+
   it("does not run group queries until the server authenticates the session", async () => {
     const bootstrap = deferred<typeof session>();
     const fetchGroup = vi.fn().mockResolvedValue({ name: "Demo group" });

@@ -110,7 +110,7 @@ void (empty response body)
 
 Session
 
-Return server identity and initialize CSRF even for an anonymous probe.
+Session probe outcomes: no cc_session without the exact X-Client: mobile marker returns browser HTTP 204 with no content; no cc_session with that exact marker remains HTTP 401. Every present cc_session is validated, and unusable values remain HTTP 401, including session_expired where emitted. All outcomes initialize the server-owned root cc_csrf cookie and clean the legacy /api cookie. This anonymous exception applies only to the session probe and does not authorize protected resources.
 
 ### Example
 ```dart

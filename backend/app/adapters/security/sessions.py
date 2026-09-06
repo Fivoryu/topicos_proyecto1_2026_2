@@ -17,6 +17,10 @@ CSRF_COOKIE_NAME = "cc_csrf"
 # document.cookie only exposes cookies whose path matches the document URL;
 # the session cookie stays scoped to /api because it is sent automatically.
 CSRF_COOKIE_PATH = "/"
+# Legacy browsers may retain a readable CSRF cookie scoped to /api.
+# Expire that path whenever the browser session is bootstrapped so duplicate
+# same-name cookies cannot shadow the current root-path cookie.
+LEGACY_CSRF_COOKIE_PATH = "/api"
 CSRF_HEADER_NAME = "X-CSRF-Token"
 # Native clients do not send a browser Origin. The exact marker is required
 # only for that missing-origin path; configured Origins remain authoritative
@@ -49,6 +53,7 @@ def set_csrf_cookie(
 ) -> str:
     """Set the readable CSRF companion cookie and return its value."""
 
+    response.delete_cookie(CSRF_COOKIE_NAME, path=LEGACY_CSRF_COOKIE_PATH)
     csrf_token = token or generate_csrf_token()
     response.set_cookie(
         key=CSRF_COOKIE_NAME,
@@ -86,6 +91,7 @@ def clear_session_cookies(response: Any) -> None:
 
     response.delete_cookie(SESSION_COOKIE_NAME, path=SESSION_COOKIE_PATH)
     response.delete_cookie(CSRF_COOKIE_NAME, path=CSRF_COOKIE_PATH)
+    response.delete_cookie(CSRF_COOKIE_NAME, path=LEGACY_CSRF_COOKIE_PATH)
 
 
 # Singular aliases keep call sites readable while preserving one cookie contract.

@@ -8,6 +8,8 @@ from fastapi import APIRouter, Depends, Request, Response
 
 from backend.app.adapters.security.sessions import (
     CSRF_COOKIE_NAME,
+    NATIVE_CLIENT_HEADER_NAME,
+    NATIVE_CLIENT_MARKER,
     SESSION_COOKIE_NAME,
     clear_session_cookies,
     set_csrf_cookie,
@@ -62,15 +64,20 @@ def session(
     """Return server identity and initialize CSRF even for an anonymous probe."""
 
     token = request.cookies.get(SESSION_COOKIE_NAME)
+    if (
+        token is None
+        and request.headers.get(NATIVE_CLIENT_HEADER_NAME) != NATIVE_CLIENT_MARKER
+    ):
+        anonymous = Response(status_code=204)
+        set_csrf_cookie(anonymous, secure=_secure_for(request))
+        return anonymous
     try:
         identity = auth_service.session_identity(token)
     except AuthenticationError as error:
         failure = error_response(error.error_code, str(error))
-        if request.cookies.get(CSRF_COOKIE_NAME) is None:
-            set_csrf_cookie(failure, secure=_secure_for(request))
+        set_csrf_cookie(failure, secure=_secure_for(request))
         return failure
-    if request.cookies.get(CSRF_COOKIE_NAME) is None:
-        set_csrf_cookie(response, secure=_secure_for(request))
+    set_csrf_cookie(response, secure=_secure_for(request))
     return SessionIdentityResponse.from_identity(identity)
 
 

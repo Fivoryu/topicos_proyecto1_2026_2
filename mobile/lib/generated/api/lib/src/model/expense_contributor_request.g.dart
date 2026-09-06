@@ -8,14 +8,19 @@ part of 'expense_contributor_request.dart';
 
 ExpenseContributorRequest _$ExpenseContributorRequestFromJson(
   Map<String, dynamic> json,
-) => $checkedCreate('ExpenseContributorRequest', json, ($checkedConvert) {
-  $checkKeys(json, requiredKeys: const ['amount', 'participant_id']);
-  final val = ExpenseContributorRequest(
-    amount: $checkedConvert('amount', (v) => v as String),
-    participantId: $checkedConvert('participant_id', (v) => v as String),
-  );
-  return val;
-}, fieldKeyMap: const {'participantId': 'participant_id'});
+) => $checkedCreate(
+  'ExpenseContributorRequest',
+  json,
+  ($checkedConvert) {
+    $checkKeys(json, requiredKeys: const ['amount', 'participant_id']);
+    final val = ExpenseContributorRequest(
+      amount: $checkedConvert('amount', (v) => v as String),
+      participantId: $checkedConvert('participant_id', (v) => v as String),
+    );
+    return val;
+  },
+  fieldKeyMap: const {'participantId': 'participant_id'},
+);
 
 Map<String, dynamic> _$ExpenseContributorRequestToJson(
   ExpenseContributorRequest instance,

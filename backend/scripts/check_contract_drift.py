@@ -20,6 +20,11 @@ _WEB_GENERATOR = "typescript-fetch"
 _MOBILE_GENERATOR = "dart-dio"
 _LEGACY_DART_SDK = "sdk: '>=3.5.0 <4.0.0'"
 _HOST_DART_SDK = "sdk: '>=3.10.0 <4.0.0'"
+_DART_ERROR_RESPONSE_IMPORT = "import 'package:openapi/src/model/error_response.dart';"
+_DART_UNUSED_IMPORT_SUPPRESSION = "// ignore: unused_import"
+_DART_GENERATED_TEST_SUPPRESSION = (
+    "// ignore_for_file: uri_does_not_exist, undefined_function, unused_local_variable"
+)
 
 
 def _executable(name: str, windows_name: str | None = None) -> str:
@@ -88,6 +93,7 @@ def generate_clients(
         _WEB_GENERATOR,
         "supportsES6=true",
     )
+    _normalize_web_api_paths(web_output)
     _run_generator(
         repository_root,
         contract,
@@ -96,6 +102,76 @@ def generate_clients(
         "serializationLibrary=json_serializable",
     )
     _normalize_mobile_pubspec(mobile_output)
+    _normalize_mobile_api_imports(mobile_output)
+    _normalize_mobile_auth_test(mobile_output)
+
+
+def _normalize_web_api_paths(
+    web_output: Path, temporary_root: Path | None = None
+) -> None:
+    """Keep generated API path declarations stable after host linting.
+
+    The TypeScript generator emits mutable ``let urlPath`` declarations, while
+    the host lint normalizes these generated declarations to ``const`` when the
+    path is not reassigned.  Restrict the normalization to TypeScript files in
+    the generated API directory so unrelated generated code remains unchanged.
+    """
+
+    generated_root = temporary_root or web_output.parent
+    api_root = _confined_generated_path(
+        generated_root,
+        web_output / "apis",
+        operation="read generated output",
+    )
+    if not api_root.is_dir():
+        return
+
+    for path in sorted(api_root.rglob("*.ts")):
+        path = _confined_generated_path(
+            generated_root, path, operation="read generated file"
+        )
+        try:
+            source = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise RuntimeError(
+                f"generated web output is malformed or unreadable: {path}"
+            ) from exc
+
+        lines = source.splitlines(keepends=True)
+        updated_lines: list[str] = []
+        changed = False
+        for index, line in enumerate(lines):
+            indentation_length = len(line) - len(line.lstrip())
+            indentation = line[:indentation_length]
+            content = line[indentation_length:]
+            if content.startswith("let urlPath ="):
+                next_declaration = next(
+                    (
+                        candidate_index
+                        for candidate_index in range(index + 1, len(lines))
+                        if lines[candidate_index]
+                        .lstrip()
+                        .startswith(("let urlPath =", "const urlPath ="))
+                    ),
+                    len(lines),
+                )
+                path_is_reassigned = any(
+                    candidate.lstrip().startswith("urlPath =")
+                    for candidate in lines[index + 1 : next_declaration]
+                )
+                if not path_is_reassigned:
+                    line = f"{indentation}const{content[3:]}"
+                    changed = True
+            updated_lines.append(line)
+
+        if not changed:
+            continue
+        try:
+            path.write_text("".join(updated_lines), encoding="utf-8", newline="")
+        except OSError as exc:
+            raise RuntimeError(
+                f"cannot normalize generated web output: {path}"
+            ) from exc
 
 
 def _run_generator(
@@ -187,6 +263,110 @@ def _normalize_mobile_pubspec(
             raise RuntimeError(
                 f"cannot normalize generated mobile output: {path}"
             ) from exc
+
+
+def _normalize_mobile_api_imports(
+    mobile_output: Path, temporary_root: Path | None = None
+) -> None:
+    """Keep generated ErrorResponse imports stable when they are unused.
+
+    The pinned Dart generator emits the import for every API file, while the
+    host lint autofix removes it when the generated API does not reference the
+    type.  A file-local suppression keeps the generated output reproducible
+    without removing imports that are actually used.
+    """
+
+    generated_root = temporary_root or mobile_output.parent
+    api_root = _confined_generated_path(
+        generated_root,
+        mobile_output / "lib" / "src" / "api",
+        operation="read generated output",
+    )
+    if not api_root.is_dir():
+        return
+
+    for path in sorted(api_root.rglob("*.dart")):
+        path = _confined_generated_path(
+            generated_root, path, operation="read generated file"
+        )
+        try:
+            source = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError) as exc:
+            raise RuntimeError(
+                f"generated mobile output is malformed or unreadable: {path}"
+            ) from exc
+
+        lines = source.splitlines(keepends=True)
+        for index, line in enumerate(lines):
+            if line.strip() != _DART_ERROR_RESPONSE_IMPORT:
+                continue
+
+            source_without_import = "".join(
+                candidate
+                for line_number, candidate in enumerate(lines)
+                if line_number != index
+            )
+            if "ErrorResponse" in source_without_import:
+                break
+            if (
+                index > 0
+                and lines[index - 1].strip() == _DART_UNUSED_IMPORT_SUPPRESSION
+            ):
+                break
+
+            line_ending = "\r\n" if line.endswith("\r\n") else "\n"
+            indentation = line[: len(line) - len(line.lstrip())]
+            lines.insert(
+                index,
+                f"{indentation}{_DART_UNUSED_IMPORT_SUPPRESSION}{line_ending}",
+            )
+            try:
+                path.write_text("".join(lines), encoding="utf-8", newline="")
+            except OSError as exc:
+                raise RuntimeError(
+                    f"cannot normalize generated mobile output: {path}"
+                ) from exc
+            break
+
+
+def _normalize_mobile_auth_test(
+    mobile_output: Path, temporary_root: Path | None = None
+) -> None:
+    """Keep the changed generated auth test analyzable in the host workspace.
+
+    The generated package declares ``test`` as a dev dependency, but the host
+    Dart analysis runner can inspect the copied test before its package config
+    is loaded. This file-level suppression is deterministic, scoped to the
+    generated auth scaffold, and applied to both committed and temporary
+    output without changing test behavior.
+    """
+
+    generated_root = temporary_root or mobile_output.parent
+    path = _confined_generated_path(
+        generated_root,
+        mobile_output / "test" / "auth_api_test.dart",
+        operation="read generated output",
+    )
+    if not path.is_file():
+        return
+    try:
+        source = path.read_text(encoding="utf-8")
+    except (OSError, UnicodeError) as exc:
+        raise RuntimeError(
+            f"generated mobile output is malformed or unreadable: {path}"
+        ) from exc
+    if source.startswith(_DART_GENERATED_TEST_SUPPRESSION):
+        return
+
+    line_ending = "\r\n" if "\r\n" in source else "\n"
+    try:
+        path.write_text(
+            f"{_DART_GENERATED_TEST_SUPPRESSION}{line_ending}{source}",
+            encoding="utf-8",
+            newline="",
+        )
+    except OSError as exc:
+        raise RuntimeError(f"cannot normalize generated mobile output: {path}") from exc
 
 
 def _build_mobile_parts(
@@ -294,6 +474,8 @@ __all__ = [
     "compare_directories",
     "find_drift",
     "generate_clients",
+    "_normalize_web_api_paths",
+    "_normalize_mobile_auth_test",
     "main",
     "run_drift_check",
 ]

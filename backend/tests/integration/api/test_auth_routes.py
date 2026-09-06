@@ -1,18 +1,21 @@
 """Integration coverage for the protected authentication HTTP surface."""
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 
 import pytest
 from backend.app.adapters.security.sessions import (
     CSRF_COOKIE_NAME,
     CSRF_HEADER_NAME,
+    NATIVE_CLIENT_HEADER_NAME,
+    NATIVE_CLIENT_MARKER,
     SESSION_COOKIE_NAME,
 )
 from backend.app.api.deps import get_auth_service
 from backend.app.api.errors import register_error_handlers
 from backend.app.api.routes.auth import router as auth_router
 from backend.app.application.auth_service import (
+    AuthenticationError,
     InvalidCredentialsError,
     SessionIdentity,
     UnauthorizedError,
@@ -26,6 +29,8 @@ class FakeAuthService:
     identities: dict[str, SessionIdentity]
     credentials: dict[tuple[str, str], SessionIdentity]
     revoked: set[str]
+    session_tokens: list[str | None] = field(default_factory=list)
+    session_errors: dict[str, AuthenticationError] = field(default_factory=dict)
 
     def login(self, login_name: str, password: str) -> SessionIdentity:
         identity = self.credentials.get((login_name, password))
@@ -37,6 +42,10 @@ class FakeAuthService:
         return identity
 
     def session_identity(self, token: str | None) -> SessionIdentity:
+        self.session_tokens.append(token)
+        configured_error = self.session_errors.get(token or "")
+        if configured_error is not None:
+            raise configured_error
         identity = self.identities.get(token or "")
         if identity is None or identity.token in self.revoked:
             raise UnauthorizedError()
@@ -194,7 +203,7 @@ async def test_session_survives_refresh_and_logout_invalidates_old_cookie(
 
 
 @pytest.mark.asyncio
-async def test_session_initializes_csrf_cookie_even_when_no_session_exists(
+async def test_browser_session_bootstrap_is_empty_204_and_initializes_csrf(
     auth_app, auth_service
 ):
     auth_app.dependency_overrides[get_auth_service] = lambda: auth_service
@@ -204,6 +213,135 @@ async def test_session_initializes_csrf_cookie_even_when_no_session_exists(
     ) as client:
         response = await client.get("/api/v1/auth/session")
 
+    assert response.status_code == 204
+    assert response.content == b""
+    assert auth_service.session_tokens == []
+    set_cookie = response.headers.get("set-cookie", "")
+    assert "cc_csrf=" in set_cookie
+    assert "cc_session=" not in set_cookie
+
+
+@pytest.mark.asyncio
+async def test_mobile_session_bootstrap_without_cookie_remains_unauthorized(
+    auth_app, auth_service
+):
+    auth_app.dependency_overrides[get_auth_service] = lambda: auth_service
+
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_app), base_url="http://testserver"
+    ) as client:
+        response = await client.get(
+            "/api/v1/auth/session",
+            headers={NATIVE_CLIENT_HEADER_NAME: NATIVE_CLIENT_MARKER},
+        )
+
     assert response.status_code == 401
     assert response.json()["error_code"] == "unauthorized"
-    assert "cc_csrf=" in response.headers.get("set-cookie", "")
+    assert auth_service.session_tokens == [None]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("marker", ["Mobile", "mobile ", "desktop"])
+async def test_non_exact_mobile_marker_uses_browser_bootstrap(
+    auth_app, auth_service, marker
+):
+    auth_app.dependency_overrides[get_auth_service] = lambda: auth_service
+
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_app), base_url="http://testserver"
+    ) as client:
+        response = await client.get(
+            "/api/v1/auth/session",
+            headers={NATIVE_CLIENT_HEADER_NAME: marker},
+        )
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert auth_service.session_tokens == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("token", "error_code"),
+    [
+        ("", "unauthorized"),
+        ("malformed-token", "unauthorized"),
+        ("unknown-token", "unauthorized"),
+        ("inactive-account-token", "unauthorized"),
+        ("expired-token", "session_expired"),
+    ],
+)
+async def test_present_unusable_session_cookies_stay_on_validation(
+    auth_app, auth_service, token, error_code
+):
+    auth_app.dependency_overrides[get_auth_service] = lambda: auth_service
+    if token in {"malformed-token", "inactive-account-token"}:
+        auth_service.session_errors[token] = UnauthorizedError()
+    elif error_code == "session_expired":
+        auth_service.session_errors[token] = AuthenticationError(
+            "session_expired", "The session has expired."
+        )
+
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_app), base_url="http://testserver"
+    ) as client:
+        _set_cookies(client, {SESSION_COOKIE_NAME: token})
+        response = await client.get("/api/v1/auth/session")
+
+    assert response.status_code == 401
+    assert response.json()["error_code"] == error_code
+    assert auth_service.session_tokens == [token]
+
+
+@pytest.mark.asyncio
+async def test_session_normalizes_legacy_csrf_cookie_before_browser_login(
+    auth_app, auth_service
+):
+    auth_app.dependency_overrides[get_auth_service] = lambda: auth_service
+
+    async with AsyncClient(
+        transport=ASGITransport(app=auth_app), base_url="http://testserver"
+    ) as client:
+        client.cookies.set(
+            CSRF_COOKIE_NAME,
+            "legacy-token",
+            domain="testserver.local",
+            path="/api",
+        )
+        client.cookies.set(
+            CSRF_COOKIE_NAME,
+            "browser-token",
+            domain="testserver.local",
+            path="/",
+        )
+
+        bootstrap = await client.get("/api/v1/auth/session")
+        assert bootstrap.status_code == 204
+        assert bootstrap.content == b""
+        set_cookie_headers = bootstrap.headers.get_list("set-cookie")
+        legacy_clear = next(
+            value
+            for value in set_cookie_headers
+            if value.startswith(f"{CSRF_COOKIE_NAME}=") and "Path=/api" in value
+        )
+        assert "Max-Age=0" in legacy_clear
+
+        browser_token = client.cookies.get(CSRF_COOKIE_NAME, path="/")
+        assert browser_token
+        csrf_cookies = [
+            cookie for cookie in client.cookies.jar if cookie.name == CSRF_COOKIE_NAME
+        ]
+        assert [(cookie.domain, cookie.path) for cookie in csrf_cookies] == [
+            ("testserver.local", "/")
+        ]
+
+        login = await client.post(
+            "/api/v1/auth/login",
+            headers={
+                "Origin": "http://localhost:5173",
+                CSRF_HEADER_NAME: browser_token,
+            },
+            json={"login_name": "demo.owner", "password": "owner-password"},
+        )
+
+    assert login.status_code == 200

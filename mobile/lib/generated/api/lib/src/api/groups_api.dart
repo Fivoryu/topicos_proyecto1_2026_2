@@ -9,12 +9,12 @@ import 'dart:convert';
 import 'package:openapi/src/deserialize.dart';
 import 'package:dio/dio.dart';
 
+// ignore: unused_import
 import 'package:openapi/src/model/error_response.dart';
 import 'package:openapi/src/model/group_response.dart';
 import 'package:openapi/src/model/group_update_request.dart';
 
 class GroupsApi {
-
   final Dio _dio;
 
   const GroupsApi(this._dio);
@@ -23,7 +23,7 @@ class GroupsApi {
   /// Return the authenticated group&#39;s server-owned settings.
   ///
   /// Parameters:
-  /// * [groupId] 
+  /// * [groupId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -33,7 +33,7 @@ class GroupsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [GroupResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<GroupResponse>> getGroupApiV1GroupsGroupIdGet({ 
+  Future<Response<GroupResponse>> getGroupApiV1GroupsGroupIdGet({
     required String groupId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -42,12 +42,15 @@ class GroupsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}'.replaceAll('{' r'group_id' '}', groupId.toString());
+    final _path = r'/api/v1/groups/{group_id}'.replaceAll(
+      '{'
+      r'group_id'
+      '}',
+      groupId.toString(),
+    );
     final _options = Options(
       method: r'GET',
-      headers: <String, dynamic>{
-        ...?headers,
-      },
+      headers: <String, dynamic>{...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -73,8 +76,14 @@ class GroupsApi {
     GroupResponse? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<GroupResponse, GroupResponse>(rawData, 'GroupResponse', growable: true);
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<GroupResponse, GroupResponse>(
+              rawData,
+              'GroupResponse',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -101,9 +110,9 @@ _responseData = rawData == null ? null : deserialize<GroupResponse, GroupRespons
   /// Update only settlement policy; authorization remains in GroupService.
   ///
   /// Parameters:
-  /// * [groupId] 
+  /// * [groupId]
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
-  /// * [groupUpdateRequest] 
+  /// * [groupUpdateRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -113,7 +122,7 @@ _responseData = rawData == null ? null : deserialize<GroupResponse, GroupRespons
   ///
   /// Returns a [Future] containing a [Response] with a [GroupResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<GroupResponse>> updateGroupApiV1GroupsGroupIdPatch({ 
+  Future<Response<GroupResponse>> updateGroupApiV1GroupsGroupIdPatch({
     required String groupId,
     required String xCSRFToken,
     required GroupUpdateRequest groupUpdateRequest,
@@ -124,13 +133,15 @@ _responseData = rawData == null ? null : deserialize<GroupResponse, GroupRespons
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}'.replaceAll('{' r'group_id' '}', groupId.toString());
+    final _path = r'/api/v1/groups/{group_id}'.replaceAll(
+      '{'
+      r'group_id'
+      '}',
+      groupId.toString(),
+    );
     final _options = Options(
       method: r'PATCH',
-      headers: <String, dynamic>{
-        r'X-CSRF-Token': xCSRFToken,
-        ...?headers,
-      },
+      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -149,13 +160,10 @@ _responseData = rawData == null ? null : deserialize<GroupResponse, GroupRespons
     dynamic _bodyData;
 
     try {
-_bodyData=jsonEncode(groupUpdateRequest);
-    } catch(error, stackTrace) {
+      _bodyData = jsonEncode(groupUpdateRequest);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
-          _dio.options,
-          _path,
-        ),
+        requestOptions: _options.compose(_dio.options, _path),
         type: DioExceptionType.unknown,
         error: error,
         stackTrace: stackTrace,
@@ -174,8 +182,14 @@ _bodyData=jsonEncode(groupUpdateRequest);
     GroupResponse? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<GroupResponse, GroupResponse>(rawData, 'GroupResponse', growable: true);
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<GroupResponse, GroupResponse>(
+              rawData,
+              'GroupResponse',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -197,5 +211,4 @@ _responseData = rawData == null ? null : deserialize<GroupResponse, GroupRespons
       extra: _response.extra,
     );
   }
-
 }

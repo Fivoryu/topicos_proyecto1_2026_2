@@ -80,6 +80,22 @@ def _add_transport_and_error_contract(document: dict[str, Any]) -> None:
                 _add_error_responses(operation, _AUTH_ERROR_CODES)
             elif is_session_probe:
                 _add_error_responses(operation, (401,))
+                operation["description"] = (
+                    "Session probe outcomes: no cc_session without the exact "
+                    "X-Client: mobile marker returns browser HTTP 204 with no "
+                    "content; no cc_session with that exact marker remains HTTP "
+                    "401. Every present cc_session is validated, and unusable "
+                    "values remain HTTP 401, including session_expired where "
+                    "emitted. All outcomes initialize the server-owned root "
+                    "cc_csrf cookie and clean the legacy /api cookie. This "
+                    "anonymous exception applies only to the session probe and "
+                    "does not authorize protected resources."
+                )
+                operation["responses"]["204"] = {
+                    "description": (
+                        "Anonymous browser session bootstrap with no content."
+                    )
+                }
 
 
 def _drop_framework_validation_schemas(document: dict[str, Any]) -> None:

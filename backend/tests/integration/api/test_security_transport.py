@@ -285,7 +285,12 @@ def test_session_and_csrf_cookie_flags_are_scoped_and_distinct():
     headers = response.headers.getlist("set-cookie")
 
     session_cookie = next(value for value in headers if value.startswith("cc_session="))
-    csrf_cookie = next(value for value in headers if value.startswith("cc_csrf="))
+    csrf_cookie = next(
+        value
+        for value in headers
+        if value.startswith("cc_csrf=")
+        and any(part.strip() == "Path=/" for part in value.split(";"))
+    )
     assert "HttpOnly" in session_cookie
     assert "SameSite=lax" in session_cookie
     assert "Path=/api" in session_cookie

@@ -75,6 +75,14 @@ describe("web transport", () => {
     expect(getCsrfToken()).toBe("csrf-token");
   });
 
+  it("returns no JSON value for a successful 204 response", async () => {
+    const client = createHttpClient({
+      fetchApi: vi.fn().mockResolvedValue(new Response(null, { status: 204 })),
+    });
+
+    await expect(client.json("/api/v1/auth/session")).resolves.toBeUndefined();
+  });
+
   it("maps a 401 response to a protected signed-out state", async () => {
     const onProtectedState = vi.fn();
     const client = createHttpClient({

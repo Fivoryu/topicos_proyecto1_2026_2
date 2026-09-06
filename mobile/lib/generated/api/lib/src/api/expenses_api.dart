@@ -9,12 +9,12 @@ import 'dart:convert';
 import 'package:openapi/src/deserialize.dart';
 import 'package:dio/dio.dart';
 
+// ignore: unused_import
 import 'package:openapi/src/model/error_response.dart';
 import 'package:openapi/src/model/expense_response.dart';
 import 'package:openapi/src/model/expense_write_request.dart';
 
 class ExpensesApi {
-
   final Dio _dio;
 
   const ExpensesApi(this._dio);
@@ -23,9 +23,9 @@ class ExpensesApi {
   /// Parse lexical money and create one complete source expense.
   ///
   /// Parameters:
-  /// * [groupId] 
+  /// * [groupId]
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
-  /// * [expenseWriteRequest] 
+  /// * [expenseWriteRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -35,7 +35,8 @@ class ExpensesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ExpenseResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ExpenseResponse>> createExpenseApiV1GroupsGroupIdExpensesPost({ 
+  Future<Response<ExpenseResponse>>
+  createExpenseApiV1GroupsGroupIdExpensesPost({
     required String groupId,
     required String xCSRFToken,
     required ExpenseWriteRequest expenseWriteRequest,
@@ -46,13 +47,15 @@ class ExpensesApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/expenses'.replaceAll('{' r'group_id' '}', groupId.toString());
+    final _path = r'/api/v1/groups/{group_id}/expenses'.replaceAll(
+      '{'
+      r'group_id'
+      '}',
+      groupId.toString(),
+    );
     final _options = Options(
       method: r'POST',
-      headers: <String, dynamic>{
-        r'X-CSRF-Token': xCSRFToken,
-        ...?headers,
-      },
+      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -71,13 +74,10 @@ class ExpensesApi {
     dynamic _bodyData;
 
     try {
-_bodyData=jsonEncode(expenseWriteRequest);
-    } catch(error, stackTrace) {
+      _bodyData = jsonEncode(expenseWriteRequest);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
-          _dio.options,
-          _path,
-        ),
+        requestOptions: _options.compose(_dio.options, _path),
         type: DioExceptionType.unknown,
         error: error,
         stackTrace: stackTrace,
@@ -96,8 +96,14 @@ _bodyData=jsonEncode(expenseWriteRequest);
     ExpenseResponse? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseResponse>(rawData, 'ExpenseResponse', growable: true);
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<ExpenseResponse, ExpenseResponse>(
+              rawData,
+              'ExpenseResponse',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -124,8 +130,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   /// Delete a source expense and all of its derived effect.
   ///
   /// Parameters:
-  /// * [groupId] 
-  /// * [expenseId] 
+  /// * [groupId]
+  /// * [expenseId]
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -136,7 +142,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>> deleteExpenseApiV1GroupsGroupIdExpensesExpenseIdDelete({ 
+  Future<Response<void>>
+  deleteExpenseApiV1GroupsGroupIdExpensesExpenseIdDelete({
     required String groupId,
     required String expenseId,
     required String xCSRFToken,
@@ -147,13 +154,22 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/expenses/{expense_id}'.replaceAll('{' r'group_id' '}', groupId.toString()).replaceAll('{' r'expense_id' '}', expenseId.toString());
+    final _path = r'/api/v1/groups/{group_id}/expenses/{expense_id}'
+        .replaceAll(
+          '{'
+          r'group_id'
+          '}',
+          groupId.toString(),
+        )
+        .replaceAll(
+          '{'
+          r'expense_id'
+          '}',
+          expenseId.toString(),
+        );
     final _options = Options(
       method: r'DELETE',
-      headers: <String, dynamic>{
-        r'X-CSRF-Token': xCSRFToken,
-        ...?headers,
-      },
+      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -183,10 +199,10 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   /// Validate a full replacement before changing the source expense.
   ///
   /// Parameters:
-  /// * [groupId] 
-  /// * [expenseId] 
+  /// * [groupId]
+  /// * [expenseId]
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
-  /// * [expenseWriteRequest] 
+  /// * [expenseWriteRequest]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -196,7 +212,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   ///
   /// Returns a [Future] containing a [Response] with a [ExpenseResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ExpenseResponse>> editExpenseApiV1GroupsGroupIdExpensesExpenseIdPatch({ 
+  Future<Response<ExpenseResponse>>
+  editExpenseApiV1GroupsGroupIdExpensesExpenseIdPatch({
     required String groupId,
     required String expenseId,
     required String xCSRFToken,
@@ -208,13 +225,22 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/expenses/{expense_id}'.replaceAll('{' r'group_id' '}', groupId.toString()).replaceAll('{' r'expense_id' '}', expenseId.toString());
+    final _path = r'/api/v1/groups/{group_id}/expenses/{expense_id}'
+        .replaceAll(
+          '{'
+          r'group_id'
+          '}',
+          groupId.toString(),
+        )
+        .replaceAll(
+          '{'
+          r'expense_id'
+          '}',
+          expenseId.toString(),
+        );
     final _options = Options(
       method: r'PATCH',
-      headers: <String, dynamic>{
-        r'X-CSRF-Token': xCSRFToken,
-        ...?headers,
-      },
+      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -233,13 +259,10 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
     dynamic _bodyData;
 
     try {
-_bodyData=jsonEncode(expenseWriteRequest);
-    } catch(error, stackTrace) {
+      _bodyData = jsonEncode(expenseWriteRequest);
+    } catch (error, stackTrace) {
       throw DioException(
-         requestOptions: _options.compose(
-          _dio.options,
-          _path,
-        ),
+        requestOptions: _options.compose(_dio.options, _path),
         type: DioExceptionType.unknown,
         error: error,
         stackTrace: stackTrace,
@@ -258,8 +281,14 @@ _bodyData=jsonEncode(expenseWriteRequest);
     ExpenseResponse? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseResponse>(rawData, 'ExpenseResponse', growable: true);
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<ExpenseResponse, ExpenseResponse>(
+              rawData,
+              'ExpenseResponse',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -286,8 +315,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   /// Read one group-owned source expense.
   ///
   /// Parameters:
-  /// * [groupId] 
-  /// * [expenseId] 
+  /// * [groupId]
+  /// * [expenseId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -297,7 +326,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   ///
   /// Returns a [Future] containing a [Response] with a [ExpenseResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ExpenseResponse>> getExpenseApiV1GroupsGroupIdExpensesExpenseIdGet({ 
+  Future<Response<ExpenseResponse>>
+  getExpenseApiV1GroupsGroupIdExpensesExpenseIdGet({
     required String groupId,
     required String expenseId,
     CancelToken? cancelToken,
@@ -307,12 +337,22 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/expenses/{expense_id}'.replaceAll('{' r'group_id' '}', groupId.toString()).replaceAll('{' r'expense_id' '}', expenseId.toString());
+    final _path = r'/api/v1/groups/{group_id}/expenses/{expense_id}'
+        .replaceAll(
+          '{'
+          r'group_id'
+          '}',
+          groupId.toString(),
+        )
+        .replaceAll(
+          '{'
+          r'expense_id'
+          '}',
+          expenseId.toString(),
+        );
     final _options = Options(
       method: r'GET',
-      headers: <String, dynamic>{
-        ...?headers,
-      },
+      headers: <String, dynamic>{...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -338,8 +378,14 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
     ExpenseResponse? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseResponse>(rawData, 'ExpenseResponse', growable: true);
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<ExpenseResponse, ExpenseResponse>(
+              rawData,
+              'ExpenseResponse',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -366,7 +412,7 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   /// List source expenses in stable creation order with current names.
   ///
   /// Parameters:
-  /// * [groupId] 
+  /// * [groupId]
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -376,7 +422,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   ///
   /// Returns a [Future] containing a [Response] with a [List<ExpenseResponse>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<List<ExpenseResponse>>> listExpensesApiV1GroupsGroupIdExpensesGet({ 
+  Future<Response<List<ExpenseResponse>>>
+  listExpensesApiV1GroupsGroupIdExpensesGet({
     required String groupId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -385,12 +432,15 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/expenses'.replaceAll('{' r'group_id' '}', groupId.toString());
+    final _path = r'/api/v1/groups/{group_id}/expenses'.replaceAll(
+      '{'
+      r'group_id'
+      '}',
+      groupId.toString(),
+    );
     final _options = Options(
       method: r'GET',
-      headers: <String, dynamic>{
-        ...?headers,
-      },
+      headers: <String, dynamic>{...?headers},
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -416,8 +466,14 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
     List<ExpenseResponse>? _responseData;
 
     try {
-final rawData = _response.data;
-_responseData = rawData == null ? null : deserialize<List<ExpenseResponse>, ExpenseResponse>(rawData, 'List<ExpenseResponse>', growable: true);
+      final rawData = _response.data;
+      _responseData = rawData == null
+          ? null
+          : deserialize<List<ExpenseResponse>, ExpenseResponse>(
+              rawData,
+              'List<ExpenseResponse>',
+              growable: true,
+            );
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -439,5 +495,4 @@ _responseData = rawData == null ? null : deserialize<List<ExpenseResponse>, Expe
       extra: _response.extra,
     );
   }
-
 }

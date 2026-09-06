@@ -1,6 +1,6 @@
+// ignore_for_file: uri_does_not_exist, undefined_function, unused_local_variable
 import 'package:test/test.dart';
 import 'package:openapi/openapi.dart';
-
 
 /// tests for AuthApi
 void main() {
@@ -27,12 +27,11 @@ void main() {
 
     // Session
     //
-    // Return server identity and initialize CSRF even for an anonymous probe.
+    // Session probe outcomes: no cc_session without the exact X-Client: mobile marker returns browser HTTP 204 with no content; no cc_session with that exact marker remains HTTP 401. Every present cc_session is validated, and unusable values remain HTTP 401, including session_expired where emitted. All outcomes initialize the server-owned root cc_csrf cookie and clean the legacy /api cookie. This anonymous exception applies only to the session probe and does not authorize protected resources.
     //
     //Future<SessionIdentityResponse> sessionApiV1AuthSessionGet() async
     test('test sessionApiV1AuthSessionGet', () async {
       // TODO
     });
-
   });
 }

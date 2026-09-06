@@ -33,6 +33,15 @@ def test_export_describes_the_protected_wire_contract(tmp_path: Path) -> None:
     assert session["properties"]["role"]["enum"] == ["owner", "member"]
     assert "role" not in document["components"]["schemas"]["LoginRequest"]["properties"]
 
+    session_operation = document["paths"]["/api/v1/auth/session"]["get"]
+    session_responses = session_operation["responses"]
+    assert {"200", "204", "401"}.issubset(session_responses)
+    assert "content" not in session_responses["204"]
+    description = session_operation["description"]
+    assert "no cc_session" in description
+    assert "X-Client: mobile" in description
+    assert "present" in description
+
     login = document["paths"]["/api/v1/auth/login"]["post"]
     assert _required_header(login, "X-CSRF-Token")
     rename_operation = document["paths"][
@@ -173,3 +182,106 @@ def test_export_marks_unsafe_group_operations_with_csrf(
 
     assert operations
     assert all(_required_header(operation, "X-CSRF-Token") for operation in operations)
+
+
+def test_normalize_web_api_paths_normalizes_only_url_path_declarations(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "web" / "apis"
+    output.mkdir(parents=True)
+    api_file = output / "AuthApi.ts"
+    api_file.write_text(
+        "        let urlPath = `/api/v1/auth/session`;\n"
+        "        let unrelated = true;\n"
+        '        let urlPathValue = "keep";\n'
+        "        let urlPath = `/api/v1/groups/{group_id}`;\n"
+        "        urlPath = urlPath.replace(`{group_id}`, groupId);\n",
+        encoding="utf-8",
+    )
+
+    check_contract_drift._normalize_web_api_paths(output.parents[0])
+    normalized = api_file.read_text(encoding="utf-8")
+
+    assert normalized == (
+        "        const urlPath = `/api/v1/auth/session`;\n"
+        "        let unrelated = true;\n"
+        '        let urlPathValue = "keep";\n'
+        "        let urlPath = `/api/v1/groups/{group_id}`;\n"
+        "        urlPath = urlPath.replace(`{group_id}`, groupId);\n"
+    )
+
+    check_contract_drift._normalize_web_api_paths(output.parents[0])
+
+    assert api_file.read_text(encoding="utf-8") == normalized
+
+
+def test_normalize_mobile_auth_test_adds_analyzer_suppression_idempotently(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "mobile" / "test"
+    output.mkdir(parents=True)
+    auth_test = output / "auth_api_test.dart"
+    auth_test.write_text("import 'package:test/test.dart';\n", encoding="utf-8")
+
+    check_contract_drift._normalize_mobile_auth_test(output.parents[0])
+    normalized = auth_test.read_text(encoding="utf-8")
+
+    assert normalized == (
+        "// ignore_for_file: uri_does_not_exist, undefined_function, "
+        "unused_local_variable\n"
+        "import 'package:test/test.dart';\n"
+    )
+
+    check_contract_drift._normalize_mobile_auth_test(output.parents[0])
+
+    assert auth_test.read_text(encoding="utf-8") == normalized
+
+
+def test_normalize_mobile_api_imports_suppresses_unused_error_response_import(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "mobile" / "lib" / "src" / "api"
+    output.mkdir(parents=True)
+    api_file = output / "balances_api.dart"
+    api_file.write_text(
+        "import 'package:openapi/src/model/error_response.dart';\n"
+        "\n"
+        "class BalancesApi {}\n",
+        encoding="utf-8",
+    )
+
+    check_contract_drift._normalize_mobile_api_imports(output.parents[2])
+    normalized = api_file.read_text(encoding="utf-8")
+
+    assert normalized == (
+        "// ignore: unused_import\n"
+        "import 'package:openapi/src/model/error_response.dart';\n"
+        "\n"
+        "class BalancesApi {}\n"
+    )
+
+    check_contract_drift._normalize_mobile_api_imports(output.parents[2])
+
+    assert api_file.read_text(encoding="utf-8") == normalized
+
+
+def test_normalize_mobile_api_imports_preserves_used_error_response_import(
+    tmp_path: Path,
+) -> None:
+    output = tmp_path / "mobile" / "lib" / "src" / "api"
+    output.mkdir(parents=True)
+    api_file = output / "auth_api.dart"
+    api_file.write_text(
+        "import 'package:openapi/src/model/error_response.dart';\n"
+        "\n"
+        "ErrorResponse parseError() => ErrorResponse();\n",
+        encoding="utf-8",
+    )
+
+    check_contract_drift._normalize_mobile_api_imports(output.parents[2])
+
+    assert api_file.read_text(encoding="utf-8") == (
+        "import 'package:openapi/src/model/error_response.dart';\n"
+        "\n"
+        "ErrorResponse parseError() => ErrorResponse();\n"
+    )

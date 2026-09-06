@@ -38,7 +38,7 @@ export interface LoginCredentials {
 }
 
 export interface AuthClient {
-  getSession: () => Promise<SessionIdentityResponse>;
+  getSession: () => Promise<SessionIdentityResponse | undefined>;
   login: (credentials: LoginCredentials) => Promise<SessionIdentityResponse>;
   logout: (csrfToken: string) => Promise<void>;
 }
@@ -115,8 +115,15 @@ async function callAuth<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 export const generatedAuthClient: AuthClient = {
-  getSession: () =>
-    callAuth(() => generatedAuthApi.sessionApiV1AuthSessionGet()),
+  getSession: async () => {
+    const response = await callAuth(() =>
+      generatedAuthApi.sessionApiV1AuthSessionGetRaw(),
+    );
+    if (response.raw.status === 204) {
+      return undefined;
+    }
+    return await response.value();
+  },
   login: ({ loginName, password, csrfToken }) =>
     callAuth(() =>
       generatedAuthApi.loginApiV1AuthLoginPost({
@@ -190,6 +197,16 @@ export function SessionProvider({
       .getSession()
       .then((currentSession) => {
         if (!active || sessionEpoch.current !== bootstrapEpoch) return;
+        if (currentSession === undefined) {
+          setSnapshot({
+            status: "signedOut",
+            session: null,
+            errorCode: null,
+            errorMessage: null,
+            notice: null,
+          });
+          return;
+        }
         setSnapshot({
           status: "authenticated",
           session: currentSession,

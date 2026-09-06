@@ -8,9 +8,11 @@ Define the REST/OpenAPI contract: the protected session surface (login/logout/se
 
 ### Requirement: Authentication and session surface
 
-The system MUST expose login, logout, and session/identity operations. Login MUST accept seeded credentials, reject invalid credentials, and, on success, establish a server-recognized protected session and return the authenticated actor's identity and server-derived role (`owner` or `member`). Logout MUST invalidate the current session. Session state MUST report the current authenticated actor and role, or fail explicitly when there is no valid session. A valid session MUST survive a page refresh; the exact transport (for example an HTTP-only session or an equivalent protected token) is a design decision and is not fixed by this specification.
+The system MUST expose login, logout, and session/identity operations. Login MUST accept seeded credentials, reject invalid credentials, and, on success, establish a server-recognized protected session and return the authenticated actor's identity and server-derived role (`owner` or `member`). Logout MUST invalidate the current session. The session operation MUST distinguish an absent session cookie from an unusable present cookie: a browser request without `cc_session` MUST return exactly HTTP `204 No Content` with an empty body, while an exact `X-Client: mobile` request without `cc_session` MUST retain HTTP `401` behavior. A request with a present unknown, malformed, revoked, expired, inactive-account, or otherwise unusable `cc_session` MUST remain HTTP `401`, preserving `session_expired` where applicable. A present valid session MUST return HTTP `200` with the unchanged identity and server-derived role. Session probing MUST NOT make missing credentials acceptable for protected resources.
 
-> **Confirmed decision (CC-03):** Minimum authentication is part of the MVP: pre-seeded demo accounts, login/logout, protected sessions, and explicit server-derived owner/member roles. Recorded in the reconciled proposal and Engram observation `2587` (`sdd/cuentas-claras-mvp/confirmation-gates`).
+Every session-operation response, including the browser anonymous response and authentication failures, MUST preserve server-owned CSRF-cookie initialization/normalization: the readable root `cc_csrf` cookie MUST be available and any legacy `/api`-scoped CSRF cookie MUST be expired. This CSRF invariant MUST remain separate from session authentication. The system MUST NOT treat session validation failure as anonymous state.
+
+(Previously: The session operation reported identity or failed explicitly with no valid session, without defining a successful browser response for an absent cookie or the cookie/CSRF normalization invariants for that response.)
 
 #### Scenario: Owner and member log in with seeded credentials
 
@@ -38,6 +40,48 @@ The system MUST expose login, logout, and session/identity operations. Login MUS
 - WHEN logout completes successfully
 - THEN the session is invalidated
 - AND any subsequent protected request with that session is rejected with error `unauthorized` or `session_expired` (HTTP 401)
+
+#### Scenario: Browser without a session bootstraps anonymously
+
+- GIVEN a browser request with no `cc_session` cookie and without the exact `X-Client: mobile` marker
+- WHEN `GET /api/v1/auth/session` is requested
+- THEN the response is exactly HTTP `204 No Content`
+- AND the response body is empty
+- AND a readable root-path `cc_csrf` cookie is initialized or normalized
+- AND any legacy `/api`-scoped CSRF cookie is expired
+
+#### Scenario: The exact mobile marker preserves native no-session behavior
+
+- GIVEN a request with no `cc_session` cookie and exactly `X-Client: mobile`
+- WHEN `GET /api/v1/auth/session` is requested
+- THEN the existing HTTP `401` no-session behavior is preserved
+- AND the response does not become anonymous HTTP `204`
+
+#### Scenario: Present unusable cookies are never anonymous success
+
+- GIVEN a request containing a present `cc_session` cookie that is unknown, malformed, revoked, expired, associated with an inactive account, or otherwise unusable
+- WHEN `GET /api/v1/auth/session` is requested
+- THEN the request is validated through the normal session semantics
+- AND the response is HTTP `401`
+- AND `session_expired` is preserved where the existing validation semantics emit it
+- AND the response is never HTTP `204` and never an anonymous success
+- AND CSRF-cookie initialization/legacy-cookie cleanup remains applied as required by the session route
+
+#### Scenario: A valid session retains identity and role
+
+- GIVEN a request containing a valid `cc_session` cookie
+- WHEN `GET /api/v1/auth/session` is requested
+- THEN the response is HTTP `200`
+- AND the identity payload and server-derived `owner` or `member` role are unchanged
+- AND no client-supplied role changes the result
+
+#### Scenario: Login immediately after anonymous bootstrap remains protected
+
+- GIVEN a browser has completed an anonymous `204` session bootstrap and has the initialized root `cc_csrf` token
+- WHEN the browser submits login using that CSRF token
+- THEN login succeeds or fails according to the existing credential rules
+- AND existing CSRF-token and origin enforcement remains in force
+- AND a successful login establishes the existing protected session and identity behavior
 
 ### Requirement: Protected session dependency for all group resources
 
@@ -120,7 +164,9 @@ The server MUST enforce the protected-operation matrix from the derived role: up
 
 ### Requirement: OpenAPI contract and generated clients
 
-The system MUST derive the OpenAPI contract from FastAPI and MUST generate the TypeScript client (web) and the Dart client (mobile) from that same frozen contract. The contract MUST include the login/logout/session state, protected group resources, participant rename, and the structured error envelope. The generation workflow (commands and regeneration order) MUST be documented, and a drift check MUST verify that checked-in generated clients match the current contract. Clients MUST NOT compute or claim any authoritative money result or any role; all monetary and role truth comes from the API.
+The system MUST derive the OpenAPI contract from FastAPI and MUST generate the TypeScript client (web) and the Dart client (mobile) from that same frozen contract. The session operation's contract MUST document HTTP `200` for a valid identity response, HTTP `204` with no content for an anonymous browser request without `cc_session`, and HTTP `401` for native no-session and present unusable-cookie failures. Its operation description MUST explain the exact `X-Client: mobile` conditional without weakening authentication or protected-resource requirements. The contract MUST retain the login/logout/session state, protected group resources, participant rename, and structured error envelope. The generation workflow and drift check MUST remain authoritative; generated clients and contract snapshots MUST be produced only through that workflow and MUST NOT be hand-edited. Generated runtime behavior for a successful `204` MUST be verified before selecting a handwritten consumer adaptation.
+
+(Previously: The contract documented the session state and generated clients but did not require the session operation to describe a `204` anonymous response alongside `200` and `401`.)
 
 #### Scenario: AO-08 — contract parity
 
@@ -128,6 +174,22 @@ The system MUST derive the OpenAPI contract from FastAPI and MUST generate the T
 - WHEN both clients are regenerated and consumers are implemented against them
 - THEN web and mobile issue the same endpoint calls with the same schemas, including auth and rename operations
 - AND the drift check passes with no manual edits to generated files
+
+#### Scenario: Session contract documents all outcomes
+
+- GIVEN the exported OpenAPI contract
+- WHEN the session operation is inspected
+- THEN its responses include `200`, `204`, and `401`
+- AND the `204` response has no content
+- AND the description distinguishes browser no-cookie bootstrap, exact mobile no-cookie behavior, and present-cookie validation failures
+
+#### Scenario: Generated outputs remain workflow-derived
+
+- GIVEN a handwritten API/OpenAPI source change defining the session outcomes
+- WHEN the pinned contract and client generation workflow is run
+- THEN checked-in generated outputs reflect the authoritative contract or remain unchanged when the workflow produces no output change
+- AND no generated TypeScript, Dart, or contract file is hand-edited
+- AND the contract drift check passes
 
 ### Requirement: WebSocket invalidation-only channel
 
