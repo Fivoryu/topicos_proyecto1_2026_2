@@ -47,7 +47,7 @@ void main() {
     //
     // List source expenses in stable creation order with current names.
     //
-    //Future<List<ExpenseResponse>> listExpensesApiV1GroupsGroupIdExpensesGet(String groupId) async
+    //Future<List<ExpenseResponse>> listExpensesApiV1GroupsGroupIdExpensesGet(String groupId, { String scope, String outingId }) async
     test('test listExpensesApiV1GroupsGroupIdExpensesGet', () async {
       // TODO
     });

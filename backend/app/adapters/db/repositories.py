@@ -548,15 +548,26 @@ class ExpenseRepositoryAdapter:
     def __init__(self, session: OrmSession):
         self.session = session
 
-    def list_by_group(self, group_id: object) -> list[Expense]:
+    def list_by_group(
+        self,
+        group_id: object,
+        *,
+        outing_filter: object | None = None,
+        general_only: bool = False,
+    ) -> list[Expense]:
         bound_group_id = _coerce_uuid(group_id)
-        return list(
-            self.session.scalars(
-                select(Expense)
-                .where(Expense.group_id == bound_group_id)
-                .order_by(Expense.created_at, Expense.id)
-            )
+        statement = (
+            select(Expense)
+            .where(Expense.group_id == bound_group_id)
+            .order_by(Expense.created_at, Expense.id)
         )
+        if general_only:
+            statement = statement.where(Expense.outing_id.is_(None))
+        elif outing_filter is not None:
+            statement = statement.where(
+                Expense.outing_id == _coerce_uuid(outing_filter)
+            )
+        return list(self.session.scalars(statement))
 
     def find_by_id(self, group_id: object, expense_id: object) -> Expense | None:
         return self.session.scalar(

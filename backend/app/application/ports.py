@@ -193,8 +193,14 @@ class ParticipantRepository(Protocol):
 class ExpenseRepository(Protocol):
     """Group-scoped source expense operations."""
 
-    def list_by_group(self, group_id: GroupId) -> list[ExpenseRecord]:
-        """Return source expenses in stable creation order."""
+    def list_by_group(
+        self,
+        group_id: GroupId,
+        *,
+        outing_filter: OutingId | None = None,
+        general_only: bool = False,
+    ) -> list[ExpenseRecord]:
+        """Return source expenses in stable creation order and optional scope."""
         ...
 
     def find_by_id(self, group_id: GroupId, expense_id: str) -> ExpenseRecord | None:

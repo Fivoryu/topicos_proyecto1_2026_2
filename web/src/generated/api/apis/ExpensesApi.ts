@@ -54,6 +54,8 @@ export interface GetExpenseApiV1GroupsGroupIdExpensesExpenseIdGetRequest {
 
 export interface ListExpensesApiV1GroupsGroupIdExpensesGetRequest {
     groupId: string;
+    scope?: ListExpensesApiV1GroupsGroupIdExpensesGetScopeEnum;
+    outingId?: string | null;
 }
 
 /**
@@ -307,6 +309,14 @@ export class ExpensesApi extends runtime.BaseAPI {
 
         const queryParameters: any = {};
 
+        if (requestParameters['scope'] != null) {
+            queryParameters['scope'] = requestParameters['scope'];
+        }
+
+        if (requestParameters['outingId'] != null) {
+            queryParameters['outing_id'] = requestParameters['outingId'];
+        }
+
         const headerParameters: runtime.HTTPHeaders = {};
 
 
@@ -333,3 +343,12 @@ export class ExpensesApi extends runtime.BaseAPI {
     }
 
 }
+
+/**
+ * @export
+ */
+export const ListExpensesApiV1GroupsGroupIdExpensesGetScopeEnum = {
+    All: 'all',
+    General: 'general'
+} as const;
+export type ListExpensesApiV1GroupsGroupIdExpensesGetScopeEnum = typeof ListExpensesApiV1GroupsGroupIdExpensesGetScopeEnum[keyof typeof ListExpensesApiV1GroupsGroupIdExpensesGetScopeEnum];

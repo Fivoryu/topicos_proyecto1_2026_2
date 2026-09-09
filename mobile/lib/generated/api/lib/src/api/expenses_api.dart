@@ -368,6 +368,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   ///
   /// Parameters:
   /// * [groupId] 
+  /// * [scope] 
+  /// * [outingId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -379,6 +381,8 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
   /// Throws [DioException] if API call or serialization fails
   Future<Response<List<ExpenseResponse>>> listExpensesApiV1GroupsGroupIdExpensesGet({ 
     required String groupId,
+    String? scope = 'all',
+    String? outingId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
     Map<String, dynamic>? extra,
@@ -406,9 +410,15 @@ _responseData = rawData == null ? null : deserialize<ExpenseResponse, ExpenseRes
       validateStatus: validateStatus,
     );
 
+    final _queryParameters = <String, dynamic>{
+      if (scope != null) r'scope': scope,
+      r'outing_id': outingId,
+    };
+
     final _response = await _dio.request<Object>(
       _path,
       options: _options,
+      queryParameters: _queryParameters,
       cancelToken: cancelToken,
       onSendProgress: onSendProgress,
       onReceiveProgress: onReceiveProgress,

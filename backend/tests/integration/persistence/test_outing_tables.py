@@ -9,7 +9,7 @@ from backend.app.adapters.db.repositories import OutingRepositoryAdapter
 from backend.app.adapters.db.tables import Account, Base, Expense, Group, Outing
 from backend.app.adapters.db.uow import SqlAlchemyUnitOfWork
 from backend.app.application.ports import OutingRecord
-from sqlalchemy import create_engine, event, inspect
+from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
@@ -217,4 +217,90 @@ def test_0004_migration_round_trip_preserves_prior_tables():
         migration.downgrade()
         assert "outings" not in inspect(connection).get_table_names()
         assert "groups" in inspect(connection).get_table_names()
+    engine.dispose()
+
+
+def test_0005_upgrade_survives_existing_general_expense_rows():
+    engine = _engine()
+    owner_id = str(uuid4())
+    group_id = str(uuid4())
+    participant_id = str(uuid4())
+    expense_id = str(uuid4())
+    with engine.connect() as connection:
+        for migration in MIGRATIONS[:2]:
+            context = MigrationContext.configure(connection)
+            setattr(migration, "op", Operations(context))
+            migration.upgrade()
+
+        connection.execute(
+            text(
+                "INSERT INTO accounts (id, login_name, password_hash) "
+                "VALUES (:id, :login_name, :password_hash)"
+            ),
+            {"id": owner_id, "login_name": "migration-owner", "password_hash": "hash"},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO groups (id, name, owner_account_id) "
+                "VALUES (:id, :name, :owner_account_id)"
+            ),
+            {"id": group_id, "name": "Migration group", "owner_account_id": owner_id},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO group_memberships (group_id, account_id) "
+                "VALUES (:group_id, :account_id)"
+            ),
+            {"group_id": group_id, "account_id": owner_id},
+        )
+        connection.execute(
+            text(
+                "INSERT INTO participants "
+                "(id, group_id, name, normalized_name) "
+                "VALUES (:id, :group_id, :name, :normalized_name)"
+            ),
+            {
+                "id": participant_id,
+                "group_id": group_id,
+                "name": "Ana",
+                "normalized_name": "ana",
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO expenses "
+                "(id, group_id, description, amount_cents) "
+                "VALUES (:id, :group_id, :description, :amount_cents)"
+            ),
+            {
+                "id": expense_id,
+                "group_id": group_id,
+                "description": "Existing general",
+                "amount_cents": 100,
+            },
+        )
+        connection.commit()
+
+        for migration in MIGRATIONS[2:]:
+            context = MigrationContext.configure(connection)
+            setattr(migration, "op", Operations(context))
+            migration.upgrade()
+        row = connection.execute(
+            text(
+                "SELECT description, amount_cents, outing_id "
+                "FROM expenses WHERE id = :id"
+            ),
+            {"id": expense_id},
+        ).one()
+        assert tuple(row) == ("Existing general", 100, None)
+
+        migration = MIGRATIONS[-1]
+        context = MigrationContext.configure(connection)
+        setattr(migration, "op", Operations(context))
+        migration.downgrade()
+        row = connection.execute(
+            text("SELECT description, amount_cents FROM expenses WHERE id = :id"),
+            {"id": expense_id},
+        ).one()
+        assert tuple(row) == ("Existing general", 100)
     engine.dispose()

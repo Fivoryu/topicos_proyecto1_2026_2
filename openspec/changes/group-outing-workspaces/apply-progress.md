@@ -2473,3 +2473,108 @@ nextRecommended: parent-lifecycle
 - `python -m ruff check backend` — **All checks passed**.
 - Exact path audit: only `backend/scripts/check_contract_drift.py`, `backend/tests/test_openapi_contract.py`, and this progress path were edited for PR3ae; all pre-existing dirty/untracked paths were preserved. No generated client, migration, product, UI, task, commit, push, reset, clean, or lifecycle operation was run.
 - Result: **success for bounded PR3ae**; parent lifecycle remains deferred.
+
+## PR4a — Expense read-scope filtering
+
+### Status and boundary
+
+- Consumed parent-resolved status: active change `group-outing-workspaces`; explicit PR4a selection overrides the stale ambiguous native snapshot. `actionContext.mode=repo-local`, workspace root and allowed edit root are the repository root.
+- Bounded slice: read-only expense scopes only — default all, `scope=general`, and exact `outing_id`. Existing nullable association, composite same-group integrity, service mutation validation, and default all-expense behavior are preserved.
+- Workload guard: `Decision needed before apply: No`; chained delivery is resolved by the parent to PR4a; hard stop is 400 changed lines. No parent-owned lifecycle, review, receipt, validation, commit, push, reset, or clean operation was run.
+
+### TDD Cycle Evidence
+
+| Task | Test file | Layer | Safety net | RED | GREEN | TRIANGULATE | REFACTOR |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| PR4a scope filtering | `backend/tests/integration/api/test_expense_derived_routes.py`, `backend/tests/integration/persistence/test_source_tables.py` | API/integration persistence | ✅ 32 focused tests passed before edits | ✅ Added all/general/exact/malformed-scope and foreign-outing isolation tests; focused run failed as expected (`2 failed`) before implementation | ✅ Focused scope tests passed (`15 passed`) after port/repository/route implementation | ✅ Mixed general/two-outing data, exact foreign-group filter, malformed query, and no mutation state covered | ✅ Ruff, compileall, focused regression, contract generation, and drift passed |
+
+### Implementation and contract evidence
+
+- `ExpenseRepository` now exposes keyword-only `outing_filter` and `general_only` scope controls; SQLAlchemy keeps the group predicate and applies exact nullable/general predicates before stable ordering results are returned.
+- The expense list route accepts generated-contract query parameters `scope` (`all` or `general`) and `outing_id`; invalid scope values are rejected by FastAPI before repository/service execution. Reads do not publish invalidation.
+- Handwritten FastAPI → OpenAPI → generated-client flow completed. `contracts/openapi.json` was exported, and only generated `ExpensesApi` outputs were copied from pinned temporary generator/build-runner output; no generated file was hand-edited.
+- Generated parity: web `1/1`, mobile `3/3`; contract and generated clients are drift-free.
+
+### Verification and audit
+
+- Safety net: `python -m pytest backend/tests/unit/application/test_expense_service.py backend/tests/integration/api/test_expense_derived_routes.py backend/tests/integration/persistence/test_source_tables.py backend/tests/integration/persistence/test_outing_tables.py backend/tests/test_alembic_harness.py -q` — **32 passed**.
+- Focused GREEN/TRIANGULATE: same command — **34 passed**.
+- Ruff: `python -m ruff check` on all touched handwritten backend/test files — **All checks passed**; compileall passed.
+- Contract gate: `python -m backend.scripts.check_contract_drift --cwd .` — **Contract and generated clients are drift-free**.
+- Changed-path/line audit: only the allowed backend ports/adapter/route, focused persistence/API tests, generated contract/client outputs, and this progress file changed; `.pi/gentle-ai/sdd-preflight.json` remains unrelated untracked state. Final authored diff is **under 400 changed lines** (exact audit recorded after append).
+
+### Task and lifecycle state
+
+- No broad PR4 RED/GREEN/TRIANGULATE/REFACTOR/Verify task row was marked complete; those rows remain unchecked because this is only PR4a. Parent lifecycle actions remain deferred and the next recommendation is `parent-lifecycle` after the bounded candidate is reviewed.
+
+## PR4 — Final cohesive nullable expense-association candidate
+
+### Status and workload
+
+- Consumed parent-resolved status: active change `group-outing-workspaces`; the stale native ambiguity is overridden by the explicit user selection. `artifactStore=openspec`, `actionContext.mode=repo-local`, workspace root and allowed edit root are the repository root.
+- Delivery decision: explicit `size:exception`; no PR4b or additional PR slice. PR4a read filtering and this completion remain one cohesive PR4 candidate. No PR5+ task, redesign/mobile UI, official fixture, WebSocket payload, `.pi/` state, commit, push, reset, clean, review, receipt, or delivery gate was touched.
+
+### TDD Cycle Evidence
+
+| Task | RED | GREEN | TRIANGULATE | REFACTOR |
+| --- | --- | --- | --- | --- |
+| PR4 | Focused collection first failed on the new `CreateTable` import; after collection repair, four new assertions exposed test-seam/expectation defects. | Focused suite reached **39 passed** after test corrections and the minimum route fix required by the full regression. | Covered null/default/general/exact reads, same-group/cross-group/malformed references, archived create/edit/delete rejection, archived history reads, no mutation/no invalidation, composite FK, migration survival, old-client compatibility, and official values. | Ruff and full backend passed; drift passed; no contract shape changed in this completion, so no regeneration copy was run. |
+
+### Completed tasks and persisted state
+
+- RED, GREEN, TRIANGULATE, REFACTOR, and Verify are now visibly `[x]` for exactly the five PR4 implementation rows in `tasks.md`; PR5+ and parent rows remain unchecked.
+- Existing nullable association/composite-FK/service/migration implementation was preserved. The only handwritten behavior correction was moving `ExpenseResponse` construction outside the beneficiary loop; the full suite had exposed that it truncated official beneficiaries and residual cases.
+
+### Files changed or preserved
+
+- Handwritten/test changes: `backend/app/application/ports.py`, `backend/app/adapters/db/repositories.py`, `backend/app/api/routes/expenses.py`, `backend/tests/unit/application/test_expense_service.py`, `backend/tests/integration/api/test_expense_derived_routes.py`, `backend/tests/integration/persistence/test_source_tables.py`, `backend/tests/integration/persistence/test_outing_tables.py`.
+- Preserved PR4a generated/contract paths: `contracts/openapi.json`, `web/src/generated/api/apis/ExpensesApi.ts`, `mobile/lib/generated/api/doc/ExpensesApi.md`, `mobile/lib/generated/api/lib/src/api/expenses_api.dart`, `mobile/lib/generated/api/test/expenses_api_test.dart`.
+- Artifacts: this file and `openspec/changes/group-outing-workspaces/tasks.md`. `uow.py`, migration, schemas, errors, and Alembic harness were verified but not reimplemented or changed in this completion.
+
+### Exact verification
+
+- Focused: `python -m pytest backend/tests/unit/application/test_expense_service.py backend/tests/integration/api/test_expense_derived_routes.py backend/tests/integration/persistence/test_source_tables.py backend/tests/integration/persistence/test_outing_tables.py backend/tests/test_alembic_harness.py -q` — **39 passed**.
+- Full backend: `python -m pytest backend/tests -q` — after the minimum route correction, **291 passed, 1 warning**.
+- Official regression: `python -m pytest backend/tests/acceptance/test_da_01_samaipata.py backend/tests/acceptance/test_da_02_residual.py -q` — **9 passed**.
+- Lint: `python -m ruff check backend` — **All checks passed**.
+- Contract: `python -m backend.scripts.check_contract_drift --cwd .` — **Contract and generated clients are drift-free**; temporary pinned generation/serialization completed and repository generated bytes were not hand-edited.
+- Migration/FK: `0005` upgrade/downgrade preserved existing general rows with `outing_id IS NULL`; composite FK rejected a cross-group row; PostgreSQL dialect compilation asserted `FOREIGN KEY(outing_id, group_id) REFERENCES outings (id, group_id) ON DELETE RESTRICT`; archived history and rollback/no-publish tests passed.
+- No live PostgreSQL service was available locally (`DATABASE_URL` unset and Docker engine unavailable), so no live PostgreSQL connection result is claimed; dialect DDL plus configured FK integration proof passed.
+- Path audit: all modified tracked paths are inside the user allowlist. Pre-existing untracked `.pi/gentle-ai/sdd-preflight.json` was preserved.
+- Exact changed-line audit from `HEAD`: **668 tracked changed-line units** (additions plus deletions), under the PR4 `<=760` target; this includes the preserved PR4a bytes and final task/progress evidence.
+- `git diff --check` is clean for handwritten source/tests/artifacts; it reports only pre-existing generator trailing whitespace in the preserved PR4a mobile outputs (`ExpensesApi.md` and `expenses_api.dart`). Generated bytes were not hand-edited.
+
+### Remaining tasks (exact unchecked rows)
+
+```text
+- [ ] RED — Add derived-service/API tests proving group scope includes every general and outing-linked expense exactly once, outing scope filters exact `outing_id`, general expenses never appear in outing totals, participants remain the authorized group set, sums equal zero, and transfer order is stable. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement optional outing scope in server-derived balance/settlement reads and REST schemas; keep all arithmetic, residual allocation, exact-zero checks, and formatting authority on the server/domain services. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Add mixed-scope, empty-outing, archived-outing, cross-group, stale-cache, and official Samaipata regression cases with exact expected balances/transfers; assert no derived state is persisted. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Regenerate contract outputs from handwritten API changes and add scope-aware query-key definitions without client calculations or WebSocket payload changes. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, focused/backend/full monetary tests, lint, contract drift, and final <=720 changed-line count. <!-- sdd-owner: implementation -->
+- [ ] RED — Add tests for owner generation/status/revoke/regenerate, hash-only persistence, reusable consumption by existing sessions, prior-token invalidation, anonymous/invalid/duplicate joins, exact-one participant choice, same-group link/create, cross-group choice rejection, token non-disclosure, and atomic rollback; run focused tests and capture RED. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement one current SHA-256-hashed 256-bit URL-safe token per group, owner-protected lifecycle endpoints, authenticated consume transaction, group-scoped account-participant link table, and explicit existing-participant-or-new-participant command with stable errors. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Add lock/concurrency, CSRF/origin, replay/reusable-code, active-membership conflict, participant uniqueness, no-log/no-summary-secret, post-commit one-frame, and no-frame-on-failure tests; preserve account/participant identity separation. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Export and regenerate OpenAPI/TypeScript/Dart outputs through the pinned workflow, keeping plaintext code only in generation response and never hand-editing generated trees. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, focused/backend/security/migration tests, lint, contract drift, secret-output audit, path audit, and final <=800 changed-line count; split before apply if forecast exceeds the cap. <!-- sdd-owner: implementation -->
+- [ ] RED — Add tests for owner removal, member leave, ended-member denial across every group resource, participant-link inactivity, preserved participant/expense/outing history, rejoin eligibility, member forbidden removal, and final-owner protection. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement nullable `ended_at` active-membership semantics, owner-remove/member-leave operations, immutable owner safety, inactive link handling, active-membership listing, and one post-commit group invalidation per successful mutation. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Add concurrent exit/remove, stale sessions, cross-group account IDs, final-owner conflict, rejoin with a new explicit link choice, rollback/no-invalidation, and official fixture regression coverage. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Reconcile handwritten API schemas/routes, regenerate clients only where the frozen contract changes, run drift, and keep role derivation server-owned. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, focused/backend/full regression tests, migration proof if applicable, lint, contract drift, path audit, and final <=740 changed-line count. <!-- sdd-owner: implementation -->
+- [ ] RED — Add behavior tests for outing/general expense separation, outing archived read-only state, server-provided scoped balances/settlement, participant detail, loading/empty/forbidden/error states, route/deep-link protection, and cache invalidation/refetch; audit redesign paths before running. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement additive laptop-first pages/states for outing detail/expenses, general expenses, group summary, participant detail, balances, and settlement using generated client data and shared integer-cent formatter; perform no client monetary arithmetic. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Cover mixed-scope no-double-counting, stale selected group/outing, archived history, WebSocket outage/manual refresh, membership changes, Spanish accessible names, keyboard focus, visible state cues, and preserved legacy anchors. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Integrate through the protected shell without overwriting `web-professional-redesign`; remove only additive duplication, preserve query identity and REST authority, then rerun focused web tests. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, `npm --prefix web run test`, `npm --prefix web run typecheck`, `npm --prefix web run build`, exact dirty-path audit, and final <=800 changed-line count; stop and split at a screen boundary if over cap. <!-- sdd-owner: implementation -->
+- [ ] RED — Add tests for owner join-code display/regenerate/revoke/status secrecy, member/owner membership controls, leave/final-owner errors, forbidden actions, empty/error/recovery states, accessibility/laptop-first behavior, and official-flow preservation. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement group/membership settings, authenticated join-code consumption UI with explicit participant link/create choice, member removal/leave actions, Spanish copy, and safe protected recovery states using server-derived role/error responses. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Add full regression cases for account selection, outing lifecycle, scoped expenses/derived results, invalidation-only WebSocket behavior, no public join/account creation, no token leakage, official Samaipata exact data/result, and all protected deep links. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Normalize source-mutating files before candidate freeze, preserve all redesign bytes/modes, remove no required acceptance coverage, and confirm the final web remains dependency-free with mobile UI out of scope. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, complete backend/web/contract/migration gates, manual laptop-first accessibility/browser flow, protected-path and generated-output audits, and final <=760 changed-line count. <!-- sdd-owner: implementation -->
+- [ ] Preserve the exact normalized candidate and evidence for every slice, then hand the frozen stack to the parent for bounded lifecycle review and delivery gates; do not mark this task complete from planning alone. <!-- sdd-owner: parent -->
+- [ ] Start or reuse the bounded review for the final frozen stacked candidate using `exception-ok` and `stacked-to-main`; confirm each slice has an independent dependency, verification, and rollback boundary. <!-- sdd-owner: parent -->
+- [ ] Execute post-apply lifecycle gates only after all implementation evidence, native attempt settlements, path/line audits, and final candidate freeze are available. <!-- sdd-owner: parent -->
+```
+
+- Produced phase result: **success for PR4 apply**; only five PR4 implementation rows were checked. Parent lifecycle remains deferred; next recommendation is `parent-lifecycle`.

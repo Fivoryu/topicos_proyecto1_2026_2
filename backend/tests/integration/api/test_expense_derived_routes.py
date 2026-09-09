@@ -154,8 +154,13 @@ class ExpenseService:
     def list(self, group_id, actor=None):
         return [row for row in self.rows if row.group_id == group_id]
 
-    def list_by_group(self, group_id):
-        return self.list(group_id)
+    def list_by_group(self, group_id, *, outing_filter=None, general_only=False):
+        rows = self.list(group_id)
+        if general_only:
+            return [row for row in rows if row.outing_id is None]
+        if outing_filter is not None:
+            return [row for row in rows if row.outing_id == outing_filter]
+        return rows
 
     def find_by_id(self, group_id, expense_id):
         return next(
@@ -379,6 +384,110 @@ async def test_expense_outing_id_is_nullable_and_forwarded_without_changing_list
     assert listed.status_code == 200
     assert [row["outing_id"] for row in listed.json()] == [None, "outing-one"]
     assert expenses.rows[-1].outing_id == "outing-one"
+
+
+@pytest.mark.asyncio
+async def test_expense_list_scopes_filter_without_mutation_or_invalidation(
+    expense_app,
+):
+    app, _group, _participants, expenses = expense_app
+    expenses.rows.extend(
+        [
+            Expense(
+                "expense-outing-two",
+                GROUP_ID,
+                "Museum",
+                2_000,
+                {"ana": 2_000},
+                ("ana",),
+                datetime(2026, 1, 3, tzinfo=UTC),
+                datetime(2026, 1, 3, tzinfo=UTC),
+                "outing-two",
+            ),
+            Expense(
+                "expense-outing-one",
+                GROUP_ID,
+                "Dinner",
+                3_000,
+                {"ana": 3_000},
+                ("ana",),
+                datetime(2026, 1, 2, tzinfo=UTC),
+                datetime(2026, 1, 2, tzinfo=UTC),
+                "outing-one",
+            ),
+        ]
+    )
+    before = [(row.id, row.outing_id) for row in expenses.rows]
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        _set_cookies(client, _cookies())
+        all_expenses = await client.get(f"/api/v1/groups/{GROUP_ID}/expenses")
+        _set_cookies(client, _cookies())
+        general = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/expenses?scope=general"
+        )
+        _set_cookies(client, _cookies())
+        outing = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/expenses?outing_id=outing-one"
+        )
+        _set_cookies(client, _cookies())
+        malformed_scope = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/expenses?scope=invalid"
+        )
+
+    assert all_expenses.status_code == 200
+    assert [row["id"] for row in all_expenses.json()] == [
+        "expense-1",
+        "expense-outing-two",
+        "expense-outing-one",
+    ]
+    assert general.status_code == 200
+    assert [row["outing_id"] for row in general.json()] == [None]
+    assert outing.status_code == 200
+    assert [row["outing_id"] for row in outing.json()] == ["outing-one"]
+    assert malformed_scope.status_code == 422
+    assert [(row.id, row.outing_id) for row in expenses.rows] == before
+    assert expenses.mutation_calls == 0
+
+
+@pytest.mark.asyncio
+async def test_archived_outing_expense_history_remains_readable(expense_app):
+    app, _group, _participants, expenses = expense_app
+    archived_expense = Expense(
+        "expense-archived",
+        GROUP_ID,
+        "Archived dinner",
+        4_000,
+        {"ana": 4_000},
+        ("ana",),
+        datetime(2026, 1, 4, tzinfo=UTC),
+        datetime(2026, 1, 4, tzinfo=UTC),
+        "archived-outing",
+    )
+    expenses.rows.append(archived_expense)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        _set_cookies(client, _cookies())
+        all_expenses = await client.get(f"/api/v1/groups/{GROUP_ID}/expenses")
+        _set_cookies(client, _cookies())
+        archived = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/expenses?outing_id=archived-outing"
+        )
+        _set_cookies(client, _cookies())
+        detail = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/expenses/{archived_expense.id}"
+        )
+
+    assert all_expenses.status_code == 200
+    assert archived.status_code == 200
+    assert detail.status_code == 200
+    assert archived.json()[0]["outing_id"] == "archived-outing"
+    assert detail.json()["outing_id"] == "archived-outing"
+    assert [row.id for row in expenses.rows] == ["expense-1", "expense-archived"]
+    assert expenses.mutation_calls == 0
 
 
 @pytest.mark.asyncio

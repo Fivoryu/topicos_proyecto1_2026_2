@@ -77,11 +77,11 @@ Chain strategy: stacked-to-main
 
 **Forecast:** 560–760 changed lines; hard maximum 800. **Dependency:** PR 3 green. **Paths:** expense ORM/records/repositories/services/routes/schemas, outing composite constraints, a new `backend/migrations/versions/` revision, focused API/domain tests, generated contract outputs. **Rollback:** revert association writes/reads only; never detach linked expenses or silently convert them to general expenses.
 
-- [ ] RED — Add tests for `outing_id = null`, valid same-group association, cross-group rejection, malformed reference, archived-outing create/edit/delete rejection, default all-expense reads, general-only filtering, and atomic child-row validation; run focused tests and capture RED. <!-- sdd-owner: implementation -->
-- [ ] GREEN — Add nullable `expenses.outing_id`, composite same-group foreign-key protection, repository filters, schema serialization, and service validation while preserving integer cents, participant/contribution/beneficiary invariants, and existing general expenses as `NULL`. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE — Test PostgreSQL constraint enforcement, archived history readability, failed transaction/no invalidation, old client compatibility, official four-expense values, and migration survival of existing source rows. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR — Export and regenerate the contract through the pinned workflow, build generated Dart serialization only when frozen models require it, run drift, and update no generated output manually. <!-- sdd-owner: implementation -->
-- [ ] Verify separately with native attempt authority, focused/backend/migration tests, lint, contract drift, path audit, and final <=760 changed-line count. <!-- sdd-owner: implementation -->
+- [x] RED — Add tests for `outing_id = null`, valid same-group association, cross-group rejection, malformed reference, archived-outing create/edit/delete rejection, default all-expense reads, general-only filtering, and atomic child-row validation; run focused tests and capture RED. <!-- sdd-owner: implementation -->
+- [x] GREEN — Add nullable `expenses.outing_id`, composite same-group foreign-key protection, repository filters, schema serialization, and service validation while preserving integer cents, participant/contribution/beneficiary invariants, and existing general expenses as `NULL`. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE — Test PostgreSQL constraint enforcement, archived history readability, failed transaction/no invalidation, old client compatibility, official four-expense values, and migration survival of existing source rows. <!-- sdd-owner: implementation -->
+- [x] REFACTOR — Export and regenerate the contract through the pinned workflow, build generated Dart serialization only when frozen models require it, run drift, and update no generated output manually. <!-- sdd-owner: implementation -->
+- [x] Verify separately with native attempt authority, focused/backend/migration tests, lint, contract drift, path audit, and final <=760 changed-line count. <!-- sdd-owner: implementation -->
 
 ## PR 5 — Scoped derived balances and settlement
 

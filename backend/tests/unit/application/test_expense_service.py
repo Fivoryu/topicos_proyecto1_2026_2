@@ -100,6 +100,7 @@ class FakeExpenses:
         current.description = replacement.description
         current.amount_cents = replacement.amount_cents
         current.updated_at = replacement.updated_at
+        current.outing_id = replacement.outing_id
         current.contributors = dict(contributions)
         current.beneficiaries = tuple(beneficiaries)
         return current
@@ -110,6 +111,14 @@ class FakeExpenses:
             return False
         self.rows.remove(current)
         return True
+
+
+class Publisher:
+    def __init__(self):
+        self.groups = []
+
+    def publish(self, group_id):
+        self.groups.append(group_id)
 
 
 class FakeUnitOfWork:
@@ -239,6 +248,8 @@ def test_edit_and_delete_reject_an_archived_current_outing():
     group_id, _participants, expenses, uow, service = fixture(
         expenses=(original,), outings=(archived,)
     )
+    publisher = Publisher()
+    service._publisher = publisher
 
     with pytest.raises(ArchivedOutingReadOnlyError):
         service.edit(
@@ -255,6 +266,87 @@ def test_edit_and_delete_reject_an_archived_current_outing():
     assert expenses.rows[0].description == "Lunch"
     assert uow.commits == 0
     assert uow.rollbacks == 2
+    assert publisher.groups == []
+
+
+def test_edit_can_associate_and_detach_a_valid_outing_after_full_validation():
+    group_id = "group-one"
+    outing = FakeOuting("outing-one", group_id)
+    original = FakeExpense(
+        "expense-one",
+        group_id,
+        "Lunch",
+        10_000,
+        {"ana": 10_000},
+        ("ana", "beto"),
+        NOW,
+        NOW,
+    )
+    group_id, _participants, expenses, _uow, service = fixture(
+        expenses=(original,), outings=(outing,)
+    )
+    publisher = Publisher()
+    service._publisher = publisher
+
+    associated = service.edit(
+        group_id,
+        original.id,
+        "Lunch outing",
+        10_000,
+        {"ana": 10_000},
+        ["ana", "beto"],
+        outing_id=outing.id,
+    )
+    associated_outing_id = associated.outing_id
+    detached = service.edit(
+        group_id,
+        original.id,
+        "General lunch",
+        10_000,
+        {"ana": 10_000},
+        ["ana", "beto"],
+        outing_id=None,
+    )
+
+    assert associated_outing_id == outing.id
+    assert detached.outing_id is None
+    assert expenses.rows[0].outing_id is None
+    assert publisher.groups == [group_id, group_id]
+
+
+def test_create_rejects_archived_and_foreign_outings_without_publishing():
+    group_id = "group-one"
+    archived = FakeOuting("archived", group_id, archived_at=NOW)
+    foreign = FakeOuting("foreign", "group-two")
+    group_id, _participants, expenses, uow, service = fixture(
+        outings=(archived, foreign)
+    )
+    publisher = Publisher()
+    service._publisher = publisher
+
+    with pytest.raises(ArchivedOutingReadOnlyError):
+        service.create(
+            group_id,
+            "Archived",
+            10_000,
+            {"ana": 10_000},
+            ["ana"],
+            outing_id=archived.id,
+        )
+    for outing_id in (foreign.id, "malformed"):
+        with pytest.raises(InvalidOutingReferenceError):
+            service.create(
+                group_id,
+                "Invalid",
+                10_000,
+                {"ana": 10_000},
+                ["ana"],
+                outing_id=outing_id,
+            )
+
+    assert expenses.rows == []
+    assert uow.rollbacks == 3
+    assert publisher.groups == []
 
 
 def test_create_persists_valid_multi_contributor_expense_atomically():

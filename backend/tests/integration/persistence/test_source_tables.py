@@ -26,8 +26,10 @@ from backend.app.adapters.db.uow import SqlAlchemyUnitOfWork
 from backend.app.application.participant_service import ParticipantService
 from backend.app.application.ports import ParticipantRecord
 from sqlalchemy import create_engine, event, inspect
+from sqlalchemy.dialects import postgresql
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
+from sqlalchemy.schema import CreateTable
 
 MIGRATION_0001 = import_module("backend.migrations.versions.0001_auth")
 MIGRATION_0002 = import_module("backend.migrations.versions.0002_source")
@@ -97,6 +99,14 @@ def test_source_tables_are_source_only_and_have_required_columns():
     assert outing_fk["referred_columns"] == ["id", "group_id"]
     assert Expense.__table__.c.outing_id.nullable
     engine.dispose()
+
+
+def test_postgresql_ddl_declares_the_composite_same_group_fk():
+    ddl = str(CreateTable(Expense.__table__).compile(dialect=postgresql.dialect()))
+
+    assert "FOREIGN KEY(outing_id, group_id)" in ddl
+    assert "REFERENCES outings (id, group_id)" in ddl
+    assert "ON DELETE RESTRICT" in ddl
 
 
 def test_composite_outing_fk_rejects_cross_group_expense():
@@ -235,6 +245,78 @@ def test_domain_repositories_require_group_scope_and_reject_cross_group_children
                 [(second_participant.id, 100)],
                 [second_participant.id],
             )
+    engine.dispose()
+
+
+def test_expense_repository_supports_all_general_and_exact_outing_scopes():
+    engine = _engine()
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        group = _auth_fixture(session)
+        other_owner = Account(id=uuid4(), login_name="other", password_hash="hash")
+        other_group = Group(id=uuid4(), name="Other", owner_account_id=other_owner.id)
+        outings = [
+            Outing(id=uuid4(), group_id=group.id, name="First"),
+            Outing(id=uuid4(), group_id=group.id, name="Second"),
+            Outing(id=uuid4(), group_id=other_group.id, name="Foreign"),
+        ]
+        session.add_all([other_owner, other_group, *outings])
+        session.flush()
+        general = Expense(
+            id=uuid4(),
+            group_id=group.id,
+            description="General",
+            amount_cents=100,
+            created_at=datetime(2026, 1, 1),
+            updated_at=datetime(2026, 1, 1),
+        )
+        first = Expense(
+            id=uuid4(),
+            group_id=group.id,
+            outing_id=outings[0].id,
+            description="First outing",
+            amount_cents=200,
+            created_at=datetime(2026, 1, 2),
+            updated_at=datetime(2026, 1, 2),
+        )
+        second = Expense(
+            id=uuid4(),
+            group_id=group.id,
+            outing_id=outings[1].id,
+            description="Second outing",
+            amount_cents=300,
+            created_at=datetime(2026, 1, 3),
+            updated_at=datetime(2026, 1, 3),
+        )
+        foreign = Expense(
+            id=uuid4(),
+            group_id=other_group.id,
+            outing_id=outings[2].id,
+            description="Foreign outing",
+            amount_cents=400,
+            created_at=datetime(2026, 1, 4),
+            updated_at=datetime(2026, 1, 4),
+        )
+        session.add_all([general, first, second, foreign])
+        session.commit()
+
+        repository = ExpenseRepositoryAdapter(session)
+        assert [row.description for row in repository.list_by_group(group.id)] == [
+            "General",
+            "First outing",
+            "Second outing",
+        ]
+        assert [
+            row.description
+            for row in repository.list_by_group(group.id, general_only=True)
+        ] == ["General"]
+        assert [
+            row.description
+            for row in repository.list_by_group(group.id, outing_filter=outings[0].id)
+        ] == ["First outing"]
+        assert repository.list_by_group(
+            group.id, outing_filter=outings[2].id
+        ) == []
     engine.dispose()
 
 

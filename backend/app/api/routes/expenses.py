@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any
+from typing import Any, Literal
 
 from fastapi import APIRouter, Depends, Response, status
 
@@ -159,29 +159,50 @@ def _response(
                 archived=is_archived,
             )
         )
-        amount_cents = value(expense, "amount_cents", "amount")
-        if not isinstance(amount_cents, int) or isinstance(amount_cents, bool):
-            raise PersistenceCorruptedError(
-                "Expense source must contain integer cents."
-            )
-        raw_outing_id = value(expense, "outing_id", default=None)
-        outing_id: str | None = None
-        if raw_outing_id is not None:
-            outing_id = identifier(expense, "outing_id")
-        return ExpenseResponse(
-            id=identifier(expense, "id", "expense_id"),
-            group_id=identifier(expense, "group_id"),
-            description=value(expense, "description"),  # type: ignore[arg-type]
-            amount_cents=amount_cents,
-            outing_id=outing_id,
-            contributors=contributors,
-            beneficiaries=beneficiaries,
-            created_at=value(expense, "created_at", default=None),  # type: ignore[arg-type]
-            updated_at=value(expense, "updated_at", default=None),  # type: ignore[arg-type]
+    amount_cents = value(expense, "amount_cents", "amount")
+    if not isinstance(amount_cents, int) or isinstance(amount_cents, bool):
+        raise PersistenceCorruptedError(
+            "Expense source must contain integer cents."
         )
+    raw_outing_id = value(expense, "outing_id", default=None)
+    outing_id: str | None = None
+    if raw_outing_id is not None:
+        outing_id = identifier(expense, "outing_id")
+    return ExpenseResponse(
+        id=identifier(expense, "id", "expense_id"),
+        group_id=identifier(expense, "group_id"),
+        description=value(expense, "description"),  # type: ignore[arg-type]
+        amount_cents=amount_cents,
+        outing_id=outing_id,
+        contributors=contributors,
+        beneficiaries=beneficiaries,
+        created_at=value(expense, "created_at", default=None),  # type: ignore[arg-type]
+        updated_at=value(expense, "updated_at", default=None),  # type: ignore[arg-type]
+    )
 
 
-def _list_expenses(service: Any, repository: Any, group_id: Identifier, actor: Any):
+def _list_expenses(
+    service: Any,
+    repository: Any,
+    group_id: Identifier,
+    actor: Any,
+    *,
+    scope: Literal["all", "general"],
+    outing_id: Identifier | None,
+):
+    if scope == "general" or outing_id is not None:
+        method = getattr(repository, "list_by_group", None) or getattr(
+            repository, "list", None
+        )
+        if method is None:
+            raise RuntimeError("repository cannot list group records")
+        return list(
+            method(
+                group_id,
+                general_only=scope == "general",
+                outing_filter=outing_id,
+            )
+        )
     method = getattr(service, "list", None) or getattr(service, "list_expenses", None)
     if method is not None:
         return call_with_actor(method, group_id, actor=actor)
@@ -215,11 +236,20 @@ def list_expenses(
     service: Any = Depends(get_expense_service),
     participant_service: Any = Depends(get_participant_service),
     repository: Any = Depends(get_expense_repository),
+    scope: Literal["all", "general"] = "all",
+    outing_id: str | None = None,
 ) -> list[ExpenseResponse]:
     """List source expenses in stable creation order with current names."""
 
     stored_group_id = coerce_identifier(group_id)
-    rows = _list_expenses(service, repository, stored_group_id, actor)
+    rows = _list_expenses(
+        service,
+        repository,
+        stored_group_id,
+        actor,
+        scope=scope,
+        outing_id=(coerce_identifier(outing_id) if outing_id is not None else None),
+    )
     participants = _participant_rows(participant_service, stored_group_id, actor)
     return [_response(row, stored_group_id, participants, repository) for row in rows]
 

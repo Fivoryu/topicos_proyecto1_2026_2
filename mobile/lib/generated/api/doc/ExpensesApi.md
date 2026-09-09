@@ -220,7 +220,7 @@ Name | Type | Description  | Notes
 [[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **listExpensesApiV1GroupsGroupIdExpensesGet**
-> List<ExpenseResponse> listExpensesApiV1GroupsGroupIdExpensesGet(groupId)
+> List<ExpenseResponse> listExpensesApiV1GroupsGroupIdExpensesGet(groupId, scope, outingId)
 
 List Expenses
 
@@ -236,9 +236,11 @@ import 'package:openapi/api.dart';
 
 final api = Openapi().getExpensesApi();
 final String groupId = groupId_example; // String | 
+final String scope = scope_example; // String | 
+final String outingId = outingId_example; // String | 
 
 try {
-    final response = api.listExpensesApiV1GroupsGroupIdExpensesGet(groupId);
+    final response = api.listExpensesApiV1GroupsGroupIdExpensesGet(groupId, scope, outingId);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling ExpensesApi->listExpensesApiV1GroupsGroupIdExpensesGet: $e\n');
@@ -250,6 +252,8 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **groupId** | **String**|  | 
+ **scope** | **String**|  | [optional] [default to 'all']
+ **outingId** | **String**|  | [optional] 
 
 ### Return type
 
