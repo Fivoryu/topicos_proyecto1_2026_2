@@ -14,6 +14,7 @@ import 'package:openapi/src/model/balances_response.dart';
 import 'package:openapi/src/model/error_response.dart';
 
 class BalancesApi {
+
   final Dio _dio;
 
   const BalancesApi(this._dio);
@@ -22,7 +23,7 @@ class BalancesApi {
   /// Compute balances from source expenses in stable participant order.
   ///
   /// Parameters:
-  /// * [groupId]
+  /// * [groupId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -32,7 +33,7 @@ class BalancesApi {
   ///
   /// Returns a [Future] containing a [Response] with a [BalancesResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<BalancesResponse>> getBalancesApiV1GroupsGroupIdBalancesGet({
+  Future<Response<BalancesResponse>> getBalancesApiV1GroupsGroupIdBalancesGet({ 
     required String groupId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -41,15 +42,12 @@ class BalancesApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/balances'.replaceAll(
-      '{'
-      r'group_id'
-      '}',
-      groupId.toString(),
-    );
+    final _path = r'/api/v1/groups/{group_id}/balances'.replaceAll('{' r'group_id' '}', groupId.toString());
     final _options = Options(
       method: r'GET',
-      headers: <String, dynamic>{...?headers},
+      headers: <String, dynamic>{
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -75,14 +73,8 @@ class BalancesApi {
     BalancesResponse? _responseData;
 
     try {
-      final rawData = _response.data;
-      _responseData = rawData == null
-          ? null
-          : deserialize<BalancesResponse, BalancesResponse>(
-              rawData,
-              'BalancesResponse',
-              growable: true,
-            );
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<BalancesResponse, BalancesResponse>(rawData, 'BalancesResponse', growable: true);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -104,4 +96,5 @@ class BalancesApi {
       extra: _response.extra,
     );
   }
+
 }

@@ -27,5 +27,10 @@ void main() {
       // TODO
     });
 
+    // String outingId
+    test('to test the property `outingId`', () async {
+      // TODO
+    });
+
   });
 }

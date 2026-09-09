@@ -7,7 +7,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from pathlib import Path
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
@@ -43,13 +43,24 @@ def _normalized_bytes(path: Path) -> bytes:
     return path.read_bytes().replace(b"\r\n", b"\n")
 
 
-def compare_directories(committed: Path, regenerated: Path) -> list[str]:
-    """Return deterministic content and presence differences between directories."""
+def compare_directories(
+    committed: Path,
+    regenerated: Path,
+    *,
+    ignored_paths: Collection[str | Path] = (),
+) -> list[str]:
+    """Return deterministic differences, excluding selected relative paths."""
 
+    ignored = tuple(Path(path) for path in ignored_paths)
     committed_files = _relative_files(committed)
     regenerated_files = _relative_files(regenerated)
     differences: list[str] = []
     for relative in sorted(committed_files | regenerated_files):
+        if any(
+            relative == ignored_path or ignored_path in relative.parents
+            for ignored_path in ignored
+        ):
+            continue
         committed_file = committed / relative
         regenerated_file = regenerated / relative
         if relative not in committed_files:
@@ -435,7 +446,11 @@ def run_drift_check(repository_root: Path = _REPOSITORY_ROOT) -> list[str]:
         )
         differences.extend(
             f"mobile/{difference}"
-            for difference in compare_directories(committed_mobile, regenerated_mobile)
+            for difference in compare_directories(
+                committed_mobile,
+                regenerated_mobile,
+                ignored_paths=("pubspec.lock", ".dart_tool"),
+            )
         )
     return differences
 

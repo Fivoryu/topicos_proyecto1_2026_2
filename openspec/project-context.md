@@ -102,3 +102,25 @@ OpenSpec lifecycle checks for final delivery:
 openspec validate final-delivery-alignment --strict
 openspec status --change final-delivery-alignment
 ```
+
+## Active change amendment: group-outing-workspaces
+
+`group-outing-workspaces` is an active, staged domain change separate from the historical delivery and the independent `web-professional-redesign` work. For this change only, its accepted rules supersede the single-active-group restrictions in the living groups/API/client baseline; historical artifacts remain unchanged. PR 0 synchronizes policy and specifications only. Product source, tests, contracts, generated clients, mobile files, the official fixture, and redesign bytes are protected until later slices.
+
+### Accepted workspace and domain rules
+
+- An authenticated account may list its active group memberships, create a group, and select a listed group. Creation atomically makes the creator the sole owner and a member of an empty group with no outings, participants, or expenses.
+- Every selected-group read and mutation rechecks active membership on the server. Roles remain derived `owner`/`member` values; route IDs, client roles, and cached data are never authorization claims.
+- A group owns outings. Any member may create or edit an active outing; only the owner may archive, unarchive, or delete an empty outing. Archived outings and their expenses remain readable history, while associated writes are rejected.
+- Expenses keep group ownership and gain nullable outing scope: `outing_id = null` is a general expense, group derivations include general and outing-associated expenses, and outing derivations include only exact linked expenses. FastAPI remains the monetary authority and clients render integer-cent results.
+- Membership exit/removal ends membership without deleting participants, outings, expenses, or historical references. The fixed final owner cannot leave or be removed because ownership transfer is not supported.
+
+### Narrow authenticated join exception
+
+The sole invitation-like exception is a reusable, owner-controlled QR/code join for accounts that already have a valid authenticated session. One current code per group is stored only as a hash, remains valid until revoked or regenerated, and regeneration invalidates the prior code. Joining is atomic and requires an explicit same-group participant link-or-create choice; account and participant identities remain separate.
+
+This exception does **not** add public registration, account creation through QR, anonymous group data, email invitations, password recovery, OAuth, expiry, approval queues, ownership transfer, participant merge, or a general account directory. It also does not add client-side money, client-side authorization, or new routing dependencies. CSRF/origin/session protection and WebSocket frames remain unchanged: committed mutations continue to publish only one group-scoped `{"type":"data_changed"}` invalidation and clients refetch REST.
+
+### Delivery and ownership boundary
+
+The change is delivered as stacked slices with an 800 changed-line maximum per slice; this is a delivery constraint, not permission to remove acceptance coverage. Laptop-first web workspace states use the existing protected shell and hash-compatible navigation without a new routing dependency. Mobile UI/domain parity remains under independent mobile ownership. `AGENTS.md`, historical/archive artifacts, generated output by hand, the official Samaipata data and exact result, and every `web-professional-redesign` file remain outside this change's edit authority.

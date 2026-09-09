@@ -103,3 +103,22 @@ The system MUST enforce the domain invariants (contributions sum to amount, at l
 - No localStorage or client-side persistence; PostgreSQL is the only durable store (group data and the session/source model).
 - No persisted balance/transfer ledgers independent of expense source data.
 - No general account-management tables (public registration, password recovery, invitations, OAuth, external identity providers).
+
+## Active amendment: group-outing-workspaces
+
+The persistence requirements above remain the historical MVP baseline. For this active change only, PostgreSQL gains source records and constraints for authenticated multi-group workspaces, outings, membership history, participant links, reusable join codes, and nullable expense scope. All additions are additive, reversible, and data-preserving.
+
+### Source records and integrity
+
+- Active memberships are the server-authorized account-to-group records. Group creation atomically persists the group and its sole owner membership; new groups contain no outings, participants, or expenses. Ending membership preserves all group history and may end its account-participant link.
+- An outing has one immutable `group_id`, required name, active/archived state, and stable identity. It remains readable after archive; deletion is allowed only when no expense references it. Optional dates are informational and do not add scheduling semantics.
+- Expenses retain `group_id` and add nullable `outing_id`. `null` is general scope; non-null references must resolve to an outing in the same group through service validation and persistence referential integrity. Existing general rows remain valid and derived balances/settlement are never persisted.
+- Account-participant links are separate, group-scoped, uniqueness-constrained records with independent account and participant identities. Cross-group links are rejected without partial writes, and participant or expense history is never rewritten on exit.
+
+### Hashed reusable join state
+
+Each group has at most one current reusable join-code generation. Persistence stores only a SHA-256 hash of cryptographically random token material plus bounded generation/revocation timestamps; plaintext is not stored in logs or unrelated records. Revoke or regenerate makes the previous representation unusable. Consumption and its explicit existing-participant-or-new-participant link choice commit atomically, while duplicate active membership is rejected without a partial link or participant row.
+
+### Explicit exclusions and preservation
+
+This narrow persistence amendment does not create public registration, account creation through QR, email invitations, password recovery, OAuth, token expiry, approval queues, ownership transfer, or a general account directory. It does not add client money/authorization state, new WebSocket payloads, mobile UI/domain parity, or routing dependencies. Reversible migrations preserve the official Samaipata four-expense fixture exactly and use isolated feature fixtures for groups, outings, joins, and membership lifecycle.

@@ -14,6 +14,7 @@ import 'package:openapi/src/model/error_response.dart';
 import 'package:openapi/src/model/settlement_response.dart';
 
 class SettlementApi {
+
   final Dio _dio;
 
   const SettlementApi(this._dio);
@@ -22,7 +23,7 @@ class SettlementApi {
   /// Return policy and deterministic transfers derived from current balances.
   ///
   /// Parameters:
-  /// * [groupId]
+  /// * [groupId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -32,8 +33,7 @@ class SettlementApi {
   ///
   /// Returns a [Future] containing a [Response] with a [SettlementResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<SettlementResponse>>
-  getSettlementApiV1GroupsGroupIdSettlementGet({
+  Future<Response<SettlementResponse>> getSettlementApiV1GroupsGroupIdSettlementGet({ 
     required String groupId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -42,15 +42,12 @@ class SettlementApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/settlement'.replaceAll(
-      '{'
-      r'group_id'
-      '}',
-      groupId.toString(),
-    );
+    final _path = r'/api/v1/groups/{group_id}/settlement'.replaceAll('{' r'group_id' '}', groupId.toString());
     final _options = Options(
       method: r'GET',
-      headers: <String, dynamic>{...?headers},
+      headers: <String, dynamic>{
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -76,14 +73,8 @@ class SettlementApi {
     SettlementResponse? _responseData;
 
     try {
-      final rawData = _response.data;
-      _responseData = rawData == null
-          ? null
-          : deserialize<SettlementResponse, SettlementResponse>(
-              rawData,
-              'SettlementResponse',
-              growable: true,
-            );
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<SettlementResponse, SettlementResponse>(rawData, 'SettlementResponse', growable: true);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -105,4 +96,5 @@ class SettlementApi {
       extra: _response.extra,
     );
   }
+
 }

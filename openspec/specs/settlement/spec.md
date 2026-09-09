@@ -110,3 +110,17 @@ The system MUST derive a transfer list from current balances: order debtors by m
 - No persisted balance or transfer ledgers independent of expense source data.
 - No custom, percentage, weighted, or unequal split modes.
 - No role or auth behavior on settlement computation itself; authorization is enforced by the API layer (see api/groups specs).
+
+## Active amendment: group-outing-workspaces
+
+The settlement algorithm, integer-cent arithmetic, exact-zero invariant, stable participant order, and server authority above remain unchanged. For this active change only, derived results support an explicit group or outing scope.
+
+### Scoped derivation
+
+- Group balances and settlement read every expense owned by the authorized group, including `outing_id = null` general expenses and all outing-associated expenses exactly once.
+- Outing balances and settlement read only expenses with the requested outing's exact `group_id` and `outing_id`; general expenses are never implicitly allocated or repeated. The authorized group participant set remains the derivation set, including participants with zero results.
+- Archived outings remain readable for historical derivation, but associated expense writes are rejected by the expense/API boundaries. No balance or transfer ledger is persisted.
+
+### Preserved delivery boundaries
+
+FastAPI continues to calculate and return integer-cent balances and deterministic transfers; clients only render those values. This amendment does not introduce client-side money or authorization, public registration, QR account creation, email invitations, recovery, OAuth, expiry, approval queues, ownership transfer, mobile parity, routing dependencies, or new WebSocket payloads. The official Samaipata four all-general expenses and exact ordered result remain unchanged.

@@ -19,6 +19,7 @@ from backend.app.adapters.db.repositories import (
     ExpenseRepositoryAdapter,
     GroupRepositoryAdapter,
     MembershipRepositoryAdapter,
+    OutingRepositoryAdapter,
     ParticipantRepositoryAdapter,
     SessionRepositoryAdapter,
 )
@@ -36,6 +37,7 @@ from backend.app.api.routes.balances import router as balances_router
 from backend.app.api.routes.events import router as events_router
 from backend.app.api.routes.expenses import router as expenses_router
 from backend.app.api.routes.groups import router as groups_router
+from backend.app.api.routes.outings import router as outings_router
 from backend.app.api.routes.participants import router as participants_router
 from backend.app.api.routes.settlement import router as settlement_router
 from backend.app.application.auth_service import AuthService
@@ -43,7 +45,9 @@ from backend.app.application.authorization import AuthorizationService
 from backend.app.application.derived_service import DerivedService
 from backend.app.application.expense_service import ExpenseService
 from backend.app.application.group_service import GroupService
+from backend.app.application.outing_service import OutingService
 from backend.app.application.participant_service import ParticipantService
+from backend.app.application.workspace_service import WorkspaceService
 
 
 class HealthStatus(StrEnum):
@@ -106,6 +110,7 @@ def _wire_request_services(
     group_repository = GroupRepositoryAdapter(session)
     participant_repository = ParticipantRepositoryAdapter(session)
     expense_repository = ExpenseRepositoryAdapter(session)
+    outing_repository = OutingRepositoryAdapter(session)
     settings = get_settings()
     hasher = Argon2idPasswordHasher()
     auth_service = AuthService(
@@ -143,6 +148,18 @@ def _wire_request_services(
         authorization,
         invalidation_publisher=invalidation_publisher,
     )
+    workspace_service = WorkspaceService(
+        group_repository,
+        membership_repository,
+        unit_of_work,
+        invalidation_publisher=invalidation_publisher,
+    )
+    outing_service = OutingService(
+        outing_repository,
+        unit_of_work,
+        authorization,
+        invalidation_publisher=invalidation_publisher,
+    )
     state.auth_service = auth_service
     state.membership_repository = membership_repository
     state.group_repository = group_repository
@@ -152,6 +169,9 @@ def _wire_request_services(
     state.expense_service = expense_service
     state.derived_service = derived_service
     state.group_service = group_service
+    state.workspace_service = workspace_service
+    state.authorization_service = authorization
+    state.outing_service = outing_service
 
 
 settings = get_settings()
@@ -192,6 +212,7 @@ async def _request_scoped_services(
 register_error_handlers(app)
 app.include_router(auth_router)
 app.include_router(groups_router)
+app.include_router(outings_router)
 app.include_router(participants_router)
 app.include_router(expenses_router)
 app.include_router(events_router)

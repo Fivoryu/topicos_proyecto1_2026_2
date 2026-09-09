@@ -25,6 +25,7 @@ class ExpenseWriteRequest(BaseModel):
     amount: str
     contributors: list[ExpenseContributorRequest]
     beneficiary_ids: list[str]
+    outing_id: str | None = None
 
 
 class ExpenseContributorResponse(BaseModel):
@@ -57,6 +58,7 @@ class ExpenseResponse(BaseModel):
     group_id: str
     description: str
     amount_cents: int
+    outing_id: str | None = None
     contributors: list[ExpenseContributorResponse]
     beneficiaries: list[ExpenseBeneficiaryResponse]
     created_at: datetime | None = None

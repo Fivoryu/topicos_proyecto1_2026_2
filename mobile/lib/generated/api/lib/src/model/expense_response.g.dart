@@ -54,6 +54,7 @@ ExpenseResponse _$ExpenseResponseFromJson(Map<String, dynamic> json) =>
           description: $checkedConvert('description', (v) => v as String),
           groupId: $checkedConvert('group_id', (v) => v as String),
           id: $checkedConvert('id', (v) => v as String),
+          outingId: $checkedConvert('outing_id', (v) => v as String?),
           updatedAt: $checkedConvert(
             'updated_at',
             (v) => v == null ? null : DateTime.parse(v as String),
@@ -65,6 +66,7 @@ ExpenseResponse _$ExpenseResponseFromJson(Map<String, dynamic> json) =>
         'amountCents': 'amount_cents',
         'createdAt': 'created_at',
         'groupId': 'group_id',
+        'outingId': 'outing_id',
         'updatedAt': 'updated_at',
       },
     );
@@ -78,5 +80,6 @@ Map<String, dynamic> _$ExpenseResponseToJson(ExpenseResponse instance) =>
       'description': instance.description,
       'group_id': instance.groupId,
       'id': instance.id,
+      'outing_id': ?instance.outingId,
       'updated_at': ?instance.updatedAt?.toIso8601String(),
     };

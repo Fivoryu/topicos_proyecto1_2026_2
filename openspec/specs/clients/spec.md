@@ -217,3 +217,23 @@ The web login flow MUST use the server-initialized readable CSRF token after ano
 - No mobile write parity in the Must slice (approved Stretch).
 - No rich group-settings experience beyond the settlement policy control (approved Stretch).
 - No registration, password recovery, invitations, or OAuth flows in either client (see groups/api specs).
+
+## Active amendment: group-outing-workspaces
+
+The client responsibilities above remain authoritative for protected sessions, server-derived roles and money, generated-client use, REST refresh, and mobile ownership. For this active change only, the web gains a laptop-first multi-group workspace and a narrow authenticated join flow.
+
+### Laptop-first web workspace
+
+- The protected web flow provides separate stable navigation states for group list/create/select, selected-group summary, outings and outing detail, outing expenses, general expenses, participant detail, balances, settlement, and group/membership settings. Existing `#gastos`, `#balances`, `#liquidacion`, `#participantes`, and `#grupo` anchors remain reachable where applicable.
+- Selection and outing scope are included in TanStack Query identity and enabled states. On group switch, logout, expiry, or membership end, protected data is cleared/reset or disabled before another group's data renders. Deep links never authorize access; the server validates membership first.
+- The web uses the generated TypeScript client and the existing protected shell/hash navigation without adding a routing dependency. Loading, empty, forbidden, archived/read-only, validation, and recovery states are explicit and understandable Spanish UI states.
+
+### Authenticated reusable join
+
+The web MAY expose an owner-controlled reusable QR/code lifecycle and an authenticated consume flow with exactly one existing-participant link or new-participant choice. Token material is never displayed in status or unrelated data. Account and participant identity remain distinct, and server errors remain authoritative over stale client affordances.
+
+The client amendment does not add public registration, account creation through QR, anonymous group data, email invitations, password recovery, OAuth, expiry, approval queues, ownership transfer, mobile UI/domain parity, new routing dependencies, client-side money or authorization, or new WebSocket payloads. It renders server-derived group/outing balances and settlement and treats `data_changed` only as a REST invalidation signal.
+
+### Preservation and delivery boundary
+
+The official Samaipata fixture remains four all-general expenses with its exact existing balances and transfer order. The uncommitted `web-professional-redesign` files are protected and must not be overwritten or reformatted. This PR 0 amendment is policy-only; later implementation is stacked in slices capped at 800 changed lines.

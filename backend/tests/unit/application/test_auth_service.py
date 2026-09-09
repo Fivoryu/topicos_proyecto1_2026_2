@@ -4,14 +4,22 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from hashlib import sha256
 from types import SimpleNamespace
+from typing import cast
+from uuid import UUID
 
 import pytest
+from backend.app.api.schemas.auth import (
+    AccountIdentityResponse,
+    SessionIdentityResponse,
+)
 from backend.app.application.auth_service import (
     AuthService,
     InvalidCredentialsError,
     SessionExpiredError,
     UnauthorizedError,
 )
+from backend.app.application.ports import AccountRepository, MembershipRepository
+from pydantic import ValidationError
 
 
 @dataclass
@@ -55,7 +63,7 @@ class FakeAccountRepository:
     def find_by_login_name(self, login_name: str):
         return self.accounts.get(login_name)
 
-    def find_by_id(self, account_id: str):
+    def find_by_id(self, account_id):
         return self.by_id.get(account_id)
 
 
@@ -109,6 +117,12 @@ def fixtures():
         password_hash="inactive-hash",
         is_active=False,
     )
+    zero_group = SimpleNamespace(
+        id="account-zero-group",
+        login_name="demo.zero-group",
+        password_hash="zero-group-hash",
+        is_active=True,
+    )
     memberships = {
         owner.id: SimpleNamespace(
             account_id=owner.id,
@@ -131,16 +145,18 @@ def fixtures():
         {
             "owner-hash": "owner-password",
             "member-hash": "member-password",
+            "zero-group-hash": "zero-group-password",
         }
     )
-    tokens = FakeSessionTokenSource("owner-token", "member-token")
-    accounts = FakeAccountRepository((owner, member, inactive))
+    tokens = FakeSessionTokenSource("owner-token", "member-token", "zero-group-token")
+    accounts = FakeAccountRepository((owner, member, inactive, zero_group))
+
     sessions = FakeSessionRepository()
     membership_repository = FakeMembershipRepository(memberships)
     service = AuthService(
-        account_repository=accounts,
+        account_repository=cast(AccountRepository, accounts),
         session_repository=sessions,
-        membership_repository=membership_repository,
+        membership_repository=cast(MembershipRepository, membership_repository),
         password_hasher=hasher,
         token_source=tokens,
         clock=clock,
@@ -186,6 +202,124 @@ def test_owner_and_member_login_return_server_derived_identity_and_role(fixtures
     )
 
 
+def test_zero_group_login_persists_opaque_session_with_null_identity_fields(fixtures):
+    identity = fixtures.service.login("demo.zero-group", "zero-group-password")
+
+    assert identity.account_id == "account-zero-group"
+    assert identity.active_group_id is None
+    assert identity.role is None
+    assert identity.token is not None
+    assert len(fixtures.sessions.created) == 1
+    session = fixtures.sessions.created[0]
+    assert session.token_hash != identity.token.encode("utf-8")
+    assert identity.token not in repr(session)
+
+
+def test_zero_group_session_identity_preserves_null_fields(fixtures):
+    login = fixtures.service.login("demo.zero-group", "zero-group-password")
+
+    identity = fixtures.service.session_identity(login.token)
+
+    assert identity.account_id == "account-zero-group"
+    assert identity.active_group_id is None
+    assert identity.role is None
+    assert identity.as_dict()["active_group_id"] is None
+    assert identity.as_dict()["role"] is None
+    assert "token" not in identity.as_dict()
+
+
+def test_session_identity_response_accepts_and_returns_null_group_and_role(fixtures):
+    login = fixtures.service.login("demo.zero-group", "zero-group-password")
+
+    response = SessionIdentityResponse.from_identity(login)
+
+    assert response.active_group_id is None
+    assert response.role is None
+    assert response.model_dump()["active_group_id"] is None
+    assert response.model_dump()["role"] is None
+    assert "token" not in response.model_dump()
+
+
+def test_session_response_serializes_group_ids_and_rejects_arbitrary_values():
+    account = AccountIdentityResponse(id="account-session", login_name="demo.session")
+    expires_at = datetime(2026, 1, 1, 13, tzinfo=UTC)
+    anonymous_group = SessionIdentityResponse(
+        account=account,
+        active_group_id=None,
+        role=None,
+        expires_at=expires_at,
+    )
+    selected_group = SessionIdentityResponse(
+        account=account,
+        active_group_id="group-demo",
+        role="member",
+        expires_at=expires_at,
+    )
+
+    assert anonymous_group.model_dump() == {
+        "account": account.model_dump(),
+        "active_group_id": None,
+        "role": None,
+        "expires_at": expires_at,
+    }
+    assert selected_group.model_dump() == {
+        "account": account.model_dump(),
+        "active_group_id": "group-demo",
+        "role": "member",
+        "expires_at": expires_at,
+    }
+    assert "token" not in anonymous_group.model_dump()
+    assert "token" not in selected_group.model_dump()
+
+    with pytest.raises(ValidationError):
+        SessionIdentityResponse(
+            account=account,
+            active_group_id=cast(str, object()),
+            role=None,
+            expires_at=expires_at,
+        )
+
+
+def test_session_identity_response_from_identity_preserves_string_group_and_role():
+    identity = SimpleNamespace(
+        account={"id": "account-owner", "login_name": "demo.owner"},
+        active_group_id="group-demo",
+        role="owner",
+        expires_at=datetime(2026, 1, 1, 13, tzinfo=UTC),
+        token="secret-session-token",
+    )
+
+    response = SessionIdentityResponse.from_identity(identity)
+
+    assert response.model_dump() == {
+        "account": identity.account,
+        "active_group_id": "group-demo",
+        "role": "owner",
+        "expires_at": identity.expires_at,
+    }
+    assert "token" not in response.model_dump()
+
+
+def test_session_identity_response_normalizes_uuid_group_ids_for_the_wire():
+    identity = SimpleNamespace(
+        account={"id": "account-owner", "login_name": "demo.owner"},
+        active_group_id=UUID("00000000-0000-4000-8000-000000000001"),
+        role="owner",
+        expires_at=datetime(2026, 1, 1, 13, tzinfo=UTC),
+    )
+
+    response = SessionIdentityResponse.from_identity(identity)
+
+    assert response.active_group_id == "00000000-0000-4000-8000-000000000001"
+
+
+def test_session_identity_response_schema_keeps_nullable_role_enum():
+    role_schema = SessionIdentityResponse.model_json_schema()["properties"]["role"]
+
+    assert role_schema["enum"] == ["owner", "member"]
+    assert {"type": "null"} in role_schema["anyOf"]
+
+
 def test_wrong_unknown_and_inactive_credentials_have_one_public_failure_shape(fixtures):
     with pytest.raises(InvalidCredentialsError) as wrong:
         fixtures.service.login("demo.owner", "wrong-password")
@@ -211,6 +345,27 @@ def test_wrong_unknown_and_inactive_credentials_have_one_public_failure_shape(fi
     assert unknown_call == ("wrong-password", FakePasswordHasher.dummy_hash)
     assert inactive_call == ("inactive-password", FakePasswordHasher.dummy_hash)
     assert fixtures.sessions.created == []
+
+
+def test_malformed_non_null_membership_remains_rejected(fixtures):
+    malformed = SimpleNamespace(
+        account_id="account-zero-group",
+        group_id=None,
+        owner_account_id="account-owner",
+    )
+    fixtures.memberships.memberships["account-zero-group"] = malformed
+
+    with pytest.raises(InvalidCredentialsError):
+        fixtures.service.login("demo.zero-group", "zero-group-password")
+    assert fixtures.sessions.created == []
+
+    fixtures.memberships.memberships["account-zero-group"] = None
+    login = fixtures.service.login("demo.zero-group", "zero-group-password")
+    fixtures.memberships.memberships["account-zero-group"] = malformed
+
+    with pytest.raises(UnauthorizedError) as error:
+        fixtures.service.session_identity(login.token)
+    assert error.value.code == "unauthorized"
 
 
 def test_malformed_credentials_still_take_the_hasher_boundary(fixtures):

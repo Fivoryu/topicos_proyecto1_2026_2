@@ -2,6 +2,7 @@
 import 'package:test/test.dart';
 import 'package:openapi/openapi.dart';
 
+
 /// tests for AuthApi
 void main() {
   final instance = Openapi().getAuthApi();
@@ -33,5 +34,6 @@ void main() {
     test('test sessionApiV1AuthSessionGet', () async {
       // TODO
     });
+
   });
 }

@@ -48,7 +48,7 @@ class SessionIdentityResponse {
   )
 
 
-  final Object? activeGroupId;
+  final String? activeGroupId;
 
 
 
@@ -68,11 +68,11 @@ class SessionIdentityResponse {
     
     name: r'role',
     required: true,
-    includeIfNull: false,
+    includeIfNull: true,
   )
 
 
-  final SessionIdentityResponseRoleEnum role;
+  final SessionIdentityResponseRoleEnum? role;
 
 
 
@@ -90,7 +90,7 @@ class SessionIdentityResponse {
         account.hashCode +
         (activeGroupId == null ? 0 : activeGroupId.hashCode) +
         expiresAt.hashCode +
-        role.hashCode;
+        (role == null ? 0 : role.hashCode);
 
   factory SessionIdentityResponse.fromJson(Map<String, dynamic> json) => _$SessionIdentityResponseFromJson(json);
 

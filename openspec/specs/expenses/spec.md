@@ -107,3 +107,17 @@ The system MUST list expenses with description, `amount_cents`, contributors wit
 - No percentage, weighted, custom-amount, or other unequal split modes.
 - No receipt OCR, smart categories, or notifications on expenses.
 - No mobile write parity in the first slice (mobile expense writes are approved Stretch only).
+
+## Active amendment: group-outing-workspaces
+
+The expense lifecycle above remains authoritative for validation, contributors, beneficiaries, participant history, integer cents, atomicity, and archived references. For this active change only, an expense also has an optional outing scope.
+
+### Group versus outing scope
+
+- `outing_id = null` means a general group expense. A non-null outing must belong to the same group as the expense; cross-group or malformed references fail atomically with no child or source rows written.
+- Default group expense history and group-wide balances/settlement include every general and outing-associated expense exactly once. An explicit outing view includes only expenses whose `outing_id` equals that outing; general expenses are never allocated, copied, or repeated there.
+- Creating, editing, detaching, or deleting an expense associated with an archived outing is rejected with the stable read-only error. Existing archived outing history remains readable, and ordinary general group expenses retain their existing workflow.
+
+### Preserved boundaries
+
+The server remains the authority for scope validation, participant/contribution/beneficiary invariants, exact-cent values, and derived results. This amendment adds no client-side money or authorization, public registration, QR account creation, email invitation, recovery, OAuth, expiry, approval queue, ownership transfer, mobile UI parity, routing dependency, or WebSocket payload. The official Samaipata fixture remains four all-general expenses with its exact existing values and results.

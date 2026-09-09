@@ -17,6 +17,7 @@ from uuid import UUID
 AccountId = UUID | str
 GroupId = UUID | str
 ParticipantId = UUID | str
+OutingId = UUID | str
 
 
 class Clock(Protocol):
@@ -66,6 +67,7 @@ class MembershipRecord:
     account_id: AccountId
     group_id: GroupId
     owner_account_id: AccountId
+    ended_at: datetime | None = None
 
 
 @dataclass(slots=True)
@@ -93,6 +95,18 @@ class ParticipantRecord:
 
 
 @dataclass(slots=True)
+class OutingRecord:
+    """Source outing data with group-owned lifecycle state."""
+
+    id: OutingId
+    group_id: GroupId
+    name: str
+    archived_at: datetime | None = None
+    created_at: datetime | None = None
+    updated_at: datetime | None = None
+
+
+@dataclass(slots=True)
 class ExpenseRecord:
     """Source expense data with its child references for application use cases."""
 
@@ -104,6 +118,7 @@ class ExpenseRecord:
     beneficiaries: tuple[str, ...]
     created_at: datetime
     updated_at: datetime
+    outing_id: OutingId | None = None
 
 
 class AccountRepository(Protocol):
@@ -212,11 +227,57 @@ class ExpenseRepository(Protocol):
         ...
 
 
+class OutingRepository(Protocol):
+    """Group-scoped outing source operations."""
+
+    def list_by_group(self, group_id: GroupId) -> list[OutingRecord]:
+        """Return active and archived outings in stable creation order."""
+        ...
+
+    def find_by_id(self, group_id: GroupId, outing_id: OutingId) -> OutingRecord | None:
+        """Return an outing only when it belongs to the requested group."""
+        ...
+
+    def create(self, group_id: GroupId, outing: OutingRecord) -> OutingRecord:
+        """Add an outing to the current transaction."""
+        ...
+
+    def update_active(
+        self, group_id: GroupId, outing_id: OutingId, name: str, updated_at: datetime
+    ) -> OutingRecord | None:
+        """Update the name of an active outing."""
+        ...
+
+    def archive(
+        self, group_id: GroupId, outing_id: OutingId, archived_at: datetime
+    ) -> OutingRecord | None:
+        """Mark an active outing archived."""
+        ...
+
+    def unarchive(
+        self, group_id: GroupId, outing_id: OutingId, updated_at: datetime
+    ) -> OutingRecord | None:
+        """Restore an archived outing to active state."""
+        ...
+
+    def has_expenses(self, group_id: GroupId, outing_id: OutingId) -> bool:
+        """Report whether an outing has linked source expenses."""
+        ...
+
+    def delete_if_empty(self, group_id: GroupId, outing_id: OutingId) -> bool:
+        """Delete an outing only when no linked expenses exist."""
+        ...
+
+
 class GroupRepository(Protocol):
-    """Load and update server-owned group settings."""
+    """Persist and load server-owned group settings."""
 
     def find_by_id(self, group_id: GroupId) -> object | None:
         """Return a group by its stable identifier."""
+        ...
+
+    def create(self, group: object) -> object:
+        """Add a group to the current transaction without committing it."""
         ...
 
 
@@ -225,7 +286,9 @@ class UnitOfWork(Protocol):
 
     participants: ParticipantRepository
     expenses: ExpenseRepository
+    outings: OutingRepository
     groups: GroupRepository
+    memberships: MembershipRepository
 
     def __enter__(self) -> Self:
         """Begin and return this transaction."""
@@ -246,10 +309,44 @@ class UnitOfWork(Protocol):
 
 
 class MembershipRepository(Protocol):
-    """Resolve the active group membership used for server-side role derivation."""
+    """Persist and resolve account memberships with server-owned group roles."""
+
+    def list_for_account(
+        self, account_id: AccountId, *, active_only: bool = True
+    ) -> list[MembershipRecord]:
+        """Return an account's memberships in stable creation order."""
+        ...
 
     def find_for_account(self, account_id: AccountId) -> MembershipRecord | None:
-        """Return the account's active-group membership, if one exists."""
+        """Return the account's first active membership, if one exists."""
+        ...
+
+    def find_for_account_in_group(
+        self, account_id: AccountId, group_id: GroupId
+    ) -> MembershipRecord | None:
+        """Return an active membership only within the requested group."""
+        ...
+
+    def find_active_by_group_account(
+        self, group_id: GroupId, account_id: AccountId
+    ) -> MembershipRecord | None:
+        """Return an active membership using group-first lookup semantics."""
+        ...
+
+    def create_or_reactivate(
+        self, group_id: GroupId, account_id: AccountId
+    ) -> MembershipRecord:
+        """Create a membership or reactivate its ended history row."""
+        ...
+
+    def end(
+        self, group_id: GroupId, account_id: AccountId, ended_at: datetime | None = None
+    ) -> bool:
+        """End an active membership without deleting its history row."""
+        ...
+
+    def count_active_owners(self, group_id: GroupId) -> int:
+        """Count active memberships belonging to the server-owned group owner."""
         ...
 
 

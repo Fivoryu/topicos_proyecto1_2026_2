@@ -8,16 +8,17 @@ A request-scoped transaction/session is supplied by the caller.
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select, update
+from sqlalchemy import func, select, update
 from sqlalchemy.orm import Session as OrmSession
 
 from backend.app.application.ports import (
     AccountRecord,
     ExpenseRecord,
     MembershipRecord,
+    OutingRecord,
     ParticipantRecord,
     SessionRecord,
 )
@@ -30,6 +31,7 @@ from .tables import (
     ExpenseContribution,
     Group,
     GroupMembership,
+    Outing,
     Participant,
 )
 
@@ -155,34 +157,50 @@ class MembershipRepositoryAdapter:
             account_id=membership.account_id,
             group_id=membership.group_id,
             owner_account_id=group.owner_account_id,
+            ended_at=membership.ended_at,
         )
 
-    def find_for_account(self, account_id: object) -> MembershipRecord | None:
-        row = self.session.execute(
+    def list_for_account(
+        self, account_id: object, *, active_only: bool = True
+    ) -> list[MembershipRecord]:
+        """Return memberships for an active account in stable creation order."""
+
+        statement = (
             select(GroupMembership, Group)
             .join(Group, Group.id == GroupMembership.group_id)
             .join(Account, Account.id == GroupMembership.account_id)
             .where(
-                GroupMembership.account_id == account_id,
+                GroupMembership.account_id == _coerce_uuid(account_id),
                 Account.is_active.is_(True),
             )
             .order_by(GroupMembership.created_at, GroupMembership.group_id)
-        ).first()
-        if row is None:
-            return None
-        membership, group = row
-        return self._membership_record(membership, group)
+        )
+        if active_only:
+            statement = statement.where(GroupMembership.ended_at.is_(None))
+        return [
+            self._membership_record(membership, group)
+            for membership, group in self.session.execute(statement).all()
+        ]
+
+    def find_for_account(self, account_id: object) -> MembershipRecord | None:
+        """Return the account's first active membership, if one exists."""
+
+        memberships = self.list_for_account(account_id)
+        return memberships[0] if memberships else None
 
     def find_for_account_in_group(
         self, account_id: object, group_id: object
     ) -> MembershipRecord | None:
+        """Return an active membership only within the requested group."""
+
         row = self.session.execute(
             select(GroupMembership, Group)
             .join(Group, Group.id == GroupMembership.group_id)
             .join(Account, Account.id == GroupMembership.account_id)
             .where(
-                GroupMembership.account_id == account_id,
-                GroupMembership.group_id == group_id,
+                GroupMembership.account_id == _coerce_uuid(account_id),
+                GroupMembership.group_id == _coerce_uuid(group_id),
+                GroupMembership.ended_at.is_(None),
                 Account.is_active.is_(True),
             )
         ).first()
@@ -190,27 +208,87 @@ class MembershipRepositoryAdapter:
             return None
         membership, group = row
         return self._membership_record(membership, group)
+
+    def find_active_by_group_account(
+        self, group_id: object, account_id: object
+    ) -> MembershipRecord | None:
+        """Return an active membership using group-first lookup semantics."""
+
+        return self.find_for_account_in_group(account_id, group_id)
 
     # This name mirrors the authorization port's alternative lookup spelling.
     find_for_account_and_group = find_for_account_in_group
 
     def owner_has_membership(self, group_id: object) -> bool:
-        """Check the required invariant that the group owner is a member."""
+        """Check the required invariant that the group owner is an active member."""
 
-        return (
-            self.session.scalar(
-                select(GroupMembership.account_id)
-                .join(Group, Group.id == GroupMembership.group_id)
-                .join(Account, Account.id == GroupMembership.account_id)
-                .where(
-                    GroupMembership.group_id == group_id,
-                    GroupMembership.account_id == Group.owner_account_id,
-                    Account.is_active.is_(True),
-                )
-                .limit(1)
+        return self.count_active_owners(group_id) > 0
+
+    def count_active_owners(self, group_id: object) -> int:
+        """Count active memberships belonging to the server-owned group owner."""
+
+        count = self.session.scalar(
+            select(func.count())
+            .select_from(GroupMembership)
+            .join(Group, Group.id == GroupMembership.group_id)
+            .join(Account, Account.id == GroupMembership.account_id)
+            .where(
+                GroupMembership.group_id == _coerce_uuid(group_id),
+                GroupMembership.account_id == Group.owner_account_id,
+                GroupMembership.ended_at.is_(None),
+                Account.is_active.is_(True),
             )
-            is not None
         )
+        return count if isinstance(count, int) else 0
+
+    def create_or_reactivate(
+        self, group_id: object, account_id: object
+    ) -> MembershipRecord:
+        """Create a membership or reactivate its ended history row.
+
+        The operation only flushes. The surrounding unit of work owns the commit so
+        membership creation can remain atomic with other source changes.
+        """
+
+        bound_group_id = _coerce_uuid(group_id)
+        bound_account_id = _coerce_uuid(account_id)
+        group = self.session.get(Group, bound_group_id)
+        if group is None:
+            raise ValueError("group does not exist")
+        if self.session.get(Account, bound_account_id) is None:
+            raise ValueError("account does not exist")
+
+        membership = self.session.get(
+            GroupMembership, (bound_group_id, bound_account_id)
+        )
+        if membership is None:
+            membership = GroupMembership(
+                group_id=bound_group_id,
+                account_id=bound_account_id,
+            )
+            self.session.add(membership)
+        elif membership.ended_at is None:
+            raise ValueError("membership is already active")
+        else:
+            membership.ended_at = None
+
+        self.session.flush()
+        return self._membership_record(membership, group)
+
+    def end(
+        self, group_id: object, account_id: object, ended_at: datetime | None = None
+    ) -> bool:
+        """End an active membership without deleting its history row."""
+
+        membership = self.session.get(
+            GroupMembership,
+            (_coerce_uuid(group_id), _coerce_uuid(account_id)),
+        )
+        if membership is None or membership.ended_at is not None:
+            return False
+        membership.ended_at = ended_at or datetime.now(UTC)
+        self.session.flush()
+        return True
 
     def create(self, membership: GroupMembership) -> GroupMembership:
         self.session.add(membership)
@@ -221,13 +299,136 @@ class MembershipRepositoryAdapter:
 
 
 class GroupRepositoryAdapter:
-    """Load server-owned groups by their identifier."""
+    """Persist and load server-owned groups by their identifier."""
 
     def __init__(self, session: OrmSession):
         self.session = session
 
     def find_by_id(self, group_id: object) -> Group | None:
         return self.session.get(Group, group_id)
+
+    def create(self, group: object) -> Group:
+        """Add a group record to the current transaction without committing."""
+
+        if isinstance(group, Group):
+            model = group
+        else:
+            group_id = getattr(group, "id", None)
+            name = getattr(group, "name", None)
+            owner_account_id = getattr(group, "owner_account_id", None)
+            if group_id is None or name is None or owner_account_id is None:
+                raise TypeError("group must expose the persisted group fields")
+            model = Group(
+                id=_coerce_uuid(group_id),
+                name=name,
+                owner_account_id=_coerce_uuid(owner_account_id),
+                settlement_policy=getattr(group, "settlement_policy", "owner_only"),
+            )
+        self.session.add(model)
+        self.session.flush()
+        return model
+
+
+class OutingRepositoryAdapter:
+    """Persist group-owned outing source rows without crossing group boundaries."""
+
+    def __init__(self, session: OrmSession):
+        self.session = session
+
+    def list_by_group(self, group_id: object) -> list[Outing]:
+        bound_group_id = _coerce_uuid(group_id)
+        return list(
+            self.session.scalars(
+                select(Outing)
+                .where(Outing.group_id == bound_group_id)
+                .order_by(Outing.created_at, Outing.id)
+            )
+        )
+
+    def find_by_id(
+        self, group_id: object, outing_id: object, *, for_update: bool = False
+    ) -> Outing | None:
+        statement = select(Outing).where(
+            Outing.group_id == _coerce_uuid(group_id),
+            Outing.id == _coerce_uuid(outing_id),
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        return self.session.scalar(statement)
+
+    def create(self, group_id: object, outing: OutingRecord | Outing) -> Outing:
+        if _coerce_uuid(outing.group_id) != _coerce_uuid(group_id):
+            raise ValueError("outing does not belong to the requested group")
+        if isinstance(outing, Outing):
+            model = outing
+        else:
+            model = Outing(
+                id=_coerce_uuid(outing.id),
+                group_id=_coerce_uuid(outing.group_id),
+                name=outing.name,
+                archived_at=outing.archived_at,
+                created_at=outing.created_at,
+                updated_at=outing.updated_at,
+            )
+        self.session.add(model)
+        self.session.flush()
+        return model
+
+    def update_active(
+        self,
+        group_id: object,
+        outing_id: object,
+        name: str,
+        updated_at: datetime,
+    ) -> Outing | None:
+        outing = self.find_by_id(group_id, outing_id, for_update=True)
+        if outing is None:
+            return None
+        outing.name = name
+        outing.updated_at = updated_at
+        self.session.flush()
+        return outing
+
+    def archive(
+        self, group_id: object, outing_id: object, archived_at: datetime
+    ) -> Outing | None:
+        outing = self.find_by_id(group_id, outing_id, for_update=True)
+        if outing is None:
+            return None
+        outing.archived_at = archived_at
+        outing.updated_at = archived_at
+        self.session.flush()
+        return outing
+
+    def unarchive(
+        self, group_id: object, outing_id: object, updated_at: datetime
+    ) -> Outing | None:
+        outing = self.find_by_id(group_id, outing_id, for_update=True)
+        if outing is None:
+            return None
+        outing.archived_at = None
+        outing.updated_at = updated_at
+        self.session.flush()
+        return outing
+
+    def has_expenses(self, group_id: object, outing_id: object) -> bool:
+        expense_id = self.session.scalar(
+            select(Expense.id)
+            .where(
+                Expense.group_id == _coerce_uuid(group_id),
+                Expense.outing_id == _coerce_uuid(outing_id),
+            )
+            .limit(1)
+        )
+        return expense_id is not None
+
+    def delete_if_empty(self, group_id: object, outing_id: object) -> bool:
+        outing = self.find_by_id(group_id, outing_id, for_update=True)
+        if outing is None or self.has_expenses(group_id, outing_id):
+            return False
+        self.session.delete(outing)
+        self.session.flush()
+        return True
 
 
 class ParticipantRepositoryAdapter:
@@ -415,6 +616,11 @@ class ExpenseRepositoryAdapter:
             expense = Expense(
                 id=_coerce_uuid(expense.id),
                 group_id=_coerce_uuid(expense.group_id),
+                outing_id=(
+                    _coerce_uuid(expense.outing_id)
+                    if expense.outing_id is not None
+                    else None
+                ),
                 description=expense.description,
                 amount_cents=expense.amount_cents,
                 created_at=expense.created_at,
@@ -466,6 +672,54 @@ class ExpenseRepositoryAdapter:
 
     add = create
 
+    def update(
+        self,
+        group_id: object,
+        expense_id: object,
+        replacement: ExpenseRecord | Expense,
+        contributions=(),
+        beneficiaries=(),
+    ) -> Expense | None:
+        expense = self.find_by_id(group_id, expense_id)
+        if expense is None:
+            return None
+        if replacement.group_id != group_id:
+            raise ValueError("expense does not belong to the requested group")
+        contributions = tuple(contributions)
+        beneficiaries = tuple(beneficiaries)
+        self._verify_participants(
+            group_id, self._participant_ids(contributions, beneficiaries)
+        )
+        expense.outing_id = (
+            _coerce_uuid(replacement.outing_id)
+            if replacement.outing_id is not None
+            else None
+        )
+        expense.description = replacement.description
+        expense.amount_cents = replacement.amount_cents
+        expense.updated_at = replacement.updated_at
+        for row in self.list_contributions(group_id, expense_id):
+            self.session.delete(row)
+        for row in self.list_beneficiaries(group_id, expense_id):
+            self.session.delete(row)
+        self.session.flush()
+        for participant_id, amount_cents in contributions:
+            self.session.add(
+                ExpenseContribution(
+                    expense_id=expense.id,
+                    participant_id=_coerce_uuid(participant_id),
+                    amount_cents=amount_cents,
+                )
+            )
+        for participant_id in beneficiaries:
+            self.session.add(
+                ExpenseBeneficiary(
+                    expense_id=expense.id,
+                    participant_id=_coerce_uuid(participant_id),
+                )
+            )
+        return expense
+
     def list_contributions(
         self, group_id: object, expense_id: object
     ) -> list[ExpenseContribution]:
@@ -510,6 +764,7 @@ SqlAlchemyMembershipRepository = MembershipRepositoryAdapter
 AccountRepository = AccountRepositoryAdapter
 SessionRepository = SessionRepositoryAdapter
 MembershipRepository = MembershipRepositoryAdapter
+OutingRepository = OutingRepositoryAdapter
 GroupRepository = GroupRepositoryAdapter
 ParticipantRepository = ParticipantRepositoryAdapter
 ExpenseRepository = ExpenseRepositoryAdapter
@@ -523,6 +778,8 @@ __all__ = [
     "GroupRepositoryAdapter",
     "MembershipRepository",
     "MembershipRepositoryAdapter",
+    "OutingRepository",
+    "OutingRepositoryAdapter",
     "ParticipantRepository",
     "ParticipantRepositoryAdapter",
     "SessionRepository",

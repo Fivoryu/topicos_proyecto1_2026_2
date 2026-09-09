@@ -9,9 +9,54 @@ All URIs are relative to *http://localhost*
 
 Method | HTTP request | Description
 ------------- | ------------- | -------------
+[**createGroupApiV1GroupsPost**](GroupsApi.md#creategroupapiv1groupspost) | **POST** /api/v1/groups | Create Group
 [**getGroupApiV1GroupsGroupIdGet**](GroupsApi.md#getgroupapiv1groupsgroupidget) | **GET** /api/v1/groups/{group_id} | Get Group
+[**listGroupsApiV1GroupsGet**](GroupsApi.md#listgroupsapiv1groupsget) | **GET** /api/v1/groups | List Groups
 [**updateGroupApiV1GroupsGroupIdPatch**](GroupsApi.md#updategroupapiv1groupsgroupidpatch) | **PATCH** /api/v1/groups/{group_id} | Update Group
 
+
+# **createGroupApiV1GroupsPost**
+> GroupSummaryResponse createGroupApiV1GroupsPost(groupCreateRequest)
+
+Create Group
+
+Create an empty owner workspace for the authenticated account.
+
+### Example
+```dart
+import 'package:openapi/api.dart';
+
+final api = Openapi().getGroupsApi();
+final GroupCreateRequest groupCreateRequest = ; // GroupCreateRequest | 
+
+try {
+    final response = api.createGroupApiV1GroupsPost(groupCreateRequest);
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling GroupsApi->createGroupApiV1GroupsPost: $e\n');
+}
+```
+
+### Parameters
+
+Name | Type | Description  | Notes
+------------- | ------------- | ------------- | -------------
+ **groupCreateRequest** | [**GroupCreateRequest**](GroupCreateRequest.md)|  | 
+
+### Return type
+
+[**GroupSummaryResponse**](GroupSummaryResponse.md)
+
+### Authorization
+
+No authorization required
+
+### HTTP request headers
+
+ - **Content-Type**: application/json
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
 
 # **getGroupApiV1GroupsGroupIdGet**
 > GroupResponse getGroupApiV1GroupsGroupIdGet(groupId)
@@ -52,6 +97,45 @@ Name | Type | Description  | Notes
 ### Authorization
 
 [cc_session](../README.md#cc_session)
+
+### HTTP request headers
+
+ - **Content-Type**: Not defined
+ - **Accept**: application/json
+
+[[Back to top]](#) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to Model list]](../README.md#documentation-for-models) [[Back to README]](../README.md)
+
+# **listGroupsApiV1GroupsGet**
+> List<GroupSummaryResponse> listGroupsApiV1GroupsGet()
+
+List Groups
+
+List only groups belonging to the authenticated account.
+
+### Example
+```dart
+import 'package:openapi/api.dart';
+
+final api = Openapi().getGroupsApi();
+
+try {
+    final response = api.listGroupsApiV1GroupsGet();
+    print(response);
+} catch on DioException (e) {
+    print('Exception when calling GroupsApi->listGroupsApiV1GroupsGet: $e\n');
+}
+```
+
+### Parameters
+This endpoint does not need any parameter.
+
+### Return type
+
+[**List&lt;GroupSummaryResponse&gt;**](GroupSummaryResponse.md)
+
+### Authorization
+
+No authorization required
 
 ### HTTP request headers
 

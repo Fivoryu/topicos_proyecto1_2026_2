@@ -10,6 +10,7 @@ import { ParticipantsPanel } from "../features/participants";
 import { SettlementPanel } from "../features/settlement";
 import { SessionProvider, useSession } from "./auth/session-provider";
 import { ProtectedRoute } from "./routes/protected-route";
+import { WorkspaceShell } from "./workspace-shell";
 
 const navItems = [
   { href: "#gastos", label: "Gastos", icon: "receipt" as const },
@@ -76,7 +77,7 @@ function ProtectedShell() {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    if (!session) return;
+    if (!session?.activeGroupId) return;
     const connection = connectGroupWebSocket({
       groupId: session.activeGroupId,
       queryClient,
@@ -85,7 +86,9 @@ function ProtectedShell() {
   }, [queryClient, session]);
 
   if (!session) return null;
+  if (!session.activeGroupId) return <WorkspaceShell />;
 
+  const activeGroupId = session.activeGroupId;
   const roleLabel = session.role === "owner" ? "Propietario" : "Miembro";
 
   return (
@@ -156,12 +159,16 @@ function ProtectedShell() {
           </header>
 
           <div className="dashboard-layout" aria-labelledby="shell-title">
-            <div className="dashboard-main-column">
+            <div
+              className="dashboard-column dashboard-main-column dashboard-primary-column"
+              role="region"
+              aria-label="Flujo financiero principal"
+            >
               <div
                 id="gastos"
                 className="dashboard-slot dashboard-slot-expenses"
               >
-                <ExpensesPanel groupId={session.activeGroupId} />
+                <ExpensesPanel groupId={activeGroupId} />
               </div>
 
               <div className="dashboard-summary-grid">
@@ -169,29 +176,29 @@ function ProtectedShell() {
                   id="balances"
                   className="dashboard-slot dashboard-slot-balances"
                 >
-                  <BalancesPanel groupId={session.activeGroupId} />
+                  <BalancesPanel groupId={activeGroupId} />
                 </div>
                 <div
                   id="liquidacion"
                   className="dashboard-slot dashboard-slot-settlement"
                 >
-                  <SettlementPanel groupId={session.activeGroupId} />
+                  <SettlementPanel groupId={activeGroupId} />
                 </div>
               </div>
             </div>
 
             <aside
-              className="dashboard-side-column"
+              className="dashboard-column dashboard-side-column"
               aria-label="Administración del grupo"
             >
               <div
                 id="participantes"
                 className="dashboard-slot dashboard-slot-participants"
               >
-                <ParticipantsPanel groupId={session.activeGroupId} />
+                <ParticipantsPanel groupId={activeGroupId} />
               </div>
               <div id="grupo" className="dashboard-slot dashboard-slot-group">
-                <GroupSettings groupId={session.activeGroupId} />
+                <GroupSettings groupId={activeGroupId} />
               </div>
             </aside>
           </div>

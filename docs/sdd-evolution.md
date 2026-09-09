@@ -33,3 +33,19 @@ Este documento explica qué material es histórico, qué cambios siguen activos 
 ## Regla operativa de Grupo 2
 
 Si cambia el entendimiento aceptado de un comportamiento, primero se actualizan las specs/artifacts correspondientes; después se escriben o ajustan tests de aceptación, luego código, y finalmente se ejecutan gates. El archive ocurre únicamente después de verificar el change.
+
+## Active change status: `group-outing-workspaces`
+
+The status line above is a preserved snapshot from 2026-09-04. The current active change is `group-outing-workspaces`, a separate staged domain/workspace expansion; its proposal, design, and change-local specs preserve the historical reasoning, while the canonical living specs now carry this policy amendment.
+
+### Supersession record
+
+For this change only, the former single-active-group restrictions are superseded by authenticated group listing, empty group creation, explicit selection, outings, membership lifecycle, nullable outing scope, and laptop-first protected workspace navigation. FastAPI, PostgreSQL, server-derived roles, integer-cent monetary results, exact-zero settlement, protected sessions/CSRF/origin, and REST authority remain unchanged.
+
+The change adds one narrow exception to the historical “no invitations” boundary: an owner-controlled, reusable QR/join code may be consumed only by an account with an existing valid session. The code is hash-only at rest, valid until revoke/regeneration, and joining is atomic with exactly one same-group participant link-or-create choice. Account and participant identities remain separate.
+
+This is not public registration, account creation through QR, anonymous group access, an email invitation, password recovery, OAuth, token expiry, an approval queue, ownership transfer, participant merge, or a general account directory. It also does not add mobile UI/domain parity, a routing dependency, client-side money/authorization, or a new WebSocket payload. WebSocket behavior remains one post-commit group-scoped `{"type":"data_changed"}` invalidation and REST refetch.
+
+### Preservation and delivery
+
+PR 0 is policy/spec synchronization only. Later implementation is stacked `PR 0 → PR 9`, each capped at 800 changed lines; the cap cannot remove security, isolation, lifecycle, monetary, contract, or regression coverage. `AGENTS.md`, all historical/archive artifacts, generated clients by hand, the official Samaipata fixture and exact result, and every `web-professional-redesign` file are protected. The fixture remains four all-general expenses, with Ana `+56000`, Beto `0`, Carla `-16000`, Diego `-40000`, and transfers Diego → Ana `40000`, then Carla → Ana `16000`.

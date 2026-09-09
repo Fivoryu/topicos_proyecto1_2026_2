@@ -4,6 +4,7 @@ apis/BalancesApi.ts
 apis/ExpensesApi.ts
 apis/GroupsApi.ts
 apis/HealthApi.ts
+apis/OutingsApi.ts
 apis/ParticipantsApi.ts
 apis/SettlementApi.ts
 apis/index.ts
@@ -19,11 +20,15 @@ models/ExpenseContributorResponse.ts
 models/ExpenseResponse.ts
 models/ExpenseWriteRequest.ts
 models/FieldError.ts
+models/GroupCreateRequest.ts
 models/GroupResponse.ts
+models/GroupSummaryResponse.ts
 models/GroupUpdateRequest.ts
 models/HealthResponse.ts
 models/HealthStatus.ts
 models/LoginRequest.ts
+models/OutingResponse.ts
+models/OutingWriteRequest.ts
 models/ParticipantResponse.ts
 models/ParticipantWriteRequest.ts
 models/RenameParticipantRequest.ts

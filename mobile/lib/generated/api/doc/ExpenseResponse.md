@@ -15,6 +15,7 @@ Name | Type | Description | Notes
 **description** | **String** |  | 
 **groupId** | **String** |  | 
 **id** | **String** |  | 
+**outingId** | **String** |  | [optional] 
 **updatedAt** | [**DateTime**](DateTime.md) |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)

@@ -4,7 +4,11 @@ from datetime import UTC, datetime
 
 import pytest
 from backend.app.application.derived_service import DerivedService
-from backend.app.application.expense_service import ExpenseService
+from backend.app.application.expense_service import (
+    ExpenseService,
+    InvalidOutingReferenceError,
+)
+from backend.app.application.outing_service import ArchivedOutingReadOnlyError
 from backend.app.application.ports import ParticipantRecord
 from backend.app.domain.errors import (
     ContributionMismatchError,
@@ -13,6 +17,8 @@ from backend.app.domain.errors import (
     NoBeneficiariesError,
     NoParticipantsError,
 )
+
+NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 @dataclass
@@ -25,6 +31,29 @@ class FakeExpense:
     beneficiaries: tuple[str, ...]
     created_at: datetime
     updated_at: datetime
+    outing_id: str | None = None
+
+
+@dataclass
+class FakeOuting:
+    id: str
+    group_id: str
+    archived_at: datetime | None = None
+
+
+class FakeOutings:
+    def __init__(self, rows=()):
+        self.rows = list(rows)
+
+    def find_by_id(self, group_id: str, outing_id: str):
+        return next(
+            (
+                row
+                for row in self.rows
+                if row.group_id == group_id and row.id == outing_id
+            ),
+            None,
+        )
 
 
 class FakeParticipants:
@@ -84,9 +113,10 @@ class FakeExpenses:
 
 
 class FakeUnitOfWork:
-    def __init__(self, participants, expenses):
+    def __init__(self, participants, expenses, outings=None):
         self.participants = participants
         self.expenses = expenses
+        self.outings = outings or FakeOutings()
         self.commits = 0
         self.rollbacks = 0
         self.flushes = 0
@@ -119,7 +149,7 @@ def participant(group_id: str, participant_id: str, day: int, *, archived=False)
     )
 
 
-def fixture(*, archived=False, expenses=()):
+def fixture(*, archived=False, expenses=(), outings=()):
     group_id = "group-one"
     participants = FakeParticipants(
         [
@@ -129,7 +159,7 @@ def fixture(*, archived=False, expenses=()):
         ]
     )
     repository = FakeExpenses(expenses)
-    uow = FakeUnitOfWork(participants, repository)
+    uow = FakeUnitOfWork(participants, repository, FakeOutings(outings))
     return (
         group_id,
         participants,
@@ -137,6 +167,94 @@ def fixture(*, archived=False, expenses=()):
         uow,
         ExpenseService(repository, participants, uow),
     )
+
+
+def test_create_preserves_a_valid_same_group_outing_reference():
+    group_id = "group-one"
+    outing = FakeOuting("outing-one", group_id)
+    group_id, _participants, expenses, uow, service = fixture(outings=(outing,))
+
+    created = service.create(
+        group_id,
+        description="Dinner",
+        amount_cents=10_000,
+        contributors={"ana": 10_000},
+        beneficiaries=["ana", "beto"],
+        outing_id=outing.id,
+    )
+
+    assert created.outing_id == outing.id
+    assert expenses.rows[0].outing_id == outing.id
+    assert uow.commits == 1
+
+
+def test_create_rejects_missing_cross_group_or_archived_outing_without_mutation():
+    group_id = "group-one"
+    archived = FakeOuting("archived", group_id, archived_at=NOW)
+    foreign = FakeOuting("foreign", "group-two")
+    group_id, _participants, expenses, uow, service = fixture(
+        outings=(archived, foreign)
+    )
+
+    for outing_id in ("malformed", foreign.id):
+        with pytest.raises(InvalidOutingReferenceError) as error:
+            service.create(
+                group_id,
+                "Dinner",
+                10_000,
+                {"ana": 10_000},
+                ["ana"],
+                outing_id=outing_id,
+            )
+        assert error.value.code == "invalid_outing_reference"
+    with pytest.raises(ArchivedOutingReadOnlyError):
+        service.create(
+            group_id,
+            "Dinner",
+            10_000,
+            {"ana": 10_000},
+            ["ana"],
+            outing_id=archived.id,
+        )
+
+    assert expenses.rows == []
+    assert uow.commits == 0
+    assert uow.rollbacks == 3
+
+
+def test_edit_and_delete_reject_an_archived_current_outing():
+    group_id = "group-one"
+    archived = FakeOuting("archived", group_id, archived_at=NOW)
+    original = FakeExpense(
+        "expense-one",
+        group_id,
+        "Lunch",
+        10_000,
+        {"ana": 10_000},
+        ("ana", "beto"),
+        NOW,
+        NOW,
+        archived.id,
+    )
+    group_id, _participants, expenses, uow, service = fixture(
+        expenses=(original,), outings=(archived,)
+    )
+
+    with pytest.raises(ArchivedOutingReadOnlyError):
+        service.edit(
+            group_id,
+            original.id,
+            "Changed",
+            10_000,
+            {"ana": 10_000},
+            ["ana", "beto"],
+        )
+    with pytest.raises(ArchivedOutingReadOnlyError):
+        service.delete(group_id, original.id)
+
+    assert expenses.rows[0].description == "Lunch"
+    assert uow.commits == 0
+    assert uow.rollbacks == 2
 
 
 def test_create_persists_valid_multi_contributor_expense_atomically():

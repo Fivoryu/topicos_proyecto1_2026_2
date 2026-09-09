@@ -37,6 +37,10 @@ def get_group_service(request: Request) -> Any:
     return _required_state(request, "group_service")
 
 
+def get_workspace_service(request: Request) -> Any:
+    return _required_state(request, "workspace_service")
+
+
 def get_participant_service(request: Request) -> Any:
     return _required_state(request, "participant_service")
 
@@ -186,6 +190,7 @@ __all__ = [
     "get_expense_repository",
     "get_expense_service",
     "get_group_service",
+    "get_workspace_service",
     "get_participant_repository",
     "get_participant_service",
     "identifier",

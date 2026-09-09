@@ -20,7 +20,7 @@ from .ports import (
     SessionTokenSource,
 )
 
-Role = Literal["owner", "member"]
+Role = Literal["owner", "member"] | None
 
 
 class AuthenticationError(Exception):
@@ -70,7 +70,7 @@ class SessionIdentity:
 
     account_id: Any
     login_name: str
-    active_group_id: Any
+    active_group_id: Any | None
     role: Role
     expires_at: datetime
     token: str | None = None
@@ -219,9 +219,9 @@ class AuthService:
             membership = self._memberships.find_for_account(account_id)
         except (AttributeError, KeyError, TypeError, ValueError) as error:
             raise InvalidCredentialsError() from error
-        if not self._is_usable_membership(membership, account_id):
-            # Account-without-group is intentionally indistinguishable from a
-            # failed login: the minimum product only authenticates group actors.
+        if membership is not None and not self._is_usable_membership(
+            membership, account_id
+        ):
             raise InvalidCredentialsError()
 
         token = self._tokens.generate()
@@ -263,7 +263,9 @@ class AuthService:
                 raise UnauthorizedError()
             account_id = cast(AccountId, _value(account, "id"))
             membership = self._memberships.find_for_account(account_id)
-            if not self._is_usable_membership(membership, account_id):
+            if membership is not None and not self._is_usable_membership(
+                membership, account_id
+            ):
                 raise UnauthorizedError()
             expires_at = cast(datetime, _value(session, "expires_at"))
             return self._identity(account, membership, expires_at, token)
@@ -340,17 +342,22 @@ class AuthService:
     @staticmethod
     def _identity(
         account: object,
-        membership: object,
+        membership: object | None,
         expires_at: datetime,
         token: str | None,
     ) -> SessionIdentity:
         account_id = cast(AccountId, _value(account, "id"))
-        owner_account_id = _value(membership, "owner_account_id")
-        role: Role = "owner" if account_id == owner_account_id else "member"
+        if membership is None:
+            active_group_id = None
+            role: Role = None
+        else:
+            owner_account_id = _value(membership, "owner_account_id")
+            active_group_id = _value(membership, "group_id")
+            role = "owner" if account_id == owner_account_id else "member"
         return SessionIdentity(
             account_id=account_id,
             login_name=cast(str, _value(account, "login_name")),
-            active_group_id=_value(membership, "group_id"),
+            active_group_id=active_group_id,
             role=role,
             expires_at=expires_at,
             token=token,

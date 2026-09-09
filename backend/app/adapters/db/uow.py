@@ -9,6 +9,8 @@ from sqlalchemy.orm import Session as OrmSession
 from .repositories import (
     ExpenseRepositoryAdapter,
     GroupRepositoryAdapter,
+    MembershipRepositoryAdapter,
+    OutingRepositoryAdapter,
     ParticipantRepositoryAdapter,
 )
 
@@ -28,7 +30,9 @@ class SqlAlchemyUnitOfWork:
         self._owns_session = session is None
         self.participants = None
         self.expenses = None
+        self.outings = None
         self.groups = None
+        self.memberships = None
 
     def __enter__(self) -> SqlAlchemyUnitOfWork:
         if self._session is None:
@@ -37,7 +41,9 @@ class SqlAlchemyUnitOfWork:
             self._session = self._session_factory()
         self.participants = ParticipantRepositoryAdapter(self._session)
         self.expenses = ExpenseRepositoryAdapter(self._session)
+        self.outings = OutingRepositoryAdapter(self._session)
         self.groups = GroupRepositoryAdapter(self._session)
+        self.memberships = MembershipRepositoryAdapter(self._session)
         return self
 
     def __exit__(self, exc_type, _exc, _traceback) -> bool:
@@ -58,6 +64,11 @@ class SqlAlchemyUnitOfWork:
     def rollback(self) -> None:
         if self._session is not None:
             self._session.rollback()
+
+    def flush(self) -> None:
+        if self._session is None:
+            raise RuntimeError("unit of work is not active")
+        self._session.flush()
 
 
 UnitOfWork = SqlAlchemyUnitOfWork

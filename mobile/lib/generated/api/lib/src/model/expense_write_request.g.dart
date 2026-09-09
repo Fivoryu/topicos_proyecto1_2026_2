@@ -37,10 +37,14 @@ ExpenseWriteRequest _$ExpenseWriteRequestFromJson(Map<String, dynamic> json) =>
                 .toList(),
           ),
           description: $checkedConvert('description', (v) => v as String),
+          outingId: $checkedConvert('outing_id', (v) => v as String?),
         );
         return val;
       },
-      fieldKeyMap: const {'beneficiaryIds': 'beneficiary_ids'},
+      fieldKeyMap: const {
+        'beneficiaryIds': 'beneficiary_ids',
+        'outingId': 'outing_id',
+      },
     );
 
 Map<String, dynamic> _$ExpenseWriteRequestToJson(
@@ -50,4 +54,5 @@ Map<String, dynamic> _$ExpenseWriteRequestToJson(
   'beneficiary_ids': instance.beneficiaryIds,
   'contributors': instance.contributors.map((e) => e.toJson()).toList(),
   'description': instance.description,
+  'outing_id': ?instance.outingId,
 };

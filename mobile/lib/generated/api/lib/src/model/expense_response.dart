@@ -34,6 +34,8 @@ class ExpenseResponse {
 
     required  this.id,
 
+     this.outingId,
+
      this.updatedAt,
   });
 
@@ -123,6 +125,18 @@ class ExpenseResponse {
 
   @JsonKey(
     
+    name: r'outing_id',
+    required: false,
+    includeIfNull: false,
+  )
+
+
+  final String? outingId;
+
+
+
+  @JsonKey(
+    
     name: r'updated_at',
     required: false,
     includeIfNull: false,
@@ -144,6 +158,7 @@ class ExpenseResponse {
       other.description == description &&
       other.groupId == groupId &&
       other.id == id &&
+      other.outingId == outingId &&
       other.updatedAt == updatedAt;
 
     @override
@@ -155,6 +170,7 @@ class ExpenseResponse {
         description.hashCode +
         groupId.hashCode +
         id.hashCode +
+        (outingId == null ? 0 : outingId.hashCode) +
         (updatedAt == null ? 0 : updatedAt.hashCode);
 
   factory ExpenseResponse.fromJson(Map<String, dynamic> json) => _$ExpenseResponseFromJson(json);

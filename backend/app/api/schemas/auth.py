@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from datetime import datetime
 from typing import Any, Literal
+from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
-Role = Literal["owner", "member"]
+Role = Literal["owner", "member"] | None
 
 
 class LoginRequest(BaseModel):
@@ -34,8 +35,8 @@ class SessionIdentityResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     account: AccountIdentityResponse
-    active_group_id: Any
-    role: Role
+    active_group_id: str | None
+    role: Role = Field(json_schema_extra={"enum": ["owner", "member"]})
     expires_at: datetime
 
     @classmethod
@@ -48,13 +49,16 @@ class SessionIdentityResponse(BaseModel):
                 "id": getattr(identity, "account_id"),
                 "login_name": getattr(identity, "login_name"),
             }
+        active_group_id = getattr(
+            identity,
+            "active_group_id",
+            getattr(identity, "group_id", None),
+        )
+        if isinstance(active_group_id, UUID):
+            active_group_id = str(active_group_id)
         return cls(
             account=AccountIdentityResponse.model_validate(account),
-            active_group_id=getattr(
-                identity,
-                "active_group_id",
-                getattr(identity, "group_id", None),
-            ),
+            active_group_id=active_group_id,
             role=getattr(identity, "role"),
             expires_at=getattr(identity, "expires_at"),
         )

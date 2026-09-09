@@ -16,6 +16,7 @@ import 'package:openapi/src/model/participant_write_request.dart';
 import 'package:openapi/src/model/rename_participant_request.dart';
 
 class ParticipantsApi {
+
   final Dio _dio;
 
   const ParticipantsApi(this._dio);
@@ -24,9 +25,9 @@ class ParticipantsApi {
   /// Add a normalized, group-scoped participant.
   ///
   /// Parameters:
-  /// * [groupId]
+  /// * [groupId] 
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
-  /// * [participantWriteRequest]
+  /// * [participantWriteRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -36,8 +37,7 @@ class ParticipantsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ParticipantResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ParticipantResponse>>
-  addParticipantApiV1GroupsGroupIdParticipantsPost({
+  Future<Response<ParticipantResponse>> addParticipantApiV1GroupsGroupIdParticipantsPost({ 
     required String groupId,
     required String xCSRFToken,
     required ParticipantWriteRequest participantWriteRequest,
@@ -48,15 +48,13 @@ class ParticipantsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/participants'.replaceAll(
-      '{'
-      r'group_id'
-      '}',
-      groupId.toString(),
-    );
+    final _path = r'/api/v1/groups/{group_id}/participants'.replaceAll('{' r'group_id' '}', groupId.toString());
     final _options = Options(
       method: r'POST',
-      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
+      headers: <String, dynamic>{
+        r'X-CSRF-Token': xCSRFToken,
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -75,10 +73,13 @@ class ParticipantsApi {
     dynamic _bodyData;
 
     try {
-      _bodyData = jsonEncode(participantWriteRequest);
-    } catch (error, stackTrace) {
+_bodyData=jsonEncode(participantWriteRequest);
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(_dio.options, _path),
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
         type: DioExceptionType.unknown,
         error: error,
         stackTrace: stackTrace,
@@ -97,14 +98,8 @@ class ParticipantsApi {
     ParticipantResponse? _responseData;
 
     try {
-      final rawData = _response.data;
-      _responseData = rawData == null
-          ? null
-          : deserialize<ParticipantResponse, ParticipantResponse>(
-              rawData,
-              'ParticipantResponse',
-              growable: true,
-            );
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ParticipantResponse, ParticipantResponse>(rawData, 'ParticipantResponse', growable: true);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -131,8 +126,8 @@ class ParticipantsApi {
   /// Archive a participant without deleting historical references.
   ///
   /// Parameters:
-  /// * [groupId]
-  /// * [participantId]
+  /// * [groupId] 
+  /// * [participantId] 
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -143,8 +138,7 @@ class ParticipantsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ParticipantResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ParticipantResponse>>
-  archiveParticipantApiV1GroupsGroupIdParticipantsParticipantIdArchivePost({
+  Future<Response<ParticipantResponse>> archiveParticipantApiV1GroupsGroupIdParticipantsParticipantIdArchivePost({ 
     required String groupId,
     required String participantId,
     required String xCSRFToken,
@@ -155,23 +149,13 @@ class ParticipantsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path =
-        r'/api/v1/groups/{group_id}/participants/{participant_id}/archive'
-            .replaceAll(
-              '{'
-              r'group_id'
-              '}',
-              groupId.toString(),
-            )
-            .replaceAll(
-              '{'
-              r'participant_id'
-              '}',
-              participantId.toString(),
-            );
+    final _path = r'/api/v1/groups/{group_id}/participants/{participant_id}/archive'.replaceAll('{' r'group_id' '}', groupId.toString()).replaceAll('{' r'participant_id' '}', participantId.toString());
     final _options = Options(
       method: r'POST',
-      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
+      headers: <String, dynamic>{
+        r'X-CSRF-Token': xCSRFToken,
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -197,14 +181,8 @@ class ParticipantsApi {
     ParticipantResponse? _responseData;
 
     try {
-      final rawData = _response.data;
-      _responseData = rawData == null
-          ? null
-          : deserialize<ParticipantResponse, ParticipantResponse>(
-              rawData,
-              'ParticipantResponse',
-              growable: true,
-            );
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ParticipantResponse, ParticipantResponse>(rawData, 'ParticipantResponse', growable: true);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -231,8 +209,8 @@ class ParticipantsApi {
   /// Physically delete only a never-referenced participant.
   ///
   /// Parameters:
-  /// * [groupId]
-  /// * [participantId]
+  /// * [groupId] 
+  /// * [participantId] 
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -243,8 +221,7 @@ class ParticipantsApi {
   ///
   /// Returns a [Future]
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<void>>
-  deleteParticipantApiV1GroupsGroupIdParticipantsParticipantIdDelete({
+  Future<Response<void>> deleteParticipantApiV1GroupsGroupIdParticipantsParticipantIdDelete({ 
     required String groupId,
     required String participantId,
     required String xCSRFToken,
@@ -255,22 +232,13 @@ class ParticipantsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/participants/{participant_id}'
-        .replaceAll(
-          '{'
-          r'group_id'
-          '}',
-          groupId.toString(),
-        )
-        .replaceAll(
-          '{'
-          r'participant_id'
-          '}',
-          participantId.toString(),
-        );
+    final _path = r'/api/v1/groups/{group_id}/participants/{participant_id}'.replaceAll('{' r'group_id' '}', groupId.toString()).replaceAll('{' r'participant_id' '}', participantId.toString());
     final _options = Options(
       method: r'DELETE',
-      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
+      headers: <String, dynamic>{
+        r'X-CSRF-Token': xCSRFToken,
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -300,7 +268,7 @@ class ParticipantsApi {
   /// List active and archived participants in stable creation order.
   ///
   /// Parameters:
-  /// * [groupId]
+  /// * [groupId] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -310,8 +278,7 @@ class ParticipantsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [List<ParticipantResponse>] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<List<ParticipantResponse>>>
-  listParticipantsApiV1GroupsGroupIdParticipantsGet({
+  Future<Response<List<ParticipantResponse>>> listParticipantsApiV1GroupsGroupIdParticipantsGet({ 
     required String groupId,
     CancelToken? cancelToken,
     Map<String, dynamic>? headers,
@@ -320,15 +287,12 @@ class ParticipantsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/participants'.replaceAll(
-      '{'
-      r'group_id'
-      '}',
-      groupId.toString(),
-    );
+    final _path = r'/api/v1/groups/{group_id}/participants'.replaceAll('{' r'group_id' '}', groupId.toString());
     final _options = Options(
       method: r'GET',
-      headers: <String, dynamic>{...?headers},
+      headers: <String, dynamic>{
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -354,14 +318,8 @@ class ParticipantsApi {
     List<ParticipantResponse>? _responseData;
 
     try {
-      final rawData = _response.data;
-      _responseData = rawData == null
-          ? null
-          : deserialize<List<ParticipantResponse>, ParticipantResponse>(
-              rawData,
-              'List<ParticipantResponse>',
-              growable: true,
-            );
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<List<ParticipantResponse>, ParticipantResponse>(rawData, 'List<ParticipantResponse>', growable: true);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -388,8 +346,8 @@ class ParticipantsApi {
   /// Reactivate an archived participant.
   ///
   /// Parameters:
-  /// * [groupId]
-  /// * [participantId]
+  /// * [groupId] 
+  /// * [participantId] 
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
@@ -400,8 +358,7 @@ class ParticipantsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ParticipantResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ParticipantResponse>>
-  reactivateParticipantApiV1GroupsGroupIdParticipantsParticipantIdReactivatePost({
+  Future<Response<ParticipantResponse>> reactivateParticipantApiV1GroupsGroupIdParticipantsParticipantIdReactivatePost({ 
     required String groupId,
     required String participantId,
     required String xCSRFToken,
@@ -412,23 +369,13 @@ class ParticipantsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path =
-        r'/api/v1/groups/{group_id}/participants/{participant_id}/reactivate'
-            .replaceAll(
-              '{'
-              r'group_id'
-              '}',
-              groupId.toString(),
-            )
-            .replaceAll(
-              '{'
-              r'participant_id'
-              '}',
-              participantId.toString(),
-            );
+    final _path = r'/api/v1/groups/{group_id}/participants/{participant_id}/reactivate'.replaceAll('{' r'group_id' '}', groupId.toString()).replaceAll('{' r'participant_id' '}', participantId.toString());
     final _options = Options(
       method: r'POST',
-      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
+      headers: <String, dynamic>{
+        r'X-CSRF-Token': xCSRFToken,
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -454,14 +401,8 @@ class ParticipantsApi {
     ParticipantResponse? _responseData;
 
     try {
-      final rawData = _response.data;
-      _responseData = rawData == null
-          ? null
-          : deserialize<ParticipantResponse, ParticipantResponse>(
-              rawData,
-              'ParticipantResponse',
-              growable: true,
-            );
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ParticipantResponse, ParticipantResponse>(rawData, 'ParticipantResponse', growable: true);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -488,10 +429,10 @@ class ParticipantsApi {
   /// Rename only the participant display identity.
   ///
   /// Parameters:
-  /// * [groupId]
-  /// * [participantId]
+  /// * [groupId] 
+  /// * [participantId] 
   /// * [xCSRFToken] - Must match the readable cc_csrf cookie.
-  /// * [renameParticipantRequest]
+  /// * [renameParticipantRequest] 
   /// * [cancelToken] - A [CancelToken] that can be used to cancel the operation
   /// * [headers] - Can be used to add additional headers to the request
   /// * [extras] - Can be used to add flags to the request
@@ -501,8 +442,7 @@ class ParticipantsApi {
   ///
   /// Returns a [Future] containing a [Response] with a [ParticipantResponse] as data
   /// Throws [DioException] if API call or serialization fails
-  Future<Response<ParticipantResponse>>
-  renameParticipantApiV1GroupsGroupIdParticipantsParticipantIdPatch({
+  Future<Response<ParticipantResponse>> renameParticipantApiV1GroupsGroupIdParticipantsParticipantIdPatch({ 
     required String groupId,
     required String participantId,
     required String xCSRFToken,
@@ -514,22 +454,13 @@ class ParticipantsApi {
     ProgressCallback? onSendProgress,
     ProgressCallback? onReceiveProgress,
   }) async {
-    final _path = r'/api/v1/groups/{group_id}/participants/{participant_id}'
-        .replaceAll(
-          '{'
-          r'group_id'
-          '}',
-          groupId.toString(),
-        )
-        .replaceAll(
-          '{'
-          r'participant_id'
-          '}',
-          participantId.toString(),
-        );
+    final _path = r'/api/v1/groups/{group_id}/participants/{participant_id}'.replaceAll('{' r'group_id' '}', groupId.toString()).replaceAll('{' r'participant_id' '}', participantId.toString());
     final _options = Options(
       method: r'PATCH',
-      headers: <String, dynamic>{r'X-CSRF-Token': xCSRFToken, ...?headers},
+      headers: <String, dynamic>{
+        r'X-CSRF-Token': xCSRFToken,
+        ...?headers,
+      },
       extra: <String, dynamic>{
         'secure': <Map<String, String>>[
           {
@@ -548,10 +479,13 @@ class ParticipantsApi {
     dynamic _bodyData;
 
     try {
-      _bodyData = jsonEncode(renameParticipantRequest);
-    } catch (error, stackTrace) {
+_bodyData=jsonEncode(renameParticipantRequest);
+    } catch(error, stackTrace) {
       throw DioException(
-        requestOptions: _options.compose(_dio.options, _path),
+         requestOptions: _options.compose(
+          _dio.options,
+          _path,
+        ),
         type: DioExceptionType.unknown,
         error: error,
         stackTrace: stackTrace,
@@ -570,14 +504,8 @@ class ParticipantsApi {
     ParticipantResponse? _responseData;
 
     try {
-      final rawData = _response.data;
-      _responseData = rawData == null
-          ? null
-          : deserialize<ParticipantResponse, ParticipantResponse>(
-              rawData,
-              'ParticipantResponse',
-              growable: true,
-            );
+final rawData = _response.data;
+_responseData = rawData == null ? null : deserialize<ParticipantResponse, ParticipantResponse>(rawData, 'ParticipantResponse', growable: true);
     } catch (error, stackTrace) {
       throw DioException(
         requestOptions: _response.requestOptions,
@@ -599,4 +527,5 @@ class ParticipantsApi {
       extra: _response.extra,
     );
   }
+
 }

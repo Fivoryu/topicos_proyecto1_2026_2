@@ -35,10 +35,10 @@ export interface SessionIdentityResponse {
     account: AccountIdentityResponse;
     /**
      * 
-     * @type {any}
+     * @type {string}
      * @memberof SessionIdentityResponse
      */
-    activeGroupId: any | null;
+    activeGroupId: string | null;
     /**
      * 
      * @type {Date}
@@ -50,7 +50,7 @@ export interface SessionIdentityResponse {
      * @type {string}
      * @memberof SessionIdentityResponse
      */
-    role: SessionIdentityResponseRoleEnum;
+    role: SessionIdentityResponseRoleEnum | null;
 }
 
 

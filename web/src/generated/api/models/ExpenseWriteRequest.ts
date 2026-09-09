@@ -51,6 +51,12 @@ export interface ExpenseWriteRequest {
      * @memberof ExpenseWriteRequest
      */
     description: string;
+    /**
+     * 
+     * @type {string}
+     * @memberof ExpenseWriteRequest
+     */
+    outingId?: string | null;
 }
 
 /**
@@ -78,6 +84,7 @@ export function ExpenseWriteRequestFromJSONTyped(json: any, ignoreDiscriminator:
         'beneficiaryIds': json['beneficiary_ids'],
         'contributors': ((json['contributors'] as Array<any>).map(ExpenseContributorRequestFromJSON)),
         'description': json['description'],
+        'outingId': json['outing_id'] == null ? undefined : json['outing_id'],
     };
 }
 
@@ -96,6 +103,7 @@ export function ExpenseWriteRequestToJSONTyped(value?: ExpenseWriteRequest | nul
         'beneficiary_ids': value['beneficiaryIds'],
         'contributors': ((value['contributors'] as Array<any>).map(ExpenseContributorRequestToJSON)),
         'description': value['description'],
+        'outing_id': value['outingId'],
     };
 }
 

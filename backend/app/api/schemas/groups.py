@@ -17,6 +17,34 @@ class GroupUpdateRequest(BaseModel):
     )
 
 
+class GroupCreateRequest(BaseModel):
+    """The account-scoped group creation command."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    name: str
+
+
+class GroupSummaryResponse(BaseModel):
+    """Server-derived account-scoped group summary without child rows."""
+
+    model_config = ConfigDict(
+        extra="forbid", from_attributes=True, populate_by_name=True
+    )
+
+    id: str
+    name: str
+    owner_account_id: str
+    settlement_policy: Literal["owner_only", "any_member"] = Field(
+        alias="settlementPolicy"
+    )
+    role: Literal["owner", "member"]
+    member_count: int | None = None
+    outings_count: int | None = None
+    participants_count: int | None = None
+    expenses_count: int | None = None
+
+
 class GroupResponse(BaseModel):
     """Server-owned group identity and settlement policy."""
 
@@ -32,4 +60,9 @@ class GroupResponse(BaseModel):
     )
 
 
-__all__ = ["GroupResponse", "GroupUpdateRequest"]
+__all__ = [
+    "GroupCreateRequest",
+    "GroupResponse",
+    "GroupSummaryResponse",
+    "GroupUpdateRequest",
+]

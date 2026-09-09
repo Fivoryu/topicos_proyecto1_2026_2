@@ -15,6 +15,7 @@ from sqlalchemy import (
     CheckConstraint,
     DateTime,
     ForeignKey,
+    ForeignKeyConstraint,
     Index,
     Integer,
     LargeBinary,
@@ -92,6 +93,12 @@ class GroupMembership(Base):
     __tablename__ = "group_memberships"
     __table_args__ = (
         PrimaryKeyConstraint("group_id", "account_id", name="pk_group_memberships"),
+        Index(
+            "ix_group_memberships_account_active",
+            "account_id",
+            "ended_at",
+            "group_id",
+        ),
         Index("ix_group_memberships_account_id", "account_id"),
     )
 
@@ -107,6 +114,40 @@ class GroupMembership(Base):
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utc_now
+    )
+    ended_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+
+
+class Outing(Base):
+    """A group-owned outing with an active or archived lifecycle."""
+
+    __tablename__ = "outings"
+    __table_args__ = (
+        UniqueConstraint("id", "group_id", name="uq_outings_id_group_id"),
+        Index("ix_outings_group_id", "group_id"),
+        Index("ix_outings_group_created", "group_id", "created_at", "id"),
+        CheckConstraint("length(trim(name)) > 0", name="ck_outings_name_nonempty"),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    group_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("groups.id", name="fk_outings_group", ondelete="CASCADE"),
+        nullable=False,
+    )
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now, onupdate=_utc_now
     )
 
 
@@ -147,7 +188,14 @@ class Expense(Base):
     __tablename__ = "expenses"
     __table_args__ = (
         CheckConstraint("amount_cents > 0", name="ck_expenses_amount_positive"),
+        ForeignKeyConstraint(
+            ["outing_id", "group_id"],
+            ["outings.id", "outings.group_id"],
+            name="fk_expenses_outing_group",
+            ondelete="RESTRICT",
+        ),
         Index("ix_expenses_group_created", "group_id", "created_at", "id"),
+        Index("ix_expenses_group_outing", "group_id", "outing_id"),
     )
 
     id: Mapped[UUID] = mapped_column(
@@ -158,6 +206,7 @@ class Expense(Base):
         ForeignKey("groups.id", name="fk_expenses_group", ondelete="CASCADE"),
         nullable=False,
     )
+    outing_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
     amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
@@ -278,6 +327,7 @@ __all__ = [
     "ExpenseContribution",
     "Group",
     "GroupMembership",
+    "Outing",
     "Participant",
     "Session",
 ]

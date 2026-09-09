@@ -21,14 +21,14 @@ SessionIdentityResponse _$SessionIdentityResponseFromJson(
         'account',
         (v) => AccountIdentityResponse.fromJson(v as Map<String, dynamic>),
       ),
-      activeGroupId: $checkedConvert('active_group_id', (v) => v),
+      activeGroupId: $checkedConvert('active_group_id', (v) => v as String?),
       expiresAt: $checkedConvert(
         'expires_at',
         (v) => DateTime.parse(v as String),
       ),
       role: $checkedConvert(
         'role',
-        (v) => $enumDecode(_$SessionIdentityResponseRoleEnumEnumMap, v),
+        (v) => $enumDecodeNullable(_$SessionIdentityResponseRoleEnumEnumMap, v),
       ),
     );
     return val;
@@ -45,7 +45,7 @@ Map<String, dynamic> _$SessionIdentityResponseToJson(
   'account': instance.account.toJson(),
   'active_group_id': instance.activeGroupId,
   'expires_at': instance.expiresAt.toIso8601String(),
-  'role': _$SessionIdentityResponseRoleEnumEnumMap[instance.role]!,
+  'role': _$SessionIdentityResponseRoleEnumEnumMap[instance.role],
 };
 
 const _$SessionIdentityResponseRoleEnumEnumMap = {

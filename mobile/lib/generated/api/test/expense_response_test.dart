@@ -42,6 +42,11 @@ void main() {
       // TODO
     });
 
+    // String outingId
+    test('to test the property `outingId`', () async {
+      // TODO
+    });
+
     // DateTime updatedAt
     test('to test the property `updatedAt`', () async {
       // TODO

@@ -54,6 +54,17 @@ def _parse_command(
     return amount_cents, contributors, beneficiaries
 
 
+def _call_expense_mutation(method: Any, *args: Any, actor: Any, outing_id: Any):
+    """Pass the additive outing field while retaining simple test-double support."""
+
+    try:
+        return method(*args, actor=actor, outing_id=outing_id)
+    except TypeError as error:
+        if "outing_id" not in str(error):
+            raise
+        return call_with_actor(method, *args, actor=actor)
+
+
 def _children(expense: object, repository: Any, group_id: Identifier):
     expense_id = identifier(expense, "id", "expense_id")
     contributors = value(expense, "contributors", "contributions", default=MISSING)
@@ -148,19 +159,26 @@ def _response(
                 archived=is_archived,
             )
         )
-    amount_cents = value(expense, "amount_cents", "amount")
-    if not isinstance(amount_cents, int) or isinstance(amount_cents, bool):
-        raise PersistenceCorruptedError("Expense source must contain integer cents.")
-    return ExpenseResponse(
-        id=identifier(expense, "id", "expense_id"),
-        group_id=identifier(expense, "group_id"),
-        description=value(expense, "description"),  # type: ignore[arg-type]
-        amount_cents=amount_cents,
-        contributors=contributors,
-        beneficiaries=beneficiaries,
-        created_at=value(expense, "created_at", default=None),  # type: ignore[arg-type]
-        updated_at=value(expense, "updated_at", default=None),  # type: ignore[arg-type]
-    )
+        amount_cents = value(expense, "amount_cents", "amount")
+        if not isinstance(amount_cents, int) or isinstance(amount_cents, bool):
+            raise PersistenceCorruptedError(
+                "Expense source must contain integer cents."
+            )
+        raw_outing_id = value(expense, "outing_id", default=None)
+        outing_id: str | None = None
+        if raw_outing_id is not None:
+            outing_id = identifier(expense, "outing_id")
+        return ExpenseResponse(
+            id=identifier(expense, "id", "expense_id"),
+            group_id=identifier(expense, "group_id"),
+            description=value(expense, "description"),  # type: ignore[arg-type]
+            amount_cents=amount_cents,
+            outing_id=outing_id,
+            contributors=contributors,
+            beneficiaries=beneficiaries,
+            created_at=value(expense, "created_at", default=None),  # type: ignore[arg-type]
+            updated_at=value(expense, "updated_at", default=None),  # type: ignore[arg-type]
+        )
 
 
 def _list_expenses(service: Any, repository: Any, group_id: Identifier, actor: Any):
@@ -224,7 +242,7 @@ def create_expense(
 
     amount_cents, contributors, beneficiaries = _parse_command(payload)
     stored_group_id = coerce_identifier(group_id)
-    row = call_with_actor(
+    row = _call_expense_mutation(
         getattr(service, "create"),
         stored_group_id,
         payload.description,
@@ -232,6 +250,7 @@ def create_expense(
         contributors,
         beneficiaries,
         actor=actor,
+        outing_id=payload.outing_id,
     )
     participants = _participant_rows(participant_service, stored_group_id, actor)
     return _response(row, stored_group_id, participants, repository)
@@ -271,7 +290,7 @@ def edit_expense(
 
     amount_cents, contributors, beneficiaries = _parse_command(payload)
     stored_group_id = coerce_identifier(group_id)
-    row = call_with_actor(
+    row = _call_expense_mutation(
         getattr(service, "edit"),
         stored_group_id,
         coerce_identifier(expense_id),
@@ -280,6 +299,7 @@ def edit_expense(
         contributors,
         beneficiaries,
         actor=actor,
+        outing_id=payload.outing_id,
     )
     participants = _participant_rows(participant_service, stored_group_id, actor)
     return _response(row, stored_group_id, participants, repository)

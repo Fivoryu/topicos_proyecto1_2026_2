@@ -76,9 +76,18 @@ Class | Method | HTTP request | Description
 [*ExpensesApi*](doc/ExpensesApi.md) | [**editExpenseApiV1GroupsGroupIdExpensesExpenseIdPatch**](doc/ExpensesApi.md#editexpenseapiv1groupsgroupidexpensesexpenseidpatch) | **PATCH** /api/v1/groups/{group_id}/expenses/{expense_id} | Edit Expense
 [*ExpensesApi*](doc/ExpensesApi.md) | [**getExpenseApiV1GroupsGroupIdExpensesExpenseIdGet**](doc/ExpensesApi.md#getexpenseapiv1groupsgroupidexpensesexpenseidget) | **GET** /api/v1/groups/{group_id}/expenses/{expense_id} | Get Expense
 [*ExpensesApi*](doc/ExpensesApi.md) | [**listExpensesApiV1GroupsGroupIdExpensesGet**](doc/ExpensesApi.md#listexpensesapiv1groupsgroupidexpensesget) | **GET** /api/v1/groups/{group_id}/expenses | List Expenses
+[*GroupsApi*](doc/GroupsApi.md) | [**createGroupApiV1GroupsPost**](doc/GroupsApi.md#creategroupapiv1groupspost) | **POST** /api/v1/groups | Create Group
 [*GroupsApi*](doc/GroupsApi.md) | [**getGroupApiV1GroupsGroupIdGet**](doc/GroupsApi.md#getgroupapiv1groupsgroupidget) | **GET** /api/v1/groups/{group_id} | Get Group
+[*GroupsApi*](doc/GroupsApi.md) | [**listGroupsApiV1GroupsGet**](doc/GroupsApi.md#listgroupsapiv1groupsget) | **GET** /api/v1/groups | List Groups
 [*GroupsApi*](doc/GroupsApi.md) | [**updateGroupApiV1GroupsGroupIdPatch**](doc/GroupsApi.md#updategroupapiv1groupsgroupidpatch) | **PATCH** /api/v1/groups/{group_id} | Update Group
 [*HealthApi*](doc/HealthApi.md) | [**healthHealthGet**](doc/HealthApi.md#healthhealthget) | **GET** /health | Health
+[*OutingsApi*](doc/OutingsApi.md) | [**archiveOutingApiV1GroupsGroupIdOutingsOutingIdArchivePost**](doc/OutingsApi.md#archiveoutingapiv1groupsgroupidoutingsoutingidarchivepost) | **POST** /api/v1/groups/{group_id}/outings/{outing_id}/archive | Archive Outing
+[*OutingsApi*](doc/OutingsApi.md) | [**createOutingApiV1GroupsGroupIdOutingsPost**](doc/OutingsApi.md#createoutingapiv1groupsgroupidoutingspost) | **POST** /api/v1/groups/{group_id}/outings | Create Outing
+[*OutingsApi*](doc/OutingsApi.md) | [**deleteOutingApiV1GroupsGroupIdOutingsOutingIdDelete**](doc/OutingsApi.md#deleteoutingapiv1groupsgroupidoutingsoutingiddelete) | **DELETE** /api/v1/groups/{group_id}/outings/{outing_id} | Delete Outing
+[*OutingsApi*](doc/OutingsApi.md) | [**editOutingApiV1GroupsGroupIdOutingsOutingIdPatch**](doc/OutingsApi.md#editoutingapiv1groupsgroupidoutingsoutingidpatch) | **PATCH** /api/v1/groups/{group_id}/outings/{outing_id} | Edit Outing
+[*OutingsApi*](doc/OutingsApi.md) | [**getOutingApiV1GroupsGroupIdOutingsOutingIdGet**](doc/OutingsApi.md#getoutingapiv1groupsgroupidoutingsoutingidget) | **GET** /api/v1/groups/{group_id}/outings/{outing_id} | Get Outing
+[*OutingsApi*](doc/OutingsApi.md) | [**listOutingsApiV1GroupsGroupIdOutingsGet**](doc/OutingsApi.md#listoutingsapiv1groupsgroupidoutingsget) | **GET** /api/v1/groups/{group_id}/outings | List Outings
+[*OutingsApi*](doc/OutingsApi.md) | [**unarchiveOutingApiV1GroupsGroupIdOutingsOutingIdUnarchivePost**](doc/OutingsApi.md#unarchiveoutingapiv1groupsgroupidoutingsoutingidunarchivepost) | **POST** /api/v1/groups/{group_id}/outings/{outing_id}/unarchive | Unarchive Outing
 [*ParticipantsApi*](doc/ParticipantsApi.md) | [**addParticipantApiV1GroupsGroupIdParticipantsPost**](doc/ParticipantsApi.md#addparticipantapiv1groupsgroupidparticipantspost) | **POST** /api/v1/groups/{group_id}/participants | Add Participant
 [*ParticipantsApi*](doc/ParticipantsApi.md) | [**archiveParticipantApiV1GroupsGroupIdParticipantsParticipantIdArchivePost**](doc/ParticipantsApi.md#archiveparticipantapiv1groupsgroupidparticipantsparticipantidarchivepost) | **POST** /api/v1/groups/{group_id}/participants/{participant_id}/archive | Archive Participant
 [*ParticipantsApi*](doc/ParticipantsApi.md) | [**deleteParticipantApiV1GroupsGroupIdParticipantsParticipantIdDelete**](doc/ParticipantsApi.md#deleteparticipantapiv1groupsgroupidparticipantsparticipantiddelete) | **DELETE** /api/v1/groups/{group_id}/participants/{participant_id} | Delete Participant
@@ -101,11 +110,15 @@ Class | Method | HTTP request | Description
  - [ExpenseResponse](doc/ExpenseResponse.md)
  - [ExpenseWriteRequest](doc/ExpenseWriteRequest.md)
  - [FieldError](doc/FieldError.md)
+ - [GroupCreateRequest](doc/GroupCreateRequest.md)
  - [GroupResponse](doc/GroupResponse.md)
+ - [GroupSummaryResponse](doc/GroupSummaryResponse.md)
  - [GroupUpdateRequest](doc/GroupUpdateRequest.md)
  - [HealthResponse](doc/HealthResponse.md)
  - [HealthStatus](doc/HealthStatus.md)
  - [LoginRequest](doc/LoginRequest.md)
+ - [OutingResponse](doc/OutingResponse.md)
+ - [OutingWriteRequest](doc/OutingWriteRequest.md)
  - [ParticipantResponse](doc/ParticipantResponse.md)
  - [ParticipantWriteRequest](doc/ParticipantWriteRequest.md)
  - [RenameParticipantRequest](doc/RenameParticipantRequest.md)

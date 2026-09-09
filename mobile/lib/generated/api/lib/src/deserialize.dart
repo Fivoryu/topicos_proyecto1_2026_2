@@ -8,10 +8,14 @@ import 'package:openapi/src/model/expense_contributor_response.dart';
 import 'package:openapi/src/model/expense_response.dart';
 import 'package:openapi/src/model/expense_write_request.dart';
 import 'package:openapi/src/model/field_error.dart';
+import 'package:openapi/src/model/group_create_request.dart';
 import 'package:openapi/src/model/group_response.dart';
+import 'package:openapi/src/model/group_summary_response.dart';
 import 'package:openapi/src/model/group_update_request.dart';
 import 'package:openapi/src/model/health_response.dart';
 import 'package:openapi/src/model/login_request.dart';
+import 'package:openapi/src/model/outing_response.dart';
+import 'package:openapi/src/model/outing_write_request.dart';
 import 'package:openapi/src/model/participant_response.dart';
 import 'package:openapi/src/model/participant_write_request.dart';
 import 'package:openapi/src/model/rename_participant_request.dart';
@@ -60,8 +64,12 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return ExpenseWriteRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'FieldError':
           return FieldError.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'GroupCreateRequest':
+          return GroupCreateRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'GroupResponse':
           return GroupResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'GroupSummaryResponse':
+          return GroupSummaryResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'GroupUpdateRequest':
           return GroupUpdateRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'HealthResponse':
@@ -71,6 +79,10 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           
         case 'LoginRequest':
           return LoginRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'OutingResponse':
+          return OutingResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'OutingWriteRequest':
+          return OutingWriteRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ParticipantResponse':
           return ParticipantResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'ParticipantWriteRequest':

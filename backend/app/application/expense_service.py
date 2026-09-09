@@ -18,6 +18,17 @@ from backend.app.domain.expense_rules import _normalise_expense
 from backend.app.domain.split_service import equal_split
 
 from .derived_service import DerivedService
+from .outing_service import ArchivedOutingReadOnlyError
+
+
+class InvalidOutingReferenceError(DomainError):
+    """Raised when an outing is missing or outside the expense group."""
+
+    def __init__(self):
+        super().__init__(
+            "invalid_outing_reference",
+            "The outing reference is invalid for this group.",
+        )
 
 
 class ExpenseNotFoundError(DomainError):
@@ -97,12 +108,15 @@ class ExpenseService:
         contributors,
         beneficiaries,
         actor: object | None = None,
+        *,
+        outing_id: object | None = None,
     ) -> ExpenseRecord:
         """Create a fully validated source expense in one transaction."""
 
         del actor
         with self._transaction() as transaction:
-            expenses, participants = self._repositories(transaction)
+            expenses, participants, outings = self._repositories(transaction)
+            outing = self._validate_outing(outings, group_id, outing_id)
             participant_rows = self._list_participants(participants, group_id)
             normalized = self._validate(
                 description,
@@ -118,6 +132,7 @@ class ExpenseService:
                 normalized[1],
                 normalized[2],
                 normalized[3],
+                outing_id=_value(outing, "id", default=None),
             )
             result = self._create_source(expenses, group_id, expense, normalized)
             self._flush(transaction, expenses)
@@ -135,15 +150,20 @@ class ExpenseService:
         contributors,
         beneficiaries,
         actor: object | None = None,
+        *,
+        outing_id: object | None = None,
     ) -> ExpenseRecord:
         """Replace an expense only after its complete replacement is valid."""
 
         del actor
         with self._transaction() as transaction:
-            expenses, participants = self._repositories(transaction)
+            expenses, participants, outings = self._repositories(transaction)
             current = self._find_expense(expenses, group_id, expense_id)
             if current is None:
                 raise ExpenseNotFoundError()
+            current_outing_id = _value(current, "outing_id", default=None)
+            self._validate_outing(outings, group_id, current_outing_id)
+            self._validate_outing(outings, group_id, outing_id)
             participant_rows = self._list_participants(participants, group_id)
             normalized = self._validate(
                 description,
@@ -161,6 +181,7 @@ class ExpenseService:
                 normalized[3],
                 expense_id=expense_id,
                 created_at=_value(current, "created_at", default=None),
+                outing_id=outing_id,
             )
             result = self._update_source(
                 expenses, group_id, expense_id, current, replacement, normalized
@@ -181,19 +202,42 @@ class ExpenseService:
 
         del actor
         with self._transaction() as transaction:
-            expenses, participants = self._repositories(transaction)
-            if self._find_expense(expenses, group_id, expense_id) is None:
+            expenses, participants, outings = self._repositories(transaction)
+            current = self._find_expense(expenses, group_id, expense_id)
+            if current is None:
                 raise ExpenseNotFoundError()
+            self._validate_outing(
+                outings, group_id, _value(current, "outing_id", default=None)
+            )
             deleter = getattr(expenses, "delete", None)
             if deleter is None:
                 raise TypeError("expense repository cannot delete expenses")
             deleted = deleter(group_id, expense_id)
-            if deleted is False:
+            if not deleted:
                 raise ExpenseNotFoundError()
             self._flush(transaction, expenses)
             self._verify_zero_sum(group_id, participants, expenses)
         if self._publisher is not None:
             self._publisher.publish(group_id)
+
+    @staticmethod
+    def _validate_outing(outings, group_id, outing_id):
+        if outing_id is None:
+            return None
+        if outings is None:
+            raise InvalidOutingReferenceError()
+        finder = getattr(outings, "find_by_id", None)
+        if finder is None:
+            raise InvalidOutingReferenceError()
+        try:
+            outing = finder(group_id, outing_id)
+        except Exception as error:
+            raise InvalidOutingReferenceError() from error
+        if outing is None:
+            raise InvalidOutingReferenceError()
+        if _is_archived(outing):
+            raise ArchivedOutingReadOnlyError()
+        return outing
 
     def _validate(
         self,
@@ -246,6 +290,7 @@ class ExpenseService:
         *,
         expense_id: str | None = None,
         created_at: object = None,
+        outing_id: object | None = None,
     ) -> ExpenseRecord:
         now = self._now()
         created = created_at if isinstance(created_at, datetime) else now
@@ -258,6 +303,7 @@ class ExpenseService:
             beneficiaries=tuple(beneficiaries),
             created_at=created,
             updated_at=now,
+            outing_id=cast(Any, outing_id),
         )
 
     def _now(self) -> datetime:
@@ -359,10 +405,11 @@ class ExpenseService:
             ),
         )
 
-    def _repositories(self, transaction: Any) -> tuple[Any, Any]:
+    def _repositories(self, transaction: Any) -> tuple[Any, Any, Any]:
         expenses = getattr(transaction, "expenses", None) or self._expenses
         participants = getattr(transaction, "participants", None) or self._participants
-        return expenses, participants
+        outings = getattr(transaction, "outings", None)
+        return expenses, participants, outings
 
     @staticmethod
     def _flush(transaction, expenses) -> None:
@@ -400,4 +447,5 @@ __all__ = [
     "ExpenseNotFoundError",
     "ExpenseService",
     "InvalidExpenseDescriptionError",
+    "InvalidOutingReferenceError",
 ]

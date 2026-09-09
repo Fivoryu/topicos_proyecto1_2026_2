@@ -12,7 +12,7 @@ void main() {
       // TODO
     });
 
-    // Object activeGroupId
+    // String activeGroupId
     test('to test the property `activeGroupId`', () async {
       // TODO
     });

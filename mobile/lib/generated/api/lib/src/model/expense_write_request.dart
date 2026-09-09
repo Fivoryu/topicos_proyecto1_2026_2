@@ -26,6 +26,8 @@ class ExpenseWriteRequest {
     required  this.contributors,
 
     required  this.description,
+
+     this.outingId,
   });
 
   @JsonKey(
@@ -76,6 +78,18 @@ class ExpenseWriteRequest {
 
 
 
+  @JsonKey(
+    
+    name: r'outing_id',
+    required: false,
+    includeIfNull: false,
+  )
+
+
+  final String? outingId;
+
+
+
 
 
     @override
@@ -83,14 +97,16 @@ class ExpenseWriteRequest {
       other.amount == amount &&
       other.beneficiaryIds == beneficiaryIds &&
       other.contributors == contributors &&
-      other.description == description;
+      other.description == description &&
+      other.outingId == outingId;
 
     @override
     int get hashCode =>
         amount.hashCode +
         beneficiaryIds.hashCode +
         contributors.hashCode +
-        description.hashCode;
+        description.hashCode +
+        (outingId == null ? 0 : outingId.hashCode);
 
   factory ExpenseWriteRequest.fromJson(Map<String, dynamic> json) => _$ExpenseWriteRequestFromJson(json);
 

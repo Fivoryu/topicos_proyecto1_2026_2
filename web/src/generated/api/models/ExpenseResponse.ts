@@ -78,6 +78,12 @@ export interface ExpenseResponse {
     id: string;
     /**
      * 
+     * @type {string}
+     * @memberof ExpenseResponse
+     */
+    outingId?: string | null;
+    /**
+     * 
      * @type {Date}
      * @memberof ExpenseResponse
      */
@@ -114,6 +120,7 @@ export function ExpenseResponseFromJSONTyped(json: any, ignoreDiscriminator: boo
         'description': json['description'],
         'groupId': json['group_id'],
         'id': json['id'],
+        'outingId': json['outing_id'] == null ? undefined : json['outing_id'],
         'updatedAt': json['updated_at'] == null ? undefined : (new Date(json['updated_at'])),
     };
 }
@@ -136,6 +143,7 @@ export function ExpenseResponseToJSONTyped(value?: ExpenseResponse | null, ignor
         'description': value['description'],
         'group_id': value['groupId'],
         'id': value['id'],
+        'outing_id': value['outingId'],
         'updated_at': value['updatedAt'] === null ? null : ((value['updatedAt'] as any)?.toISOString()),
     };
 }

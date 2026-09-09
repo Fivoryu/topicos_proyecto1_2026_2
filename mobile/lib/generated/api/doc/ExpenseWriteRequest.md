@@ -12,6 +12,7 @@ Name | Type | Description | Notes
 **beneficiaryIds** | **List&lt;String&gt;** |  | 
 **contributors** | [**List&lt;ExpenseContributorRequest&gt;**](ExpenseContributorRequest.md) |  | 
 **description** | **String** |  | 
+**outingId** | **String** |  | [optional] 
 
 [[Back to Model list]](../README.md#documentation-for-models) [[Back to API list]](../README.md#documentation-for-api-endpoints) [[Back to README]](../README.md)
 

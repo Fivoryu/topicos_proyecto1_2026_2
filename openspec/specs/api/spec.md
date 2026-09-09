@@ -265,3 +265,23 @@ The API MUST expose `settlementPolicy` in the group payload and MUST accept upda
 - No WebSocket monetary or role payloads; the WebSocket is never a source of truth.
 - No persisted balance/transfer endpoints as independent ledgers.
 - No anonymous endpoints for group data, and no multi-group or group-creation endpoints in the MVP surface beyond the seeded group.
+
+## Active amendment: group-outing-workspaces
+
+The endpoint and error exclusions above remain the historical MVP baseline. For this active change only, the protected API expands additively to support authenticated multi-group workspaces, outings, membership lifecycle, reusable join codes, participant-link choices, and nullable outing expense scope.
+
+### Protected endpoint contract
+
+- `GET/POST /api/v1/groups` is authenticated and account-scoped: list active memberships or atomically create an empty owner/member group. Existing group-scoped routes remain protected and recheck membership for every request; selection is navigation state, never an authorization claim.
+- Group-scoped routes add outing CRUD/lifecycle, active-member reads, owner removal/member leave, owner join-code status/generate/regenerate/revoke, and authenticated `POST /api/v1/groups/join`. Expense, balance, and settlement routes accept the nullable `outing_id` scope where applicable.
+- A join code is reusable for already-authenticated accounts until revoke/regeneration. Its plaintext is returned only by protected generation/regeneration, never by status or unrelated group data. Consumption requires exactly one same-group existing-participant link or new-participant choice and is atomic.
+
+### Stable validation and authority rules
+
+The additive contract uses stable `invalid_outing_reference`, `archived_outing_read_only`, `outing_not_empty`, `invalid_join_code`, `revoked_join_code`, `duplicate_membership`, `invalid_participant_link_choice`, `duplicate_participant_link`, `final_owner_exit`, `member_not_found`, and existing `forbidden` errors with the baseline `401`/`403`/`404`/`409`/`422` mapping. Invalid, cross-group, archived, duplicate, or unauthorized requests produce no partial mutation and no invalidation.
+
+Group derivations include `outing_id = null` general expenses and every linked outing expense exactly once. Outing derivations filter to the exact outing and never allocate general expenses. FastAPI remains the sole authorization and integer-cent monetary authority.
+
+### Narrow scope and preserved integrations
+
+This amendment deliberately excludes public registration, account creation through QR, anonymous group data, email invitations, password recovery, OAuth, token expiry, approval queues, ownership transfer, mobile UI parity, new routing dependencies, client-side money/authorization, and new WebSocket payloads. Successful source mutations still publish exactly one post-commit group-scoped `{"type":"data_changed"}` frame; clients refetch REST and never read data from that frame. OpenAPI and clients remain workflow-generated, never hand-edited.

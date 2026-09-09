@@ -18,4 +18,7 @@ def test_alembic_harness_includes_source_revision():
     assert revisions == [
         BACKEND_ROOT / "migrations" / "versions" / "0001_auth.py",
         BACKEND_ROOT / "migrations" / "versions" / "0002_source.py",
+        BACKEND_ROOT / "migrations" / "versions" / "0003_workspace.py",
+        BACKEND_ROOT / "migrations" / "versions" / "0004_outing.py",
+        BACKEND_ROOT / "migrations" / "versions" / "0005_expense_outing.py",
     ]

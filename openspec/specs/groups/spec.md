@@ -114,3 +114,28 @@ The system MUST scope every group-owned read and mutation to the authenticated a
 - No multiple groups in the UI, group discovery, group creation, or group switcher.
 - No anonymous or unauthenticated access to any group data.
 - No cloud collaboration or real-time editing.
+
+## Active amendment: group-outing-workspaces
+
+The single-group requirements above are preserved as the historical MVP baseline. For `group-outing-workspaces` only, authenticated multi-group workspaces and the following group-scoped lifecycle rules supersede the former single-active-group restriction.
+
+### Authenticated multi-group workspace
+
+- An authenticated account MAY list only its active memberships, create a group, and select a listed group. Group creation atomically creates exactly one owner membership and starts with no outings, participants, or expenses.
+- Every selected-group resource independently rechecks active membership. A client-supplied group ID or role never grants access, and server-derived `owner`/`member` roles remain authoritative.
+
+### Controlled authenticated joining
+
+- The owner MAY generate, revoke, and regenerate one current reusable QR/join code. It is usable only by an already-authenticated account, remains valid until revoked or regenerated, and regeneration invalidates the prior code.
+- Consumption is atomic and requires exactly one same-group participant choice: link an existing participant or create a new participant. Account and participant identities remain separate.
+- This narrow exception does not add public registration, account creation through QR, anonymous joining/data, email invitations, password recovery, OAuth, expiry, approval queues, ownership transfer, participant merge, or a general account directory.
+
+### Outing and membership lifecycle
+
+- An outing belongs to exactly one group and has a required name. Any member may create or edit an active outing; only the owner may archive/unarchive or delete an empty outing. Archived outings and expenses remain readable history and reject associated writes. Non-empty outings are never deleted.
+- The owner may remove a member and a member may leave, except that the final owner remains active because ownership transfer is out of scope. Ending membership preserves participant, outing, expense, and derived history; account-participant links may be ended.
+- Group summaries include all group expenses. Outing results include only expenses linked to that outing; general expenses are never implicitly allocated or repeated.
+
+### Preserved boundaries
+
+The existing protected session, CSRF/origin, participant identity, integer-cent, exact-zero, server-derived settlement, invalidation-only WebSocket, official Samaipata, mobile ownership, and redesign boundaries remain in force. The web scope is laptop-first, preserves applicable hash anchors, and adds no routing dependency. This amendment is policy only; later slices must not edit `AGENTS.md`, historical/archive artifacts, generated clients by hand, the official fixture, or `web-professional-redesign` files.

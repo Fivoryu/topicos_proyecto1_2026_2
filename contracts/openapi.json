@@ -246,6 +246,17 @@
             "title": "Id",
             "type": "string"
           },
+          "outing_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outing Id"
+          },
           "updated_at": {
             "anyOf": [
               {
@@ -295,6 +306,17 @@
           "description": {
             "title": "Description",
             "type": "string"
+          },
+          "outing_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outing Id"
           }
         },
         "required": [
@@ -320,6 +342,21 @@
           "field",
           "message"
         ],
+        "type": "object"
+      },
+      "GroupCreateRequest": {
+        "additionalProperties": false,
+        "description": "The account-scoped group creation command.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "GroupCreateRequest",
         "type": "object"
       },
       "GroupResponse": {
@@ -354,6 +391,93 @@
           "settlementPolicy"
         ],
         "title": "GroupResponse",
+        "type": "object"
+      },
+      "GroupSummaryResponse": {
+        "additionalProperties": false,
+        "description": "Server-derived account-scoped group summary without child rows.",
+        "properties": {
+          "expenses_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expenses Count"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "member_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Count"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "outings_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outings Count"
+          },
+          "owner_account_id": {
+            "title": "Owner Account Id",
+            "type": "string"
+          },
+          "participants_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participants Count"
+          },
+          "role": {
+            "enum": [
+              "owner",
+              "member"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "settlementPolicy": {
+            "enum": [
+              "owner_only",
+              "any_member"
+            ],
+            "title": "Settlementpolicy",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "owner_account_id",
+          "settlementPolicy",
+          "role"
+        ],
+        "title": "GroupSummaryResponse",
         "type": "object"
       },
       "GroupUpdateRequest": {
@@ -417,6 +541,87 @@
           "password"
         ],
         "title": "LoginRequest",
+        "type": "object"
+      },
+      "OutingResponse": {
+        "additionalProperties": false,
+        "description": "Server-owned active/archived outing history shape.",
+        "properties": {
+          "archived": {
+            "title": "Archived",
+            "type": "boolean"
+          },
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "created_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created At"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "updated_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Updated At"
+          }
+        },
+        "required": [
+          "id",
+          "group_id",
+          "name",
+          "archived"
+        ],
+        "title": "OutingResponse",
+        "type": "object"
+      },
+      "OutingWriteRequest": {
+        "additionalProperties": false,
+        "description": "The only editable outing field in this bounded lifecycle slice.",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OutingWriteRequest",
         "type": "object"
       },
       "ParticipantResponse": {
@@ -499,6 +704,14 @@
             "$ref": "#/components/schemas/AccountIdentityResponse"
           },
           "active_group_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "title": "Active Group Id"
           },
           "expires_at": {
@@ -507,12 +720,23 @@
             "type": "string"
           },
           "role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "owner",
+                  "member"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
             "enum": [
               "owner",
               "member"
             ],
-            "title": "Role",
-            "type": "string"
+            "title": "Role"
           }
         },
         "required": [
@@ -735,6 +959,72 @@
         "summary": "Session",
         "tags": [
           "auth"
+        ]
+      }
+    },
+    "/api/v1/groups": {
+      "get": {
+        "description": "List only groups belonging to the authenticated account.",
+        "operationId": "list_groups_api_v1_groups_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/GroupSummaryResponse"
+                  },
+                  "title": "Response List Groups Api V1 Groups Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Groups",
+        "tags": [
+          "groups"
+        ]
+      },
+      "post": {
+        "description": "Create an empty owner workspace for the authenticated account.",
+        "operationId": "create_group_api_v1_groups_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GroupCreateRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GroupSummaryResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Group",
+        "tags": [
+          "groups"
         ]
       }
     },
@@ -1265,6 +1555,499 @@
         "summary": "Edit Expense",
         "tags": [
           "expenses"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/outings": {
+      "get": {
+        "description": "List active and archived outings in stable creation order.",
+        "operationId": "list_outings_api_v1_groups__group_id__outings_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/OutingResponse"
+                  },
+                  "title": "Response List Outings Api V1 Groups  Group Id  Outings Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "List Outings",
+        "tags": [
+          "outings"
+        ]
+      },
+      "post": {
+        "description": "Create an active outing for any active group member.",
+        "operationId": "create_outing_api_v1_groups__group_id__outings_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutingWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Create Outing",
+        "tags": [
+          "outings"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/outings/{outing_id}": {
+      "delete": {
+        "description": "Delete an empty active outing as its server-authorized owner.",
+        "operationId": "delete_outing_api_v1_groups__group_id__outings__outing_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "outing_id",
+            "required": true,
+            "schema": {
+              "title": "Outing Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Delete Outing",
+        "tags": [
+          "outings"
+        ]
+      },
+      "get": {
+        "description": "Read an active or archived outing in the requested group.",
+        "operationId": "get_outing_api_v1_groups__group_id__outings__outing_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "outing_id",
+            "required": true,
+            "schema": {
+              "title": "Outing Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Get Outing",
+        "tags": [
+          "outings"
+        ]
+      },
+      "patch": {
+        "description": "Edit only the name of an active outing.",
+        "operationId": "edit_outing_api_v1_groups__group_id__outings__outing_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "outing_id",
+            "required": true,
+            "schema": {
+              "title": "Outing Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OutingWriteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Edit Outing",
+        "tags": [
+          "outings"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/outings/{outing_id}/archive": {
+      "post": {
+        "description": "Archive an outing as a server-authorized owner operation.",
+        "operationId": "archive_outing_api_v1_groups__group_id__outings__outing_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "outing_id",
+            "required": true,
+            "schema": {
+              "title": "Outing Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Archive Outing",
+        "tags": [
+          "outings"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/outings/{outing_id}/unarchive": {
+      "post": {
+        "description": "Restore an archived outing to active state as its owner.",
+        "operationId": "unarchive_outing_api_v1_groups__group_id__outings__outing_id__unarchive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "outing_id",
+            "required": true,
+            "schema": {
+              "title": "Outing Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutingResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Unarchive Outing",
+        "tags": [
+          "outings"
         ]
       }
     },

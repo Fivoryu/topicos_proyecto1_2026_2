@@ -9,7 +9,7 @@ import 'package:openapi/api.dart';
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **account** | [**AccountIdentityResponse**](AccountIdentityResponse.md) |  | 
-**activeGroupId** | **Object** |  | 
+**activeGroupId** | **String** |  | 
 **expiresAt** | [**DateTime**](DateTime.md) |  | 
 **role** | **String** |  | 
 

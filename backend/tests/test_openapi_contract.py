@@ -152,6 +152,36 @@ def test_drift_comparison_handles_added_and_removed_generated_files(
     ]
 
 
+def test_drift_comparison_ignores_mobile_transient_paths_only(
+    tmp_path: Path,
+) -> None:
+    committed = tmp_path / "committed-mobile"
+    regenerated = tmp_path / "regenerated-mobile"
+    committed.mkdir()
+    regenerated.mkdir()
+
+    (committed / "kept.dart").write_text("same", encoding="utf-8")
+    (committed / "pubspec.lock").write_text("committed", encoding="utf-8")
+    (committed / ".dart_tool" / "package_config.json").parent.mkdir()
+    (committed / ".dart_tool" / "package_config.json").write_text(
+        "committed", encoding="utf-8"
+    )
+    (committed / "removed.dart").write_text("old", encoding="utf-8")
+    (regenerated / "kept.dart").write_text("same", encoding="utf-8")
+    (regenerated / "added.dart").write_text("new", encoding="utf-8")
+
+    drift = check_contract_drift.compare_directories(
+        committed,
+        regenerated,
+        ignored_paths=("pubspec.lock", ".dart_tool"),
+    )
+
+    assert drift == [
+        "added.dart (missing from committed)",
+        "removed.dart (missing from regenerated)",
+    ]
+
+
 def test_drift_comparison_ignores_platform_line_endings(tmp_path: Path) -> None:
     committed = tmp_path / "committed"
     regenerated = tmp_path / "regenerated"

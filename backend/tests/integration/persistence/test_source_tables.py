@@ -19,6 +19,7 @@ from backend.app.adapters.db.tables import (
     ExpenseBeneficiary,
     ExpenseContribution,
     Group,
+    Outing,
     Participant,
 )
 from backend.app.adapters.db.uow import SqlAlchemyUnitOfWork
@@ -80,7 +81,61 @@ def test_source_tables_are_source_only_and_have_required_columns():
         "amount_cents",
         "created_at",
         "updated_at",
+        "outing_id",
     }.issubset({c["name"] for c in inspect(engine).get_columns("expenses")})
+    expense_indexes = {
+        index["name"] for index in inspect(engine).get_indexes("expenses")
+    }
+    assert "ix_expenses_group_outing" in expense_indexes
+    outing_fk = next(
+        foreign_key
+        for foreign_key in inspect(engine).get_foreign_keys("expenses")
+        if foreign_key["name"] == "fk_expenses_outing_group"
+    )
+    assert outing_fk["constrained_columns"] == ["outing_id", "group_id"]
+    assert outing_fk["referred_table"] == "outings"
+    assert outing_fk["referred_columns"] == ["id", "group_id"]
+    assert Expense.__table__.c.outing_id.nullable
+    engine.dispose()
+
+
+def test_composite_outing_fk_rejects_cross_group_expense():
+    engine = _engine()
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        first_group = _auth_fixture(session)
+        other_owner = Account(id=uuid4(), login_name="other", password_hash="hash")
+        other_group = Group(id=uuid4(), name="Other", owner_account_id=other_owner.id)
+        outing = Outing(id=uuid4(), group_id=other_group.id, name="Other outing")
+        session.add_all([other_owner, other_group, outing])
+        session.commit()
+
+        expense = Expense(
+            id=uuid4(),
+            group_id=first_group.id,
+            outing_id=outing.id,
+            description="Cross-group",
+            amount_cents=100,
+        )
+        session.add(expense)
+        with pytest.raises(IntegrityError):
+            session.flush()
+        session.rollback()
+        assert session.get(Expense, expense.id) is None
+    engine.dispose()
+
+
+def test_existing_general_expenses_keep_a_null_outing_reference():
+    engine = _engine()
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        group = _auth_fixture(session)
+        expense = Expense(
+            id=uuid4(), group_id=group.id, description="General", amount_cents=100
+        )
+        session.add(expense)
+        session.commit()
+        assert getattr(expense, "outing_id", None) is None
     engine.dispose()
 
 

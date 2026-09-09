@@ -70,6 +70,7 @@ class Expense:
     beneficiaries: tuple[str, ...]
     created_at: datetime
     updated_at: datetime
+    outing_id: str | None = None
 
 
 class Auth:
@@ -189,6 +190,7 @@ class ExpenseService:
         amount_cents,
         contributors,
         beneficiaries,
+        outing_id=None,
         actor=None,
     ):
         self.mutation_calls += 1
@@ -203,6 +205,7 @@ class ExpenseService:
             tuple(str(participant_id) for participant_id in normalized.beneficiaries),
             now,
             now,
+            outing_id,
         )
         self.rows.append(row)
         return row
@@ -215,6 +218,7 @@ class ExpenseService:
         amount_cents,
         contributors,
         beneficiaries,
+        outing_id=None,
         actor=None,
     ):
         current = self.find_by_id(group_id, expense_id)
@@ -228,6 +232,7 @@ class ExpenseService:
         current.beneficiaries = tuple(
             str(participant_id) for participant_id in normalized.beneficiaries
         )
+        current.outing_id = outing_id
         current.updated_at = datetime(2026, 1, 3, tzinfo=UTC)
         return current
 
@@ -290,13 +295,20 @@ def _headers():
     return {"Origin": "http://localhost:5173", CSRF_HEADER_NAME: "csrf-token"}
 
 
-def _write_payload(amount: object = "10.00", contribution: object = "10.00"):
-    return {
+def _write_payload(
+    amount: object = "10.00",
+    contribution: object = "10.00",
+    outing_id: str | None = None,
+):
+    payload = {
         "description": "  Coffee  ",
         "amount": amount,
         "contributors": [{"participant_id": "ana", "amount": contribution}],
         "beneficiary_ids": ["ana", "beto"],
     }
+    if outing_id is not None:
+        payload["outing_id"] = outing_id
+    return payload
 
 
 @pytest.mark.asyncio
@@ -343,6 +355,30 @@ async def test_expense_crud_parses_decimal_strings_once_and_wires_integer_wire_s
     assert edited.json()["amount_cents"] == 10_002
     assert deleted.status_code == 204
     assert expenses.mutation_calls == 3
+
+
+@pytest.mark.asyncio
+async def test_expense_outing_id_is_nullable_and_forwarded_without_changing_list_scope(
+    expense_app,
+):
+    app, _group, _participants, expenses = expense_app
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        _set_cookies(client, _cookies())
+        created = await client.post(
+            f"/api/v1/groups/{GROUP_ID}/expenses",
+            headers=_headers(),
+            json=_write_payload(outing_id="outing-one"),
+        )
+        _set_cookies(client, _cookies())
+        listed = await client.get(f"/api/v1/groups/{GROUP_ID}/expenses")
+
+    assert created.status_code == 201
+    assert created.json()["outing_id"] == "outing-one"
+    assert listed.status_code == 200
+    assert [row["outing_id"] for row in listed.json()] == [None, "outing-one"]
+    assert expenses.rows[-1].outing_id == "outing-one"
 
 
 @pytest.mark.asyncio
