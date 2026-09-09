@@ -19,6 +19,7 @@ SettlementResponse _$SettlementResponseFromJson(Map<String, dynamic> json) =>
       );
       final val = SettlementResponse(
         groupId: $checkedConvert('group_id', (v) => v as String),
+        outingId: $checkedConvert('outing_id', (v) => v as String?),
         settled: $checkedConvert('settled', (v) => v as bool),
         settlementPolicy: $checkedConvert(
           'settlementPolicy',
@@ -37,11 +38,12 @@ SettlementResponse _$SettlementResponseFromJson(Map<String, dynamic> json) =>
         ),
       );
       return val;
-    }, fieldKeyMap: const {'groupId': 'group_id'});
+    }, fieldKeyMap: const {'groupId': 'group_id', 'outingId': 'outing_id'});
 
 Map<String, dynamic> _$SettlementResponseToJson(SettlementResponse instance) =>
     <String, dynamic>{
       'group_id': instance.groupId,
+      'outing_id': ?instance.outingId,
       'settled': instance.settled,
       'settlementPolicy':
           _$SettlementResponseSettlementPolicyEnumEnumMap[instance

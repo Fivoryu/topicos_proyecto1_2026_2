@@ -9,6 +9,7 @@ import 'package:openapi/api.dart';
 Name | Type | Description | Notes
 ------------ | ------------- | ------------- | -------------
 **groupId** | **String** |  | 
+**outingId** | **String** |  | [optional] 
 **settled** | **bool** |  | 
 **settlementPolicy** | **String** |  | 
 **transfers** | [**List&lt;SettlementTransferResponse&gt;**](SettlementTransferResponse.md) |  | 

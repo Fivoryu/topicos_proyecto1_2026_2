@@ -35,6 +35,12 @@ export interface BalancesResponse {
     groupId: string;
     /**
      * 
+     * @type {string}
+     * @memberof BalancesResponse
+     */
+    outingId?: string | null;
+    /**
+     * 
      * @type {Array<BalanceParticipantResponse>}
      * @memberof BalancesResponse
      */
@@ -61,6 +67,7 @@ export function BalancesResponseFromJSONTyped(json: any, ignoreDiscriminator: bo
     return {
         
         'groupId': json['group_id'],
+        'outingId': json['outing_id'] == null ? undefined : json['outing_id'],
         'participants': ((json['participants'] as Array<any>).map(BalanceParticipantResponseFromJSON)),
     };
 }
@@ -77,6 +84,7 @@ export function BalancesResponseToJSONTyped(value?: BalancesResponse | null, ign
     return {
         
         'group_id': value['groupId'],
+        'outing_id': value['outingId'],
         'participants': ((value['participants'] as Array<any>).map(BalanceParticipantResponseToJSON)),
     };
 }

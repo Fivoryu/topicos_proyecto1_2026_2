@@ -30,6 +30,7 @@ class SettlementResponse(BaseModel):
     )
     settled: bool
     transfers: list[SettlementTransferResponse]
+    outing_id: str | None = None
 
 
 __all__ = ["SettlementResponse", "SettlementTransferResponse"]

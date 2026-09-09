@@ -12,6 +12,11 @@ void main() {
       // TODO
     });
 
+    // String outingId
+    test('to test the property `outingId`', () async {
+      // TODO
+    });
+
     // List<BalanceParticipantResponse> participants
     test('to test the property `participants`', () async {
       // TODO

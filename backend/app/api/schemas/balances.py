@@ -25,6 +25,7 @@ class BalancesResponse(BaseModel):
 
     group_id: str
     participants: list[BalanceParticipantResponse]
+    outing_id: str | None = None
 
 
 __all__ = ["BalanceParticipantResponse", "BalancesResponse"]

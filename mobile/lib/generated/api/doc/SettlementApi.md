@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 
 # **getSettlementApiV1GroupsGroupIdSettlementGet**
-> SettlementResponse getSettlementApiV1GroupsGroupIdSettlementGet(groupId)
+> SettlementResponse getSettlementApiV1GroupsGroupIdSettlementGet(groupId, outingId)
 
 Get Settlement
 
@@ -29,9 +29,10 @@ import 'package:openapi/api.dart';
 
 final api = Openapi().getSettlementApi();
 final String groupId = groupId_example; // String | 
+final String outingId = outingId_example; // String | 
 
 try {
-    final response = api.getSettlementApiV1GroupsGroupIdSettlementGet(groupId);
+    final response = api.getSettlementApiV1GroupsGroupIdSettlementGet(groupId, outingId);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling SettlementApi->getSettlementApiV1GroupsGroupIdSettlementGet: $e\n');
@@ -43,6 +44,7 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **groupId** | **String**|  | 
+ **outingId** | **String**|  | [optional] 
 
 ### Return type
 

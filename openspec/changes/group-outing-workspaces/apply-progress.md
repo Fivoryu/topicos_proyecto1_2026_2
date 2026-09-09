@@ -2578,3 +2578,104 @@ nextRecommended: parent-lifecycle
 ```
 
 - Produced phase result: **success for PR4 apply**; only five PR4 implementation rows were checked. Parent lifecycle remains deferred; next recommendation is `parent-lifecycle`.
+
+## PR5 — Scoped derived balances and settlement
+
+### Status, scope, and workload
+
+- Parent-resolved active change: `group-outing-workspaces`; assigned slice: **PR5 only**. The native status snapshot supplied to this worker still reports stale ambiguous selection (`group-outing-workspaces`, `multi-currency`, `web-professional-redesign`); this warning is preserved for parent reconciliation, while the explicit user/parent assignment was used for this continuation.
+- `actionContext.mode=repo-local`; workspace root and allowed edit root are the repository root. No target file was outside the authoritative workspace.
+- Delivery boundary: one stacked-to-main PR5 candidate, forecast `500–720`, hard cap `800`; measured tracked diff from `HEAD`: **655 changed-line units** (609 additions + 46 deletions, including the five task transitions and this progress evidence), below the PR5 `<=720` target. Untracked `.pi/` preflight state was preserved and excluded.
+- Parent-held native attempt authority remained in force; this worker did not acquire, settle, reset, commit, push, clean, start review, create/approve receipts, or run lifecycle gates.
+
+### TDD Cycle Evidence
+
+| Task | Test files / gate | RED | GREEN | TRIANGULATE | REFACTOR |
+| --- | --- | --- | --- | --- | --- |
+| PR5 RED | `backend/tests/unit/application/test_derived_service.py`, `backend/tests/integration/api/test_expense_derived_routes.py`, `web/tests/features/settlement/settlement.test.tsx` | Added scope/filter/order/zero-sum/empty/archived/cross-group and query-key tests; focused tests failed before implementation with missing outing-aware seams. | — | — | — |
+| PR5 GREEN | Derived service, balance/settlement routes and schemas | — | Optional `outing_id` is passed to server-owned derived reads; REST validates the outing within the authenticated group and returns the scope in both response schemas. | — | — |
+| PR5 TRIANGULATE | Focused API/domain tests and full backend suite | — | — | Mixed group/general/outing expenses are included exactly once, outing scope excludes general and other outings, authorized participants remain stable, sums are zero, transfer ordering is deterministic, empty/archived reads remain safe, foreign outings are denied without leakage, and no derived state is persisted. | — |
+| PR5 REFACTOR | Pinned OpenAPI/client generation and web seam | — | — | Contract export and generated TypeScript/Dart parity completed; generated outputs were copied only from temporary pinned generator/build-runner output. | Scope-aware nullable web balance/settlement query keys were added without client monetary arithmetic or WebSocket payload changes. |
+
+### Completed tasks and persisted checkbox updates
+
+- Marked exactly the five PR5 implementation-owned rows `[x]` in `openspec/changes/group-outing-workspaces/tasks.md`: RED, GREEN, TRIANGULATE, REFACTOR, and Verify.
+- No PR6–PR9 implementation row and no parent-owned lifecycle row was changed. Before return, `tasks.md` was re-read and all five reported PR5 rows visibly contain `[x]` with terminal `sdd-owner: implementation` markers.
+
+### Implementation and contract evidence
+
+- `DerivedService` accepts optional `outing_id` for balances, settlement, compatibility aliases, and combined reads; the repository applies exact outing filtering while group-wide reads retain both general and outing-linked expenses.
+- Balance and settlement routes validate a requested outing through the server-owned outing service, pass the scope to the derived service, and serialize `outing_id`; authorization and all cent arithmetic remain server/domain-owned.
+- Generated contract output includes nullable `outing_id` query parameters and response fields. TypeScript and Dart clients/models/tests/docs were regenerated through the pinned workflow; no generated file was hand-edited.
+- Web query keys preserve the group default and map `undefined`/`null` to the same group scope while keeping each outing scope distinct.
+
+### Verification evidence
+
+- Focused backend derived/API tests: **13 passed**; broader selected backend regression: **15 passed**.
+- `python -m pytest backend/tests -q`: **296 passed, 1 warning** (existing Starlette/httpx deprecation warning).
+- `python -m ruff check backend`: **All checks passed**.
+- `npm --prefix web run typecheck`: **passed**.
+- `npm --prefix web run test -- --no-file-parallelism`: **12 files / 87 tests passed**; existing React `act(...)` warning only.
+- `npm --prefix web run build`: **passed**.
+- `cd mobile/lib/generated/api && dart analyze ...balances/settlement...`: **No issues found**; focused generated tests: **10 passed**.
+- `python -m backend.scripts.check_contract_drift --cwd .`: **Contract and generated clients are drift-free**.
+- `git diff --check` is clean for handwritten PR5 paths. It reports only generator-produced trailing whitespace in generated TypeScript response model headers; those bytes were preserved and not hand-fixed.
+
+### Files changed
+
+- Handwritten backend: `backend/app/application/derived_service.py`, `backend/app/api/routes/balances.py`, `backend/app/api/routes/settlement.py`, `backend/app/api/schemas/balances.py`, `backend/app/api/schemas/settlement.py`.
+- Focused tests: `backend/tests/unit/application/test_derived_service.py`, `backend/tests/integration/api/test_expense_derived_routes.py`, `web/tests/features/settlement/settlement.test.tsx`.
+- Query seam: `web/src/core/workspace-query-keys.ts`.
+- Generated/contract outputs: `contracts/openapi.json`, selected web TypeScript and mobile Dart balance/settlement outputs.
+- Existing unrelated dirty/untracked paths, including `.pi/`, were preserved.
+
+### Deviations and rollback boundary
+
+- No design deviation was introduced. The REST layer adds validation only when an outing scope is requested; group-wide compatibility remains unchanged. No WebSocket payload, persisted derived table, client calculation, PR6 behavior, or lifecycle action was added.
+- Rollback boundary: revert only the PR5 derived-read route/service/schema/tests, query-key seam, generated balance/settlement outputs, contract snapshot, five PR5 checkbox transitions, and this section. Retain PR4 nullable expense association and all unrelated dirty paths.
+
+### Remaining exact unchecked implementation and parent-owned rows
+
+The following PR6–PR9 and parent-owned rows remain unchecked in `tasks.md`; they are deferred and were not started:
+
+```text
+- [ ] RED — Add tests for owner generation/status/revoke/regenerate, hash-only persistence, reusable consumption by existing sessions, prior-token invalidation, anonymous/invalid/duplicate joins, exact-one participant choice, same-group link/create, cross-group choice rejection, token non-disclosure, and atomic rollback; run focused tests and capture RED. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement one current SHA-256-hashed 256-bit URL-safe token per group, owner-protected lifecycle endpoints, authenticated consume transaction, group-scoped account-participant link table, and explicit existing-participant-or-new-participant command with stable errors. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Add lock/concurrency, CSRF/origin, replay/reusable-code, active-membership conflict, participant uniqueness, no-log/no-summary-secret, post-commit one-frame, and no-frame-on-failure tests; preserve account/participant identity separation. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Export and regenerate OpenAPI/TypeScript/Dart outputs through the pinned workflow, keeping plaintext code only in generation response and never hand-editing generated trees. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, focused/backend/security/migration tests, lint, contract drift, secret-output audit, path audit, and final <=800 changed-line count; split before apply if forecast exceeds the cap. <!-- sdd-owner: implementation -->
+- [ ] RED — Add tests for owner removal, member leave, ended-member denial across every group resource, participant-link inactivity, preserved participant/expense/outing history, rejoin eligibility, member forbidden removal, and final-owner protection. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement nullable `ended_at` active-membership semantics, owner-remove/member-leave operations, immutable owner safety, inactive link handling, active-membership listing, and one post-commit group invalidation per successful mutation. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Add concurrent exit/remove, stale sessions, cross-group account IDs, final-owner conflict, rejoin with a new explicit link choice, rollback/no-invalidation, and official fixture regression coverage. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Reconcile handwritten API schemas/routes, regenerate clients only where the frozen contract changes, run drift, and keep role derivation server-owned. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, focused/backend/full regression tests, migration proof if applicable, lint, contract drift, path audit, and final <=740 changed-line count. <!-- sdd-owner: implementation -->
+- [ ] RED — Add behavior tests for outing/general expense separation, outing archived read-only state, server-provided scoped balances/settlement, participant detail, loading/empty/forbidden/error states, route/deep-link protection, and cache invalidation/refetch; audit redesign paths before running. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement additive laptop-first pages/states for outing detail/expenses, general expenses, group summary, participant detail, balances, and settlement using generated client data and shared integer-cent formatter; perform no client monetary arithmetic. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Cover mixed-scope no-double-counting, stale selected group/outing, archived history, WebSocket outage/manual refresh, membership changes, Spanish accessible names, keyboard focus, visible state cues, and preserved legacy anchors. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Integrate through the protected shell without overwriting `web-professional-redesign`; remove only additive duplication, preserve query identity and REST authority, then rerun focused web tests. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, `npm --prefix web run test`, `npm --prefix web run typecheck`, `npm --prefix web run build`, exact dirty-path audit, and final <=800 changed-line count; stop and split at a screen boundary if over cap. <!-- sdd-owner: implementation -->
+- [ ] RED — Add tests for owner join-code display/regenerate/revoke/status secrecy, member/owner membership controls, leave/final-owner errors, forbidden actions, empty/error/recovery states, accessibility/laptop-first behavior, and official-flow preservation. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement group/membership settings, authenticated join-code consumption UI with explicit participant link/create choice, member removal/leave actions, Spanish copy, and safe protected recovery states using server-derived role/error responses. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Add full regression cases for account selection, outing lifecycle, scoped expenses/derived results, invalidation-only WebSocket behavior, no public join/account creation, no token leakage, official Samaipata exact data/result, and all protected deep links. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Normalize source-mutating files before candidate freeze, preserve all redesign bytes/modes, remove no required acceptance coverage, and confirm the final web remains dependency-free with mobile UI out of scope. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, complete backend/web/contract/migration gates, manual laptop-first accessibility/browser flow, protected-path and generated-output audits, and final <=760 changed-line count. <!-- sdd-owner: implementation -->
+- [ ] Preserve the exact normalized candidate and evidence for every slice, then hand the frozen stack to the parent for bounded lifecycle review and delivery gates; do not mark this task complete from planning alone. <!-- sdd-owner: parent -->
+- [ ] Start or reuse the bounded review for the final frozen stacked candidate using `exception-ok` and `stacked-to-main`; confirm each slice has an independent dependency, verification, and rollback boundary. <!-- sdd-owner: parent -->
+- [ ] Execute post-apply lifecycle gates only after all implementation evidence, native attempt settlements, path/line audits, and final candidate freeze are available. <!-- sdd-owner: parent -->
+```
+
+### Structured phase result
+
+- `status: success` for the assigned PR5 implementation slice.
+
+- `next_recommended: parent-lifecycle` (parent must reconcile the stale ambiguous native snapshot, then own bounded review/receipt/delivery gates; this worker does not perform them).
+- `skill_resolution: paths-injected` (chained-PR guidance was loaded from the injected skill path).
+
+## PR5 corrective slice — request-scoped outing authorization
+
+- Confirmed defect: scoped balances and settlement reads no longer consult `request.app.state.outing_service`; they require the request-scoped validator on `request.state` and raise when it is unavailable.
+- RED: the two new regressions failed before the fix (`2 failed, 9 deselected`): the app-scoped singleton was accepted and missing request-scoped validation did not raise.
+- GREEN: `python -m pytest backend/tests/integration/api/test_expense_derived_routes.py -k 'scoped_derived_reads' -q` — **2 passed**.
+- TRIANGULATE: request-state authorization rejects the foreign outing for both endpoints, while the focused affected API files pass: `python -m pytest backend/tests/integration/api/test_expense_derived_routes.py backend/tests/integration/api/test_outing_routes.py -q` — **17 passed**.
+- Ruff: `python -m ruff check backend/app/api/routes/balances.py backend/app/api/routes/settlement.py backend/tests/integration/api/test_expense_derived_routes.py backend/tests/integration/api/test_outing_routes.py` — **All checks passed**.
+- Boundary: no monetary arithmetic, contract/generated output, PR6+ task checkbox, parent-owned lifecycle action, or app-scoped authorization fallback was changed.

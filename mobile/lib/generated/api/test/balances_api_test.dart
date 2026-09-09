@@ -11,7 +11,7 @@ void main() {
     //
     // Compute balances from source expenses in stable participant order.
     //
-    //Future<BalancesResponse> getBalancesApiV1GroupsGroupIdBalancesGet(String groupId) async
+    //Future<BalancesResponse> getBalancesApiV1GroupsGroupIdBalancesGet(String groupId, { String outingId }) async
     test('test getBalancesApiV1GroupsGroupIdBalancesGet', () async {
       // TODO
     });

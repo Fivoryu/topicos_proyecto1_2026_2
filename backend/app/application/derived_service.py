@@ -56,49 +56,61 @@ class DerivedService:
         self._participants = participant_repository
         self._expenses = expense_repository
 
-    def get_balances(self, group_id: str):
+    def get_balances(self, group_id: str, outing_id: str | None = None):
         """Return stable participant balance rows computed from source expenses."""
 
         participants = self._list(self._participants, group_id)
-        expenses = self._source_expenses(group_id)
+        expenses = self._source_expenses(group_id, outing_id=outing_id)
         return compute_balances(participants, expenses)
 
-    def balances(self, group_id: str):
+    def balances(self, group_id: str, outing_id: str | None = None):
         """Compatibility spelling for the balance read use case."""
 
-        return self.get_balances(group_id)
+        return self.get_balances(group_id, outing_id=outing_id)
 
-    def get_settlement(self, group_id: str):
+    def get_settlement(self, group_id: str, outing_id: str | None = None):
         """Return deterministic transfers computed from current balances."""
 
-        return build_settlement(self.get_balances(group_id))
+        return build_settlement(self.get_balances(group_id, outing_id=outing_id))
 
-    def settlement(self, group_id: str):
+    def settlement(self, group_id: str, outing_id: str | None = None):
         """Compatibility spelling for the settlement read use case."""
 
-        return self.get_settlement(group_id)
+        return self.get_settlement(group_id, outing_id=outing_id)
 
-    def read(self, group_id: str) -> dict[str, Any]:
+    def read(self, group_id: str, outing_id: str | None = None) -> dict[str, Any]:
         """Return balances and settlement as one group-scoped read model."""
 
-        balances = self.get_balances(group_id)
+        balances = self.get_balances(group_id, outing_id=outing_id)
         return {
             "group_id": group_id,
+            "outing_id": outing_id,
             "balances": balances,
             "settlement": build_settlement(balances),
         }
 
     @staticmethod
-    def _list(repository, group_id: str):
+    def _list(repository, group_id: str, **filters):
         lister = getattr(repository, "list_by_group", None) or getattr(
             repository, "list", None
         )
         if lister is None:
             raise TypeError("repository cannot list group records")
+        if filters:
+            return list(lister(group_id, **filters))
         return list(lister(group_id))
 
-    def _source_expenses(self, group_id: str) -> list[dict[str, object]]:
-        expenses = self._list(self._expenses, group_id)
+    def _source_expenses(
+        self, group_id: str, *, outing_id: str | None = None
+    ) -> list[dict[str, object]]:
+        if outing_id is None:
+            expenses = self._list(self._expenses, group_id)
+        else:
+            expenses = self._list(
+                self._expenses,
+                group_id,
+                outing_filter=outing_id,
+            )
         result = []
         for expense in expenses:
             expense_id = _id(expense, "id", "expense_id")

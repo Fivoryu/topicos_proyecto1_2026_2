@@ -21,6 +21,8 @@ class SettlementResponse {
 
     required  this.groupId,
 
+     this.outingId,
+
     required  this.settled,
 
     required  this.settlementPolicy,
@@ -37,6 +39,18 @@ class SettlementResponse {
 
 
   final String groupId;
+
+
+
+  @JsonKey(
+    
+    name: r'outing_id',
+    required: false,
+    includeIfNull: false,
+  )
+
+
+  final String? outingId;
 
 
 
@@ -81,6 +95,7 @@ class SettlementResponse {
     @override
     bool operator ==(Object other) => identical(this, other) || other is SettlementResponse &&
       other.groupId == groupId &&
+      other.outingId == outingId &&
       other.settled == settled &&
       other.settlementPolicy == settlementPolicy &&
       other.transfers == transfers;
@@ -88,6 +103,7 @@ class SettlementResponse {
     @override
     int get hashCode =>
         groupId.hashCode +
+        (outingId == null ? 0 : outingId.hashCode) +
         settled.hashCode +
         settlementPolicy.hashCode +
         transfers.hashCode;

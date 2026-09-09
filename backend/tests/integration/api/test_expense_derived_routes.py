@@ -254,12 +254,13 @@ class Derived:
         self.participants = participants
         self.expenses = expenses
 
-    def get_balances(self, group_id):
+    def get_balances(self, group_id, outing_id=None):
         rows = self.participants.list(group_id)
-        return compute_balances(rows, self.expenses.list(group_id))
+        expenses = self.expenses.list_by_group(group_id, outing_filter=outing_id)
+        return compute_balances(rows, expenses)
 
-    def get_settlement(self, group_id):
-        return build_settlement(self.get_balances(group_id))
+    def get_settlement(self, group_id, outing_id=None):
+        return build_settlement(self.get_balances(group_id, outing_id))
 
 
 @pytest.fixture
@@ -615,6 +616,203 @@ class _TrackingSessionFactory:
         session = _TrackingSession(len(self.sessions))
         self.sessions.append(session)
         return session
+
+
+@pytest.mark.asyncio
+async def test_balances_and_settlement_filter_exact_outing_scope(
+    expense_app,
+):
+    app, group, participants, expenses = expense_app
+    expenses.rows.extend(
+        [
+            Expense(
+                "expense-outing-one",
+                GROUP_ID,
+                "Outing dinner",
+                6_000,
+                {"carla": 6_000},
+                ("ana", "beto"),
+                datetime(2026, 1, 2, tzinfo=UTC),
+                datetime(2026, 1, 2, tzinfo=UTC),
+                "outing-one",
+            ),
+            Expense(
+                "expense-outing-two",
+                GROUP_ID,
+                "Other outing",
+                9_000,
+                {"beto": 9_000},
+                ("ana", "carla"),
+                datetime(2026, 1, 3, tzinfo=UTC),
+                datetime(2026, 1, 3, tzinfo=UTC),
+                "outing-two",
+            ),
+        ]
+    )
+    before = [(row.id, row.outing_id) for row in expenses.rows]
+
+    class Outings:
+        def get(self, group_id, outing_id, actor=None):
+            return SimpleNamespace(id=outing_id, group_id=group_id)
+
+    @app.middleware("http")
+    async def wire_request_scoped_outing_service(request, call_next):
+        request.state.outing_service = Outings()
+        return await call_next(request)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        _set_cookies(client, _cookies())
+        balances = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/balances?outing_id=outing-one"
+        )
+        _set_cookies(client, _cookies())
+        settlement = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/settlement?outing_id=outing-one"
+        )
+
+    assert balances.status_code == 200
+    assert balances.json()["outing_id"] == "outing-one"
+    assert [
+        (
+            row["participant_id"],
+            row["paid_cents"],
+            row["owed_cents"],
+            row["balance_cents"],
+        )
+        for row in balances.json()["participants"]
+    ] == [
+        ("ana", 0, 3_000, -3_000),
+        ("beto", 0, 3_000, -3_000),
+        ("carla", 6_000, 0, 6_000),
+        ("diego", 0, 0, 0),
+    ]
+    assert sum(row["balance_cents"] for row in balances.json()["participants"]) == 0
+    assert settlement.status_code == 200
+    assert settlement.json()["outing_id"] == "outing-one"
+    assert [
+        (row["from_participant_id"], row["to_participant_id"], row["amount_cents"])
+        for row in settlement.json()["transfers"]
+    ] == [("ana", "carla", 3_000), ("beto", "carla", 3_000)]
+    assert [(row.id, row.outing_id) for row in expenses.rows] == before
+    assert len(participants.rows) == 4
+    assert group.id == GROUP_ID
+
+
+@pytest.mark.asyncio
+async def test_scoped_derived_reads_use_request_state_for_outing_authorization(
+    expense_app,
+):
+    app, _group, _participants, _expenses = expense_app
+
+    class AppScopedOutings:
+        def get(self, group_id, outing_id, actor=None):
+            return SimpleNamespace(id=outing_id, group_id=group_id)
+
+    class RequestScopedOutings:
+        def get(self, group_id, outing_id, actor=None):
+            from backend.app.application.outing_service import OutingNotFoundError
+
+            raise OutingNotFoundError()
+
+    app.state.outing_service = AppScopedOutings()
+
+    @app.middleware("http")
+    async def wire_request_scoped_outing_service(request, call_next):
+        request.state.outing_service = RequestScopedOutings()
+        return await call_next(request)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        _set_cookies(client, _cookies())
+        balances = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/balances?outing_id=foreign-outing"
+        )
+        _set_cookies(client, _cookies())
+        settlement = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/settlement?outing_id=foreign-outing"
+        )
+
+    assert balances.status_code == 404
+    assert balances.json() == {
+        "error_code": "not_found",
+        "message": "Outing was not found in this group.",
+    }
+    assert settlement.status_code == 404
+    assert settlement.json() == {
+        "error_code": "not_found",
+        "message": "Outing was not found in this group.",
+    }
+
+
+@pytest.mark.asyncio
+async def test_scoped_derived_reads_fail_closed_without_request_scoped_outing_service(
+    expense_app,
+):
+    app, _group, _participants, _expenses = expense_app
+
+    class AppScopedOutings:
+        def get(self, group_id, outing_id, actor=None):
+            return SimpleNamespace(id=outing_id, group_id=group_id)
+
+    app.state.outing_service = AppScopedOutings()
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        for path in (
+            f"/api/v1/groups/{GROUP_ID}/balances?outing_id=outing-one",
+            f"/api/v1/groups/{GROUP_ID}/settlement?outing_id=outing-one",
+        ):
+            _set_cookies(client, _cookies())
+            with pytest.raises(RuntimeError, match="request-scoped"):
+                await client.get(path)
+
+
+@pytest.mark.asyncio
+async def test_archived_outing_scope_remains_readable(
+    expense_app,
+):
+    app, _group, _participants, expenses = expense_app
+    expenses.rows.append(
+        Expense(
+            "expense-archived-derived",
+            GROUP_ID,
+            "Archived dinner",
+            4_000,
+            {"ana": 4_000},
+            ("ana", "beto"),
+            datetime(2026, 1, 4, tzinfo=UTC),
+            datetime(2026, 1, 4, tzinfo=UTC),
+            "archived-outing",
+        )
+    )
+
+    class Outings:
+        def get(self, group_id, outing_id, actor=None):
+            return SimpleNamespace(
+                id=outing_id,
+                group_id=group_id,
+                archived_at=datetime(2026, 1, 5, tzinfo=UTC),
+            )
+
+    @app.middleware("http")
+    async def wire_request_scoped_outing_service(request, call_next):
+        request.state.outing_service = Outings()
+        return await call_next(request)
+
+    async with AsyncClient(
+        transport=ASGITransport(app=app), base_url="http://testserver"
+    ) as client:
+        _set_cookies(client, _cookies())
+        response = await client.get(
+            f"/api/v1/groups/{GROUP_ID}/balances?outing_id=archived-outing"
+        )
+
+    assert response.status_code == 200
+    assert response.json()["outing_id"] == "archived-outing"
+    assert sum(row["balance_cents"] for row in response.json()["participants"]) == 0
 
 
 @pytest.mark.asyncio

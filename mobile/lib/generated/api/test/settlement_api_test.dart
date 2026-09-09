@@ -11,7 +11,7 @@ void main() {
     //
     // Return policy and deterministic transfers derived from current balances.
     //
-    //Future<SettlementResponse> getSettlementApiV1GroupsGroupIdSettlementGet(String groupId) async
+    //Future<SettlementResponse> getSettlementApiV1GroupsGroupIdSettlementGet(String groupId, { String outingId }) async
     test('test getSettlementApiV1GroupsGroupIdSettlementGet', () async {
       // TODO
     });

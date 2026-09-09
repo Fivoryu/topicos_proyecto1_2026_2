@@ -6,6 +6,7 @@ import {
   SettlementPanel,
   type SettlementFeatureClient,
 } from "../../../src/features/settlement";
+import { workspaceQueryKeys } from "../../../src/core/workspace-query-keys";
 import {
   type AuthClient,
   SessionProvider,
@@ -47,6 +48,21 @@ function renderPanel(response: SettlementResponse) {
 }
 
 describe("settlement panel", () => {
+  it("keeps group and outing scopes isolated in query identity", () => {
+    expect(workspaceQueryKeys.group.settlement("group-demo")).toEqual([
+      "group",
+      "group-demo",
+      "settlement",
+      "group",
+    ]);
+    expect(
+      workspaceQueryKeys.group.settlement("group-demo", null),
+    ).toEqual(workspaceQueryKeys.group.settlement("group-demo"));
+    expect(
+      workspaceQueryKeys.group.settlement("group-demo", "outing-one"),
+    ).not.toEqual(workspaceQueryKeys.group.settlement("group-demo"));
+  });
+
   it("renders the explicit all-settled empty state without transfers", async () => {
     renderPanel({
       groupId: "group-demo",

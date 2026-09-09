@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query, Request
 
 from backend.app.api.deps import AuthenticatedActor
 from backend.app.api.routes._common import (
@@ -65,9 +65,29 @@ def _transfer_values(transfer: object) -> tuple[str, str, int]:
     return source, target, amount  # type: ignore[return-value]
 
 
+def _validate_outing_scope(
+    request: Request, group_id: object, outing_id: str | None, actor: Any
+) -> None:
+    if outing_id is None:
+        return
+    outing_service = getattr(request.state, "outing_service", None)
+    if outing_service is None:
+        raise RuntimeError(
+            "request-scoped outing service cannot validate scoped reads"
+        )
+    method = getattr(outing_service, "get", None) or getattr(
+        outing_service, "read", None
+    )
+    if method is None:
+        raise RuntimeError("outing service cannot validate scoped reads")
+    call_with_actor(method, group_id, coerce_identifier(outing_id), actor=actor)
+
+
 @router.get("", response_model=SettlementResponse)
 def get_settlement(
+    request: Request,
     group_id: str,
+    outing_id: str | None = Query(default=None),
     actor: AuthenticatedActor = Depends(require_group_scoped_access),
     derived_service: Any = Depends(get_derived_service),
     group_service: Any = Depends(get_group_service),
@@ -76,10 +96,11 @@ def get_settlement(
     """Return policy and deterministic transfers derived from current balances."""
 
     stored_group_id = coerce_identifier(group_id)
+    _validate_outing_scope(request, stored_group_id, outing_id, actor)
     settlement_method = getattr(derived_service, "get_settlement", None) or getattr(
         derived_service, "settlement"
     )
-    settlement = settlement_method(stored_group_id)
+    settlement = settlement_method(stored_group_id, outing_id=outing_id)
     group_method = getattr(group_service, "read", None) or getattr(group_service, "get")
     group = call_with_actor(group_method, stored_group_id, actor=actor)
     participants = list(
@@ -111,6 +132,7 @@ def get_settlement(
         )
     return SettlementResponse(
         group_id=str(stored_group_id),
+        outing_id=outing_id,
         settlement_policy=_policy(group),  # type: ignore[arg-type]
         settled=bool(settlement.get("settled", not transfers)),
         transfers=transfers,

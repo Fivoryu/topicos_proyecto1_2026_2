@@ -35,6 +35,12 @@ export interface SettlementResponse {
     groupId: string;
     /**
      * 
+     * @type {string}
+     * @memberof SettlementResponse
+     */
+    outingId?: string | null;
+    /**
+     * 
      * @type {boolean}
      * @memberof SettlementResponse
      */
@@ -86,6 +92,7 @@ export function SettlementResponseFromJSONTyped(json: any, ignoreDiscriminator: 
     return {
         
         'groupId': json['group_id'],
+        'outingId': json['outing_id'] == null ? undefined : json['outing_id'],
         'settled': json['settled'],
         'settlementPolicy': json['settlementPolicy'],
         'transfers': ((json['transfers'] as Array<any>).map(SettlementTransferResponseFromJSON)),
@@ -104,6 +111,7 @@ export function SettlementResponseToJSONTyped(value?: SettlementResponse | null,
     return {
         
         'group_id': value['groupId'],
+        'outing_id': value['outingId'],
         'settled': value['settled'],
         'settlementPolicy': value['settlementPolicy'],
         'transfers': ((value['transfers'] as Array<any>).map(SettlementTransferResponseToJSON)),

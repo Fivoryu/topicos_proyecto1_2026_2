@@ -21,6 +21,8 @@ class BalancesResponse {
 
     required  this.groupId,
 
+     this.outingId,
+
     required  this.participants,
   });
 
@@ -33,6 +35,18 @@ class BalancesResponse {
 
 
   final String groupId;
+
+
+
+  @JsonKey(
+    
+    name: r'outing_id',
+    required: false,
+    includeIfNull: false,
+  )
+
+
+  final String? outingId;
 
 
 
@@ -53,11 +67,13 @@ class BalancesResponse {
     @override
     bool operator ==(Object other) => identical(this, other) || other is BalancesResponse &&
       other.groupId == groupId &&
+      other.outingId == outingId &&
       other.participants == participants;
 
     @override
     int get hashCode =>
         groupId.hashCode +
+        (outingId == null ? 0 : outingId.hashCode) +
         participants.hashCode;
 
   factory BalancesResponse.fromJson(Map<String, dynamic> json) => _$BalancesResponseFromJson(json);

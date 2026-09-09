@@ -11,6 +11,7 @@ BalancesResponse _$BalancesResponseFromJson(Map<String, dynamic> json) =>
       $checkKeys(json, requiredKeys: const ['group_id', 'participants']);
       final val = BalancesResponse(
         groupId: $checkedConvert('group_id', (v) => v as String),
+        outingId: $checkedConvert('outing_id', (v) => v as String?),
         participants: $checkedConvert(
           'participants',
           (v) => (v as List<dynamic>)
@@ -23,10 +24,11 @@ BalancesResponse _$BalancesResponseFromJson(Map<String, dynamic> json) =>
         ),
       );
       return val;
-    }, fieldKeyMap: const {'groupId': 'group_id'});
+    }, fieldKeyMap: const {'groupId': 'group_id', 'outingId': 'outing_id'});
 
 Map<String, dynamic> _$BalancesResponseToJson(BalancesResponse instance) =>
     <String, dynamic>{
       'group_id': instance.groupId,
+      'outing_id': ?instance.outingId,
       'participants': instance.participants.map((e) => e.toJson()).toList(),
     };

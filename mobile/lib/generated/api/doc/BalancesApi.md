@@ -13,7 +13,7 @@ Method | HTTP request | Description
 
 
 # **getBalancesApiV1GroupsGroupIdBalancesGet**
-> BalancesResponse getBalancesApiV1GroupsGroupIdBalancesGet(groupId)
+> BalancesResponse getBalancesApiV1GroupsGroupIdBalancesGet(groupId, outingId)
 
 Get Balances
 
@@ -29,9 +29,10 @@ import 'package:openapi/api.dart';
 
 final api = Openapi().getBalancesApi();
 final String groupId = groupId_example; // String | 
+final String outingId = outingId_example; // String | 
 
 try {
-    final response = api.getBalancesApiV1GroupsGroupIdBalancesGet(groupId);
+    final response = api.getBalancesApiV1GroupsGroupIdBalancesGet(groupId, outingId);
     print(response);
 } catch on DioException (e) {
     print('Exception when calling BalancesApi->getBalancesApiV1GroupsGroupIdBalancesGet: $e\n');
@@ -43,6 +44,7 @@ try {
 Name | Type | Description  | Notes
 ------------- | ------------- | ------------- | -------------
  **groupId** | **String**|  | 
+ **outingId** | **String**|  | [optional] 
 
 ### Return type
 

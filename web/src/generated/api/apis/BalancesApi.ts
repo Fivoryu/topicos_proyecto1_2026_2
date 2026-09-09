@@ -27,6 +27,7 @@ import {
 
 export interface GetBalancesApiV1GroupsGroupIdBalancesGetRequest {
     groupId: string;
+    outingId?: string | null;
 }
 
 /**
@@ -47,6 +48,10 @@ export class BalancesApi extends runtime.BaseAPI {
         }
 
         const queryParameters: any = {};
+
+        if (requestParameters['outingId'] != null) {
+            queryParameters['outing_id'] = requestParameters['outingId'];
+        }
 
         const headerParameters: runtime.HTTPHeaders = {};
 

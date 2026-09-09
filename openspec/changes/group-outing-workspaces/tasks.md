@@ -87,11 +87,11 @@ Chain strategy: stacked-to-main
 
 **Forecast:** 500–720 changed lines; hard maximum 800. **Dependency:** PR 4 green. **Paths:** `backend/app/application/derived_service.py`, balance/settlement route schemas and repositories, focused monetary tests, generated contract outputs, and additive web query-key seams only. **Rollback:** revert outing-derived reads while retaining source association and group-wide behavior.
 
-- [ ] RED — Add derived-service/API tests proving group scope includes every general and outing-linked expense exactly once, outing scope filters exact `outing_id`, general expenses never appear in outing totals, participants remain the authorized group set, sums equal zero, and transfer order is stable. <!-- sdd-owner: implementation -->
-- [ ] GREEN — Implement optional outing scope in server-derived balance/settlement reads and REST schemas; keep all arithmetic, residual allocation, exact-zero checks, and formatting authority on the server/domain services. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE — Add mixed-scope, empty-outing, archived-outing, cross-group, stale-cache, and official Samaipata regression cases with exact expected balances/transfers; assert no derived state is persisted. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR — Regenerate contract outputs from handwritten API changes and add scope-aware query-key definitions without client calculations or WebSocket payload changes. <!-- sdd-owner: implementation -->
-- [ ] Verify separately with native attempt authority, focused/backend/full monetary tests, lint, contract drift, and final <=720 changed-line count. <!-- sdd-owner: implementation -->
+- [x] RED — Add derived-service/API tests proving group scope includes every general and outing-linked expense exactly once, outing scope filters exact `outing_id`, general expenses never appear in outing totals, participants remain the authorized group set, sums equal zero, and transfer order is stable. <!-- sdd-owner: implementation -->
+- [x] GREEN — Implement optional outing scope in server-derived balance/settlement reads and REST schemas; keep all arithmetic, residual allocation, exact-zero checks, and formatting authority on the server/domain services. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE — Add mixed-scope, empty-outing, archived-outing, cross-group, stale-cache, and official Samaipata regression cases with exact expected balances/transfers; assert no derived state is persisted. <!-- sdd-owner: implementation -->
+- [x] REFACTOR — Regenerate contract outputs from handwritten API changes and add scope-aware query-key definitions without client calculations or WebSocket payload changes. <!-- sdd-owner: implementation -->
+- [x] Verify separately with native attempt authority, focused/backend/full monetary tests, lint, contract drift, and final <=720 changed-line count. <!-- sdd-owner: implementation -->
 
 ## PR 6 — Authenticated join code and participant link
 

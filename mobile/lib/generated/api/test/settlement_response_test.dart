@@ -12,6 +12,11 @@ void main() {
       // TODO
     });
 
+    // String outingId
+    test('to test the property `outingId`', () async {
+      // TODO
+    });
+
     // bool settled
     test('to test the property `settled`', () async {
       // TODO

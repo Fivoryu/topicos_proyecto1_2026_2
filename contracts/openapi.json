@@ -80,6 +80,17 @@
             "title": "Group Id",
             "type": "string"
           },
+          "outing_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outing Id"
+          },
           "participants": {
             "items": {
               "$ref": "#/components/schemas/BalanceParticipantResponse"
@@ -756,6 +767,17 @@
             "title": "Group Id",
             "type": "string"
           },
+          "outing_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outing Id"
+          },
           "settled": {
             "title": "Settled",
             "type": "boolean"
@@ -1169,6 +1191,22 @@
             "schema": {
               "title": "Group Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outing_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outing Id"
             }
           }
         ],
@@ -2523,6 +2561,22 @@
             "schema": {
               "title": "Group Id",
               "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "outing_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Outing Id"
             }
           }
         ],

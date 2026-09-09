@@ -12,10 +12,10 @@ export const workspaceQueryKeys = {
     outings: (groupId: string) => ["group", groupId, "outings"] as const,
     expenses: (groupId: string, scope = "all") =>
       ["group", groupId, "expenses", scope] as const,
-    balances: (groupId: string, outingId = "group") =>
-      ["group", groupId, "balances", outingId] as const,
-    settlement: (groupId: string, outingId = "group") =>
-      ["group", groupId, "settlement", outingId] as const,
+    balances: (groupId: string, outingId?: string | null) =>
+      ["group", groupId, "balances", outingId ?? "group"] as const,
+    settlement: (groupId: string, outingId?: string | null) =>
+      ["group", groupId, "settlement", outingId ?? "group"] as const,
   },
 } as const;
 
