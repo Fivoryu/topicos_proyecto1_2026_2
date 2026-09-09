@@ -9,6 +9,7 @@ import type {
   ExpenseWriteRequest,
   ParticipantResponse,
 } from "../../generated/api";
+import { ErrorCard, LoadingCard } from "../../components/ui";
 import {
   featureErrorMessage,
   formatFeatureError,
@@ -307,20 +308,20 @@ export function ExpensesPanel({
   }
 
   if (participantsQuery.isPending || expensesQuery.isPending) {
-    return <section className="feature-card">Cargando gastos…</section>;
+    return <LoadingCard>Cargando gastos…</LoadingCard>;
   }
   if (participantsQuery.isError || expensesQuery.isError) {
     return (
-      <section className="feature-card" role="alert">
+      <ErrorCard>
         No se pudieron cargar los gastos. Intenta nuevamente.
-      </section>
+      </ErrorCard>
     );
   }
 
   const hasParticipants = (participantsQuery.data ?? []).length > 0;
   return (
     <section
-      className="feature-card expenses-card"
+      className="feature-card expenses-card expense-anchor"
       aria-labelledby="expenses-title"
     >
       <div className="feature-heading expenses-heading-bar">
@@ -335,7 +336,7 @@ export function ExpensesPanel({
       </div>
 
       <div className="expense-workspace">
-        <div className="expense-editor">
+        <div className="expense-editor expense-editor-primary">
           {hasParticipants ? (
             <form className="feature-form expense-form" onSubmit={submit}>
               <div className="expense-form-title">
@@ -596,7 +597,7 @@ export function ExpensesPanel({
           )}
         </div>
 
-        <div className="expense-history">
+        <div className="expense-history expense-history-secondary">
           <div className="expense-history-heading">
             <div>
               <p className="feature-eyebrow">Historial</p>

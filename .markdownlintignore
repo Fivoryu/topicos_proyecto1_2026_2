@@ -1,0 +1,3 @@
+# OpenAPI Generator-owned Markdown must remain byte-stable.
+mobile/lib/generated/api/README.md
+mobile/lib/generated/api/doc/**

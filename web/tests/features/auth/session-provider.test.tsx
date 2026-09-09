@@ -421,6 +421,40 @@ describe("login and logout", () => {
     );
   });
 
+  it("announces the authenticating state through a live status", async () => {
+    const login = deferred<typeof session>();
+    const client = makeClient({
+      getSession: vi
+        .fn()
+        .mockRejectedValue(
+          new AuthError(401, "unauthorized", "Sign in required."),
+        ),
+      login: vi.fn().mockReturnValue(login.promise),
+    });
+
+    renderProtected(client, <p>Datos protegidos del grupo</p>);
+    await screen.findByLabelText(/usuario/i);
+    fireEvent.change(screen.getByLabelText(/usuario/i), {
+      target: { value: "demo.member" },
+    });
+    fireEvent.change(screen.getByLabelText(/^contraseña$/i), {
+      target: { value: "secret" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /^iniciar sesión$/i }));
+
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /verificando tu acceso/i,
+    );
+
+    login.resolve(session);
+    await waitFor(() =>
+      expect(
+        screen.getByText("Datos protegidos del grupo"),
+      ).toBeInTheDocument(),
+    );
+    expect(screen.queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("clears the CSRF cookie and protected query state when logging out", async () => {
     document.cookie = "cc_csrf=csrf-token; Path=/";
     const queryClient = new QueryClient();

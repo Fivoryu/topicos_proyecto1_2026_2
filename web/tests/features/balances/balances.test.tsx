@@ -141,6 +141,29 @@ describe("balances panel", () => {
     expect(within(diegoRow!).getByText(/Saldado/)).toBeInTheDocument();
   });
 
+  it("keeps the tabular headings and row semantics available for each server value", async () => {
+    const client: BalanceFeatureClient = {
+      getBalances: vi.fn().mockResolvedValue(balances),
+    };
+    renderPanel(client);
+
+    const table = await screen.findByRole("table", { name: /balances/i });
+    expect(
+      within(table)
+        .getAllByRole("columnheader")
+        .map((header) => header.textContent),
+    ).toEqual(["Participante", "Pagó", "Le corresponde", "Balance", "Estado"]);
+    expect(
+      within(table)
+        .getAllByRole("rowheader")
+        .map((header) => header.textContent),
+    ).toEqual(["Ana", "Beto", "Carla", "Diego"]);
+    expect(within(table).getByText("↑")).toHaveTextContent("↑");
+    expect(within(table).getByText(/Le deben/)).toBeInTheDocument();
+    expect(within(table).getAllByText(/^Debe$/)).toHaveLength(2);
+    expect(within(table).getByText(/Saldado/)).toBeInTheDocument();
+  });
+
   it("uses REST on startup and when the WebSocket is unavailable", async () => {
     const client: BalanceFeatureClient = {
       getBalances: vi.fn().mockResolvedValue(balances),
@@ -149,7 +172,9 @@ describe("balances panel", () => {
 
     await screen.findByRole("table", { name: /balances/i });
     expect(client.getBalances).toHaveBeenCalledWith("group-demo");
-    fireEvent.click(screen.getByRole("button", { name: /actualizar balances/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /actualizar balances/i }),
+    );
     await waitFor(() => expect(client.getBalances).toHaveBeenCalledTimes(2));
   });
 });

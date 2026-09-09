@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useSession } from "../../app/auth/session-provider";
-import { ErrorCard, LoadingCard, Panel, PanelHeading, StatusBadge } from "../../components/ui";
+import {
+  ErrorCard,
+  LoadingCard,
+  Panel,
+  PanelHeading,
+  StatusBadge,
+} from "../../components/ui";
 import { formatCents } from "../../core/cents-formatter";
 import { groupQueryKey } from "../../core/query-client";
 import { generatedSettlementClient, type SettlementFeatureClient } from "./api";
@@ -30,12 +36,19 @@ export function SettlementPanel({
     return <LoadingCard>Cargando liquidación…</LoadingCard>;
   }
   if (settlementQuery.isError || !settlementQuery.data) {
-    return <ErrorCard>No se pudo cargar la liquidación. Intenta nuevamente.</ErrorCard>;
+    return (
+      <ErrorCard>
+        No se pudo cargar la liquidación. Intenta nuevamente.
+      </ErrorCard>
+    );
   }
 
   const settlement = settlementQuery.data;
   return (
-    <Panel className="settlement-card" labelledBy="settlement-title">
+    <Panel
+      className="settlement-card summary-card"
+      labelledBy="settlement-title"
+    >
       <PanelHeading
         eyebrow="Transferencias calculadas por el servidor"
         title="Liquidación"

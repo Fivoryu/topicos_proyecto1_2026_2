@@ -78,7 +78,11 @@ export function LoginScreen() {
               {notice}
             </p>
           )}
-          <form aria-label="Iniciar sesión" onSubmit={submit}>
+          <form
+            className="auth-form"
+            aria-label="Iniciar sesión"
+            onSubmit={submit}
+          >
             <div className="auth-field">
               <label htmlFor="login-name">Usuario</label>
               <input
@@ -134,6 +138,11 @@ export function LoginScreen() {
             >
               {isLoading ? "Ingresando…" : "Iniciar sesión"}
             </Button>
+            {isLoading && (
+              <p className="auth-progress" role="status" aria-live="polite">
+                Verificando tu acceso…
+              </p>
+            )}
           </form>
           <p className="auth-footnote">
             La sesión y los permisos son validados por el backend.

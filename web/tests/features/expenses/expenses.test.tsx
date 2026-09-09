@@ -63,6 +63,16 @@ function participantClient() {
   return { listParticipants: vi.fn().mockResolvedValue(participants) };
 }
 
+function deferred<T>() {
+  let resolve!: (value: T) => void;
+  let reject!: (reason?: unknown) => void;
+  const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+    resolve = resolvePromise;
+    reject = rejectPromise;
+  });
+  return { promise, resolve, reject };
+}
+
 function baseClient(): ExpenseFeatureClient {
   return {
     listExpenses: vi.fn().mockResolvedValue([expense]),
@@ -93,6 +103,41 @@ function renderPanel(
 }
 
 describe("expenses panel", () => {
+  it("uses the shared live loading surface while expense queries resolve", async () => {
+    const participantsRequest = deferred<ParticipantResponse[]>();
+    const expensesRequest = deferred<ExpenseResponse[]>();
+    const client = baseClient();
+    client.listExpenses = vi.fn().mockReturnValue(expensesRequest.promise);
+    const participantsApi = {
+      listParticipants: vi.fn().mockReturnValue(participantsRequest.promise),
+    };
+
+    renderPanel(client, participantsApi);
+
+    expect(await screen.findByRole("status")).toHaveTextContent(
+      "Cargando gastos…",
+    );
+
+    participantsRequest.resolve(participants);
+    expensesRequest.resolve([]);
+    expect(
+      await screen.findByRole("heading", { name: "Gastos" }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps a failed expense query in the shared alert surface", async () => {
+    const client = baseClient();
+    client.listExpenses = vi
+      .fn()
+      .mockRejectedValue(new Error("network failure"));
+
+    renderPanel(client);
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "No se pudieron cargar los gastos. Intenta nuevamente.",
+    );
+  });
+
   it("defaults new beneficiaries to active participants and sends decimal strings for contributors", async () => {
     const client = baseClient();
     client.listExpenses = vi.fn().mockResolvedValue([]);

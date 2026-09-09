@@ -72,6 +72,20 @@ afterEach(() => {
 });
 
 describe("group settings", () => {
+  it("uses the shared alert surface when the group cannot be loaded", async () => {
+    const client: GroupFeatureClient = {
+      getGroup: vi.fn().mockRejectedValue(new Error("network unavailable")),
+      updatePolicy: vi.fn(),
+    };
+    renderSettings(client);
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent(
+      "No se pudo cargar el grupo. Intenta nuevamente.",
+    );
+    expect(error).toHaveClass("feature-state-card");
+  });
+
   it("renders the server-owned group details and lets an owner update policy", async () => {
     const client: GroupFeatureClient = {
       getGroup: vi.fn().mockResolvedValue(group),
@@ -88,6 +102,13 @@ describe("group settings", () => {
     ).toBeInTheDocument();
     expect(screen.getByText(/cuenta propietaria/i)).toBeInTheDocument();
     expect(screen.getByText("owner-1")).toBeInTheDocument();
+    const details = screen.getAllByRole("definition")[0].closest("dl");
+    expect(details).toHaveAttribute("class", "group-details");
+    expect(
+      Array.from(details?.querySelectorAll("dt") ?? []).map(
+        (term) => term.textContent,
+      ),
+    ).toEqual(["Cuenta propietaria", "Política de liquidación"]);
     expect(screen.getAllByText(/política de liquidación/i)).not.toHaveLength(0);
     expect(screen.getAllByText(/solo propietario/i)).not.toHaveLength(0);
 
@@ -130,7 +151,9 @@ describe("group settings", () => {
     renderSettings(client, memberSession);
 
     await screen.findByRole("heading", { name: "Samaipata" });
-    expect(screen.getByLabelText(/política de liquidación/i)).toBeInTheDocument();
+    expect(
+      screen.getByLabelText(/política de liquidación/i),
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByLabelText(/política de liquidación/i), {
       target: { value: "owner_only" },
     });

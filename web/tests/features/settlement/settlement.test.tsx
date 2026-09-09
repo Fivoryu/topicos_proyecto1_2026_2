@@ -55,7 +55,9 @@ describe("settlement panel", () => {
       transfers: [],
     });
 
-    expect(await screen.findByText(/todos están saldados/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/todos están saldados/i),
+    ).toBeInTheDocument();
     expect(
       screen.queryByRole("list", { name: /transferencias/i }),
     ).not.toBeInTheDocument();
@@ -84,7 +86,10 @@ describe("settlement panel", () => {
       ],
     });
 
-    const list = await screen.findByRole("list", { name: /transferencias/i });
+    const heading = await screen.findByRole("heading", { name: "Liquidación" });
+    expect(heading).toBeInTheDocument();
+    expect(screen.getByText("Solo propietario")).toBeInTheDocument();
+    const list = screen.getByRole("list", { name: /transferencias/i });
     expect(
       within(list)
         .getAllByRole("listitem")

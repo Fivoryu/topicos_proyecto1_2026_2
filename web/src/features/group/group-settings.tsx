@@ -1,7 +1,14 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "../../app/auth/session-provider";
-import { Button, ErrorCard, LoadingCard, Panel, PanelHeading, StatusBadge } from "../../components/ui";
+import {
+  Button,
+  ErrorCard,
+  LoadingCard,
+  Panel,
+  PanelHeading,
+  StatusBadge,
+} from "../../components/ui";
 import { groupQueryKey } from "../../core/query-client";
 import type { GroupResponseSettlementPolicyEnum } from "../../generated/api";
 import { formatFeatureError, readFeatureError } from "../api-error";
@@ -51,7 +58,9 @@ export function GroupSettings({
   });
   if (groupQuery.isPending) return <LoadingCard>Cargando grupo…</LoadingCard>;
   if (groupQuery.isError || !groupQuery.data) {
-    return <ErrorCard>No se pudo cargar el grupo. Intenta nuevamente.</ErrorCard>;
+    return (
+      <ErrorCard>No se pudo cargar el grupo. Intenta nuevamente.</ErrorCard>
+    );
   }
   const group = groupQuery.data;
   const canUpdate =
@@ -64,7 +73,10 @@ export function GroupSettings({
     updatePolicy.mutate(selectedPolicy);
   }
   return (
-    <Panel className="group-card" labelledBy="group-settings-title">
+    <Panel
+      className="group-card management-card"
+      labelledBy="group-settings-title"
+    >
       <PanelHeading
         eyebrow="Grupo activo"
         title={group.name}
@@ -82,7 +94,10 @@ export function GroupSettings({
         </div>
       </dl>
       {canUpdate && (
-        <form className="feature-form" onSubmit={submitPolicy}>
+        <form
+          className="feature-form group-policy-form"
+          onSubmit={submitPolicy}
+        >
           <div className="feature-field">
             <label htmlFor="settlement-policy">Política de liquidación</label>
             <select

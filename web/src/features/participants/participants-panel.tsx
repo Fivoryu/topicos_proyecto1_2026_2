@@ -11,6 +11,12 @@ import { groupQueryKey, groupQueryKeys } from "../../core/query-client";
 import type { ParticipantResponse } from "../../generated/api";
 import { formatFeatureError, readFeatureError } from "../api-error";
 import {
+  ErrorCard,
+  LoadingCard,
+  Panel,
+  PanelHeading,
+} from "../../components/ui";
+import {
   generatedParticipantClient,
   type ParticipantFeatureClient,
 } from "./api";
@@ -135,7 +141,10 @@ export function ParticipantsPanel({
     const name = renameNames[participant.id] ?? participant.name;
     const key = `rename:${participant.id}`;
     if (!name.trim()) {
-      setInputError(key, "invalid_participant_name: Ingresa un nombre de participante.");
+      setInputError(
+        key,
+        "invalid_participant_name: Ingresa un nombre de participante.",
+      );
       setFocusErrorKey(key);
       return;
     }
@@ -153,26 +162,30 @@ export function ParticipantsPanel({
     setInputError(`rename:${participant.id}`, null);
   }
   if (participantsQuery.isPending)
-    return <section className="feature-card">Cargando participantes…</section>;
+    return <LoadingCard>Cargando participantes…</LoadingCard>;
   if (participantsQuery.isError || !participantsQuery.data) {
     return (
-      <section className="feature-card" role="alert">
+      <ErrorCard>
         No se pudieron cargar los participantes. Intenta nuevamente.
-      </section>
+      </ErrorCard>
     );
   }
   return (
-    <section className="feature-card" aria-labelledby="participants-title">
-      <div className="feature-heading">
-        <div>
-          <p className="feature-eyebrow">Personas del grupo</p>
-          <h2 id="participants-title">Participantes</h2>
-        </div>
-        <span>{participantsQuery.data.length} en total</span>
-      </div>
+    <Panel
+      className="participants-card management-card"
+      labelledBy="participants-title"
+    >
+      <PanelHeading
+        eyebrow="Personas del grupo"
+        title="Participantes"
+        titleId="participants-title"
+        action={<span>{participantsQuery.data.length} en total</span>}
+      />
       <form className="feature-form participant-add-form" onSubmit={submitAdd}>
         <div className="feature-field">
-          <label htmlFor="new-participant-name">Nombre del nuevo participante</label>
+          <label htmlFor="new-participant-name">
+            Nombre del nuevo participante
+          </label>
           <input
             ref={addInputRef}
             id="new-participant-name"
@@ -298,7 +311,7 @@ export function ParticipantsPanel({
           );
         })}
       </ul>
-    </section>
+    </Panel>
   );
 }
 export { ParticipantsPanel as ParticipantsFeature };

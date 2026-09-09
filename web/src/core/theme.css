@@ -34,13 +34,19 @@
   --border-on-dark: rgb(247 244 236 / 16%);
   --focus-ring: #9e4232;
 
-  --shadow-card:
-    0 16px 38px rgb(74 61 44 / 7%),
-    0 2px 8px rgb(74 61 44 / 4%);
-  --shadow-lift:
-    0 20px 42px rgb(74 61 44 / 11%),
-    0 4px 12px rgb(74 61 44 / 5%);
+  /* Shared light-theme roles keep repeated state values semantic. */
+  --action-soft: var(--brand-primary-soft);
+  --credit-soft: rgb(20 117 99 / 9%);
+  --debt-soft: rgb(173 79 90 / 9%);
+  --border-subtle: rgb(226 219 207 / 72%);
 
+  --shadow-card: 0 16px 38px rgb(74 61 44 / 7%), 0 2px 8px rgb(74 61 44 / 4%);
+  --shadow-lift: 0 20px 42px rgb(74 61 44 / 11%), 0 4px 12px rgb(74 61 44 / 5%);
+  --shadow-workspace: var(--shadow-card);
+
+  --space-section: 1.5rem;
+  --space-control-min: 2.75rem;
+  --motion-standard: 0.22s;
   --ease-ledger: cubic-bezier(0.22, 0.8, 0.24, 1);
   --radius-sm: 0.45rem;
   --radius-md: 0.7rem;

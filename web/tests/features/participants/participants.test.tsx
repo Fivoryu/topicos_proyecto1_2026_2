@@ -75,6 +75,37 @@ afterEach(() => {
 });
 
 describe("participants panel", () => {
+  it("uses the shared live state surface while participants are loading", async () => {
+    const client: ParticipantFeatureClient = {
+      ...baseClient(),
+      listParticipants: vi.fn(
+        () => new Promise<ParticipantResponse[]>(() => {}),
+      ),
+    };
+    renderPanel(client);
+
+    const loading = await screen.findByRole("status");
+    expect(loading).toHaveTextContent(/cargando participantes/i);
+    expect(loading).toHaveAttribute("aria-live", "polite");
+    expect(loading).toHaveClass("feature-state-card");
+  });
+
+  it("uses the shared alert surface when participants cannot be loaded", async () => {
+    const client: ParticipantFeatureClient = {
+      ...baseClient(),
+      listParticipants: vi
+        .fn()
+        .mockRejectedValue(new Error("network unavailable")),
+    };
+    renderPanel(client);
+
+    const error = await screen.findByRole("alert");
+    expect(error).toHaveTextContent(
+      "No se pudieron cargar los participantes. Intenta nuevamente.",
+    );
+    expect(error).toHaveClass("feature-state-card");
+  });
+
   it("keeps the server stable order and shows archived status", async () => {
     renderPanel(baseClient());
 
@@ -94,7 +125,9 @@ describe("participants panel", () => {
     await screen.findByText("Ana");
     const input = screen.getByLabelText(/nombre del nuevo participante/i);
     fireEvent.change(input, { target: { value: "   " } });
-    fireEvent.click(screen.getByRole("button", { name: /agregar participante/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /agregar participante/i }),
+    );
 
     expect(client.addParticipant).not.toHaveBeenCalled();
     expect(screen.getAllByRole("listitem")).toHaveLength(3);
@@ -120,7 +153,9 @@ describe("participants panel", () => {
     await screen.findByText("Ana");
     const input = screen.getByLabelText(/nombre del nuevo participante/i);
     fireEvent.change(input, { target: { value: " ana " } });
-    fireEvent.click(screen.getByRole("button", { name: /agregar participante/i }));
+    fireEvent.click(
+      screen.getByRole("button", { name: /agregar participante/i }),
+    );
 
     expect(
       await screen.findByText(/duplicate_participant_name/i),
@@ -198,7 +233,9 @@ describe("participants panel", () => {
     const client = baseClient();
     renderPanel(client);
 
-    const input = await screen.findByRole("textbox", { name: /renombrar Ana/i });
+    const input = await screen.findByRole("textbox", {
+      name: /renombrar Ana/i,
+    });
     fireEvent.change(input, { target: { value: "  " } });
     fireEvent.click(screen.getByRole("button", { name: /renombrar Ana/i }));
 
@@ -226,7 +263,9 @@ describe("participants panel", () => {
       );
     renderPanel(client);
 
-    const input = await screen.findByRole("textbox", { name: /renombrar Beto/i });
+    const input = await screen.findByRole("textbox", {
+      name: /renombrar Beto/i,
+    });
     fireEvent.change(input, { target: { value: " ana " } });
     fireEvent.click(screen.getByRole("button", { name: /renombrar Beto/i }));
 
@@ -272,7 +311,9 @@ describe("participants panel", () => {
     }
 
     renderPanel(client, <BalanceProbe />);
-    const input = await screen.findByRole("textbox", { name: /renombrar Ana/i });
+    const input = await screen.findByRole("textbox", {
+      name: /renombrar Ana/i,
+    });
     fireEvent.change(input, { target: { value: "Ana L." } });
     fireEvent.click(screen.getByRole("button", { name: /renombrar Ana/i }));
 
