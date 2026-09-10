@@ -31,6 +31,8 @@ doc/JoinCodeResponse.md
 doc/JoinCodeStatus.md
 doc/JoinResponse.md
 doc/LoginRequest.md
+doc/MemberResponse.md
+doc/MembershipsApi.md
 doc/OutingResponse.md
 doc/OutingWriteRequest.md
 doc/OutingsApi.md
@@ -50,6 +52,7 @@ lib/src/api/expenses_api.dart
 lib/src/api/groups_api.dart
 lib/src/api/health_api.dart
 lib/src/api/join_api.dart
+lib/src/api/memberships_api.dart
 lib/src/api/outings_api.dart
 lib/src/api/participants_api.dart
 lib/src/api/settlement_api.dart
@@ -81,6 +84,7 @@ lib/src/model/join_code_response.dart
 lib/src/model/join_code_status.dart
 lib/src/model/join_response.dart
 lib/src/model/login_request.dart
+lib/src/model/member_response.dart
 lib/src/model/outing_response.dart
 lib/src/model/outing_write_request.dart
 lib/src/model/participant_response.dart
@@ -118,6 +122,8 @@ test/join_code_response_test.dart
 test/join_code_status_test.dart
 test/join_response_test.dart
 test/login_request_test.dart
+test/member_response_test.dart
+test/memberships_api_test.dart
 test/outing_response_test.dart
 test/outing_write_request_test.dart
 test/outings_api_test.dart

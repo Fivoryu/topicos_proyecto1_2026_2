@@ -86,6 +86,9 @@ Class | Method | HTTP request | Description
 [*JoinApi*](doc/JoinApi.md) | [**getJoinCodeStatusApiV1GroupsGroupIdJoinCodeGet**](doc/JoinApi.md#getjoincodestatusapiv1groupsgroupidjoincodeget) | **GET** /api/v1/groups/{group_id}/join-code | Get Join Code Status
 [*JoinApi*](doc/JoinApi.md) | [**regenerateJoinCodeApiV1GroupsGroupIdJoinCodeRegeneratePost**](doc/JoinApi.md#regeneratejoincodeapiv1groupsgroupidjoincoderegeneratepost) | **POST** /api/v1/groups/{group_id}/join-code/regenerate | Regenerate Join Code
 [*JoinApi*](doc/JoinApi.md) | [**revokeJoinCodeApiV1GroupsGroupIdJoinCodeDelete**](doc/JoinApi.md#revokejoincodeapiv1groupsgroupidjoincodedelete) | **DELETE** /api/v1/groups/{group_id}/join-code | Revoke Join Code
+[*MembershipsApi*](doc/MembershipsApi.md) | [**leaveGroupApiV1GroupsGroupIdLeavePost**](doc/MembershipsApi.md#leavegroupapiv1groupsgroupidleavepost) | **POST** /api/v1/groups/{group_id}/leave | Leave Group
+[*MembershipsApi*](doc/MembershipsApi.md) | [**listMembersApiV1GroupsGroupIdMembersGet**](doc/MembershipsApi.md#listmembersapiv1groupsgroupidmembersget) | **GET** /api/v1/groups/{group_id}/members | List Members
+[*MembershipsApi*](doc/MembershipsApi.md) | [**removeMemberApiV1GroupsGroupIdMembersAccountIdDelete**](doc/MembershipsApi.md#removememberapiv1groupsgroupidmembersaccountiddelete) | **DELETE** /api/v1/groups/{group_id}/members/{account_id} | Remove Member
 [*OutingsApi*](doc/OutingsApi.md) | [**archiveOutingApiV1GroupsGroupIdOutingsOutingIdArchivePost**](doc/OutingsApi.md#archiveoutingapiv1groupsgroupidoutingsoutingidarchivepost) | **POST** /api/v1/groups/{group_id}/outings/{outing_id}/archive | Archive Outing
 [*OutingsApi*](doc/OutingsApi.md) | [**createOutingApiV1GroupsGroupIdOutingsPost**](doc/OutingsApi.md#createoutingapiv1groupsgroupidoutingspost) | **POST** /api/v1/groups/{group_id}/outings | Create Outing
 [*OutingsApi*](doc/OutingsApi.md) | [**deleteOutingApiV1GroupsGroupIdOutingsOutingIdDelete**](doc/OutingsApi.md#deleteoutingapiv1groupsgroupidoutingsoutingiddelete) | **DELETE** /api/v1/groups/{group_id}/outings/{outing_id} | Delete Outing
@@ -126,6 +129,7 @@ Class | Method | HTTP request | Description
  - [JoinCodeStatus](doc/JoinCodeStatus.md)
  - [JoinResponse](doc/JoinResponse.md)
  - [LoginRequest](doc/LoginRequest.md)
+ - [MemberResponse](doc/MemberResponse.md)
  - [OutingResponse](doc/OutingResponse.md)
  - [OutingWriteRequest](doc/OutingWriteRequest.md)
  - [ParticipantResponse](doc/ParticipantResponse.md)

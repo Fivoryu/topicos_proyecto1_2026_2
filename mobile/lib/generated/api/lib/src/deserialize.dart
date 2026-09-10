@@ -18,6 +18,7 @@ import 'package:openapi/src/model/join_code_response.dart';
 import 'package:openapi/src/model/join_code_status.dart';
 import 'package:openapi/src/model/join_response.dart';
 import 'package:openapi/src/model/login_request.dart';
+import 'package:openapi/src/model/member_response.dart';
 import 'package:openapi/src/model/outing_response.dart';
 import 'package:openapi/src/model/outing_write_request.dart';
 import 'package:openapi/src/model/participant_response.dart';
@@ -91,6 +92,8 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
           return JoinResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'LoginRequest':
           return LoginRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'MemberResponse':
+          return MemberResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'OutingResponse':
           return OutingResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'OutingWriteRequest':

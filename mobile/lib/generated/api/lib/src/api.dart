@@ -13,6 +13,7 @@ import 'package:openapi/src/api/expenses_api.dart';
 import 'package:openapi/src/api/groups_api.dart';
 import 'package:openapi/src/api/health_api.dart';
 import 'package:openapi/src/api/join_api.dart';
+import 'package:openapi/src/api/memberships_api.dart';
 import 'package:openapi/src/api/outings_api.dart';
 import 'package:openapi/src/api/participants_api.dart';
 import 'package:openapi/src/api/settlement_api.dart';
@@ -102,6 +103,12 @@ class Openapi {
   /// by doing that all interceptors will not be executed
   JoinApi getJoinApi() {
     return JoinApi(dio);
+  }
+
+  /// Get MembershipsApi instance, base route and serializer can be overridden by a given but be careful,
+  /// by doing that all interceptors will not be executed
+  MembershipsApi getMembershipsApi() {
+    return MembershipsApi(dio);
   }
 
   /// Get OutingsApi instance, base route and serializer can be overridden by a given but be careful,
