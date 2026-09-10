@@ -39,6 +39,7 @@ from backend.app.api.routes.events import router as events_router
 from backend.app.api.routes.expenses import router as expenses_router
 from backend.app.api.routes.groups import router as groups_router
 from backend.app.api.routes.join import router as join_router
+from backend.app.api.routes.memberships import router as memberships_router
 from backend.app.api.routes.outings import router as outings_router
 from backend.app.api.routes.participants import router as participants_router
 from backend.app.api.routes.settlement import router as settlement_router
@@ -48,6 +49,7 @@ from backend.app.application.derived_service import DerivedService
 from backend.app.application.expense_service import ExpenseService
 from backend.app.application.group_service import GroupService
 from backend.app.application.join_service import JoinService
+from backend.app.application.membership_service import MembershipService
 from backend.app.application.outing_service import OutingService
 from backend.app.application.participant_service import ParticipantService
 from backend.app.application.workspace_service import WorkspaceService
@@ -163,6 +165,13 @@ def _wire_request_services(
         unit_of_work,
         invalidation_publisher=invalidation_publisher,
     )
+    membership_service = MembershipService(
+        membership_repository,
+        unit_of_work,
+        authorization,
+        invalidation_publisher=invalidation_publisher,
+        now=UvClock().now,
+    )
     outing_service = OutingService(
         outing_repository,
         unit_of_work,
@@ -179,6 +188,7 @@ def _wire_request_services(
     state.derived_service = derived_service
     state.group_service = group_service
     state.workspace_service = workspace_service
+    state.membership_service = membership_service
     state.authorization_service = authorization
     state.join_service = join_service
     state.outing_service = outing_service
@@ -223,6 +233,7 @@ register_error_handlers(app)
 app.include_router(auth_router)
 app.include_router(groups_router)
 app.include_router(join_router)
+app.include_router(memberships_router)
 app.include_router(outings_router)
 app.include_router(participants_router)
 app.include_router(expenses_router)

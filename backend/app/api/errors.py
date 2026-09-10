@@ -61,6 +61,8 @@ _DOMAIN_STATUS_CODES = {
     "invalid_join_code": 422,
     "revoked_join_code": 422,
     "invalid_participant_link_choice": 422,
+    "member_not_found": 404,
+    "final_owner_exit": 409,
     "duplicate_membership": 409,
     "duplicate_participant_link": 409,
     "participant_in_use": 409,

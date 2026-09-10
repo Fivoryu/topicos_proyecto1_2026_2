@@ -57,6 +57,10 @@ def get_join_service(request: Request) -> Any:
     return _required_state(request, "join_service")
 
 
+def get_membership_service(request: Request) -> Any:
+    return _required_state(request, "membership_service")
+
+
 def get_participant_repository(
     request: Request,
     participant_service: Any = Depends(get_participant_service),
@@ -195,6 +199,7 @@ __all__ = [
     "get_expense_service",
     "get_group_service",
     "get_join_service",
+    "get_membership_service",
     "get_workspace_service",
     "get_participant_repository",
     "get_participant_service",
