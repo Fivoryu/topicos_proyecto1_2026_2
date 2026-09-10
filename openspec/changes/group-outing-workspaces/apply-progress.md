@@ -2974,3 +2974,64 @@ The following PR6–PR9 and parent-owned rows remain unchecked in `tasks.md`; th
 - Fresh web evidence hashes (complete combined stdout/stderr): test `sha256:e0ea276b8b87fbec4d9d7d7bc61d470d5977c5325d04a3f618a11932b4afcdbb`; typecheck `sha256:e6fe0eeddd18fcb346b8378ad6e5a0c66f65ba916015bd7c73a25e49be0bb345`; build `sha256:a1ea710adc108a6beaf2753dc2404096563af7c44f92c8076f44b0887b57da46`.
 - Scope audit found only 15 handwritten web/test paths for PR9; generated clients, backend, mobile, contracts, and `web-professional-redesign` remain untouched. `.pi/gentle-ai/sdd-preflight.json` and `NUL` remain preserved and untracked.
 - Manual acceptance completed by the user at `http://localhost:5173`: login, owner/member settings, join-code lifecycle, membership controls, authenticated join flow, protected/error/recovery states, Spanish accessible copy, and laptop layout were confirmed. No token or sensitive credential was recorded.
+
+## PR6/PR7 formal reconciliation — residual evidence
+
+### Scope and authority
+
+- This reconciliation audits only the already-landed PR6 and PR7 implementation. No PR10 work, PR8/PR9 source, multi-currency, redesign, mobile UI/domain, generated output, official fixture, or production backend source was changed.
+- Initial native review inspection returned `next_transition.kind=stop` with `reason_code=rdd_disabled`. After explicit user authorization, global and clone-effective RDD were on; no native review lineage, receipt, acknowledgement, or review-closed claim was created.
+- Initial task state was **47/60 complete with 13 unchecked rows**. After the evidence below, exactly the ten PR6/PR7 implementation rows are checked; the three parent-owned lifecycle rows remain unchecked.
+
+### Residual audit coverage
+
+- **PR6:** current token generation/regeneration/revocation/status, SHA-256 digest equality and 32-byte hash-only schema, reusable authenticated consumption, prior-token invalidation, exact one-of participant choice, same-group participant/link isolation, authentication/CSRF/origin rejection, atomic rollback, post-commit publication, commit-failure silence, token non-disclosure, and the complete `0006_join_codes` migration round trip are covered by focused tests and source inspection.
+- **PR7:** active `ended_at` semantics, owner remove/member leave, immutable final owner, server-derived roles, ended-session denial across the operation matrix, inactive links, preserved participant/outing/expense/contribution/beneficiary source rows, unchanged derived balances, explicit rejoin choice, duplicate-active rejection, second-exit no-second-frame behavior, stable API errors, and membership OpenAPI/CSRF/no-secret contract shape are covered by focused tests and source inspection.
+- Lock/concurrency evidence is bounded: join-code repository lookups and membership end operations use `with_for_update`; the tests cover serialized second-operation rejection. No live PostgreSQL race test was run because no `DATABASE_URL` was configured; this limitation is reported, not hidden.
+
+### Strict-TDD evidence
+
+| Slice | RED | GREEN | TRIANGULATE | REFACTOR |
+| --- | --- | --- | --- | --- |
+| PR6 residual tests | Existing landed behavior baseline: 6 focused tests passed; no artificial failure was manufactured. | 14 focused PR6 tests passed after adding characterization/security/migration assertions. | 63 related join/membership tests passed; invalid choice, isolation, CSRF/origin, rollback, publication, and migration paths passed. | Ruff and `git diff --check` passed; candidate is 222 changed units. |
+| PR7 residual tests | Existing landed behavior baseline: 67 focused tests passed; no artificial failure was manufactured. | 89 focused PR7 tests passed after adding lifecycle/history/authorization/contract assertions. | 54 targeted negative/lifecycle tests passed, 35 deselected; stale access, rejoin, final owner, rollback, and source preservation passed. | Ruff and `git diff --check` passed; candidate is 345 changed units. |
+
+### Exact verification
+
+- Focused PR6/PR7 suite: **106 passed, 1 warning**, exit `0`.
+- `python -m pytest backend/tests -q`: **348 passed, 1 warning**, exit `0`.
+- `python -m ruff check backend`: **passed**, exit `0`.
+- `npm --prefix web run test`: **21 files / 132 tests passed**, exit `0`.
+- `npm --prefix web run typecheck`: **passed**, exit `0`.
+- `npm --prefix web run build`: **162 modules transformed**, exit `0`.
+- `python -m backend.scripts.check_contract_drift --cwd .`: **Contract and generated clients are drift-free**, exit `0`.
+- `openspec validate group-outing-workspaces --strict`: **valid**, exit `0`.
+- `git diff --check`: **passed**, exit `0`.
+- Backend output hash: `sha256:45a956432d735b343fa6585a9d3da4b029944e6520b0c184e8d63d759f5e5b02`.
+- Web build output hash: `sha256:b53e591b37bef661df692a64abfe0d919cfcb21374fd1dfcc581c44a1c94f00b`.
+
+### Changed paths and bounded lines
+
+- Current dirty tracked paths are exactly eight backend test files: `backend/tests/integration/api/test_join_routes.py`, `backend/tests/integration/api/test_membership_routes.py`, `backend/tests/integration/persistence/test_auth_tables.py`, `backend/tests/integration/persistence/test_join_tables.py`, `backend/tests/test_openapi_contract.py`, `backend/tests/unit/application/test_authorization.py`, `backend/tests/unit/application/test_join_service.py`, and `backend/tests/unit/application/test_membership_service.py`.
+- PR6 residual slice: **222 changed units** across three test files.
+- PR7 residual slice: **345 changed units** across five test files.
+- Aggregate residual candidate: **567 changed units** (556 additions + 11 deletions); each slice is below the 400-line budget.
+- Preserved untracked path: `.pi/gentle-ai/sdd-preflight.json`. The root `NUL` was explicitly deleted by the user and is not preserved in this current reconciliation. Preserved protected paths include `AGENTS.md`, `contracts/openapi.json`, `web/src/generated/api/**`, `mobile/**`, `openspec/changes/web-professional-redesign/**`, official Samaipata fixtures, and all non-target product source.
+
+### Current lifecycle disposition
+
+- After restart, the user excluded `.pi/gentle-ai/sdd-preflight.json` from the review candidate. Fresh selection returned `native-mutation-status-reconciled` with `mutation_outcome: unknown` and `next_action: start`; fresh ordinary START re-offered `intended_untracked_selection_required`.
+- No lineage, receipt, acknowledgement, or review closure was created, and nothing was staged. The three parent-owned lifecycle rows remain unchecked.
+- The resulting blocker is native lifecycle/controller reconciliation, not a product-test blocker. Public contract/runtime checks passed in isolated clones for gentle-ai v2.7.0 (public latest) and gentle-pi v2.5.0 (public latest release). The exact host-controller restart behavior was not reproduced because host dependencies were unavailable; no upstream issue was opened.
+
+### Rollback and remaining decisions
+
+- Rollback boundary is test/evidence-only: revert the eight residual test files plus this reconciliation section and the ten task-marker transitions. No source/history data or generated output requires rollback.
+- The three parent-owned rows remain unchecked: preserve the normalized candidate/evidence, start or reuse bounded review, and execute post-apply lifecycle gates. The unresolved native lifecycle/controller state does not close review or authorize delivery, commit, push, PR, or archive.
+- Existing warnings remain non-blocking: Starlette/httpx deprecation, React `act(...)`, generator option/server warnings, and Git LF/CRLF notices.
+
+### Key Learnings
+
+- Residual characterization tests can reconcile already-landed behavior without fabricating a RED failure.
+- Hash-only join persistence and ended-membership history are independently testable without touching generated or mobile outputs.
+- Native lifecycle/controller reconciliation can block review closure even when RDD is enabled and product verification is green; that is not evidence of a product failure.

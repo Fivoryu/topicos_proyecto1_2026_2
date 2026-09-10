@@ -1,17 +1,17 @@
 ```yaml
 schema: gentle-ai.verify-result/v1
-evidence_revision: sha256:06c7d5c144569caae40d1dab0ebf0a1ffc4ab58c60b589f0ab368dcb2eb8b933
+evidence_revision: sha256:341454c9dba12f376e8276b3f932fd9d1b542cab552f6e11f8afe526f7f6b60a
 verdict: pass_with_warnings
 blockers: 0
 critical_findings: 0
-requirements: 5/5
-scenarios: 14/14
-test_command: npm --prefix web run test
+requirements: 18/18
+scenarios: 47/47
+test_command: python -m pytest backend/tests -q
 test_exit_code: 0
-test_output_hash: sha256:e0ea276b8b87fbec4d9d7d7bc61d470d5977c5325d04a3f618a11932b4afcdbb
+test_output_hash: sha256:45a956432d735b343fa6585a9d3da4b029944e6520b0c184e8d63d759f5e5b02
 build_command: npm --prefix web run build
 build_exit_code: 0
-build_output_hash: sha256:a1ea710adc108a6beaf2753dc2404096563af7c44f92c8076f44b0887b57da46
+build_output_hash: sha256:b53e591b37bef661df692a64abfe0d919cfcb21374fd1dfcc581c44a1c94f00b
 ```
 
 # Verify Report: `pr9-web-membership-settings`
@@ -309,3 +309,64 @@ Strict TDD is enabled. The PR3d `TDD Cycle Evidence` table exists in apply-progr
 - `next_recommended`: `parent-lifecycle` for parent-owned snapshot settlement, then deferred generated-client batches.
 - `risks`: aggregate worktree contains preserved earlier backend, generated, web, mobile, and redesign changes; the normalized native-slice audit excluded them. Do not treat aggregate `git status` as the PR3d diff.
 - `skill_resolution`: `fallback-path` (parent-injected phase skill paths were absent; global strict-TDD support was loaded from `C:/Users/HP/.pi/agent/gentle-ai/support/`).
+
+---
+
+# Verify Report: `pr6-pr7-formal-reconciliation`
+
+## Verdict
+
+**PASS WITH WARNINGS — PR6 and PR7 implementation rows are reconciled; parent lifecycle remains open.**
+
+The current candidate contains residual tests only. The implementation was already landed on `origin/main`; no production source rewrite was performed. Exactly ten PR6/PR7 implementation rows are now checked. The three parent-owned lifecycle rows remain unchecked because native lifecycle/controller reconciliation is incomplete.
+
+## Scope and evidence
+
+- PR6 residual coverage proves SHA-256 hash-only storage, lifecycle invalidation, authenticated reusable consumption, exact participant choice, same-group isolation, authentication/CSRF/origin rejection, rollback/publication behavior, non-disclosure, and the full `0006_join_codes` migration round trip.
+- PR7 residual coverage proves active `ended_at`, owner remove/member leave, final-owner protection, server-derived roles, ended-session denial, inactive links, preserved participants/outings/expenses/contribution/beneficiary rows, unchanged derived balances, explicit rejoin choice, duplicate rejection, serialized second-exit behavior, stable API errors, and membership contract shape.
+- The scoped verifier totals are **18 requirements / 47 scenarios**, derived from the PR6/PR7-relevant requirement blocks in the Groups, API, and Persistence deltas. The complete change contains 43 requirements / 89 scenarios; this report does not relabel unrelated web/demo requirements as PR6/PR7 evidence.
+- Initial native inspection returned `rdd_disabled`; after explicit user authorization, global and clone-effective RDD were on. No review lineage, receipt, acknowledgement, or review-closed claim was created. No live PostgreSQL race test was run because `DATABASE_URL` was unset.
+
+## TDD and verification
+
+| Slice | RED | GREEN | TRIANGULATE | REFACTOR |
+| --- | --- | --- | --- | --- |
+| PR6 | Existing landed baseline passed; no artificial failure was manufactured. | 14 focused tests passed. | 63 related tests passed, including negative/security/rollback/migration cases. | Ruff, diff check, and 222-unit bound passed. |
+| PR7 | Existing landed baseline passed; no artificial failure was manufactured. | 89 focused tests passed. | 54 targeted tests passed with 35 deselected; lifecycle/history/authorization/contract cases passed. | Ruff, diff check, and 345-unit bound passed. |
+
+| Command | Result |
+| --- | --- |
+| `python -m pytest backend/tests -q` | PASS — 348 passed, 1 warning |
+| `python -m ruff check backend` | PASS |
+| `npm --prefix web run test` | PASS — 21 files / 132 tests |
+| `npm --prefix web run typecheck` | PASS |
+| `npm --prefix web run build` | PASS — 162 modules transformed |
+| `python -m backend.scripts.check_contract_drift --cwd .` | PASS — drift-free |
+| `openspec validate group-outing-workspaces --strict` | PASS |
+| `git diff --check` | PASS |
+| `gentle-ai sdd-verify-validate --input openspec/changes/group-outing-workspaces/verify-report.md --requirements 18 --scenarios 47` | PASS — exit 0, `pass_with_warnings` |
+
+Output hashes:
+
+- Backend tests: `sha256:45a956432d735b343fa6585a9d3da4b029944e6520b0c184e8d63d759f5e5b02`
+- Web build: `sha256:b53e591b37bef661df692a64abfe0d919cfcb21374fd1dfcc581c44a1c94f00b`
+
+## Changed paths and budget
+
+- Eight backend test files changed; no production, generated, contract snapshot, mobile, web, redesign, AGENTS, fixture, or historical paths changed in this candidate.
+- PR6: **222 changed units** across three files.
+- PR7: **345 changed units** across five files.
+- Aggregate residual candidate: **567 changed units** (556 additions + 11 deletions); both slices are below 400.
+- `.pi/gentle-ai/sdd-preflight.json` remains untracked and preserved. The root `NUL` was explicitly deleted by the user and is not preserved in this current reconciliation.
+
+## Current lifecycle disposition
+
+- After restart, the user excluded `.pi/gentle-ai/sdd-preflight.json` from the review candidate. Fresh selection returned `native-mutation-status-reconciled` with `mutation_outcome: unknown` and `next_action: start`; fresh ordinary START re-offered `intended_untracked_selection_required`.
+- No lineage, receipt, acknowledgement, or review closure was created, and nothing was staged. The three parent-owned lifecycle rows remain unchecked.
+- The resulting blocker is native lifecycle/controller reconciliation, not a product-test blocker. Public contract/runtime checks passed in isolated clones for gentle-ai v2.7.0 (public latest) and gentle-pi v2.5.0 (public latest release). The exact host-controller restart behavior was not reproduced because host dependencies were unavailable; no upstream issue was opened.
+
+## Remaining blockers and delivery boundary
+
+- The three parent-owned lifecycle rows remain open: normalized-candidate handoff, bounded review, and post-apply lifecycle gates.
+- Native lifecycle/controller reconciliation remains incomplete and prevents a review closure; this is not a product-test failure. This report does not authorize commit, push, PR, release, or archive.
+- Existing non-blocking warnings: Starlette/httpx deprecation, React `act(...)`, generator warnings, and LF/CRLF notices.
