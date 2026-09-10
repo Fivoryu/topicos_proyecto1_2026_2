@@ -1,3 +1,53 @@
+```yaml
+schema: gentle-ai.verify-result/v1
+evidence_revision: sha256:bbc9744d9ce08f1de211a0776fbe71978836851c874298e1c20c356ffc9191a7
+verdict: pass_with_warnings
+blockers: 0
+critical_findings: 0
+requirements: 9/9
+scenarios: 19/19
+test_command: npm --prefix web run test
+test_exit_code: 0
+test_output_hash: sha256:05d691290128bf90ada496d6ff256c23c8f1efca5d11713e57992169aac4678a
+build_command: npm --prefix web run build
+build_exit_code: 0
+build_output_hash: sha256:bfdb86f02b0c4d9d21228b0fb7e7bbe198cd5b48ec42803890d4cd3b2b723b61
+```
+
+# Verify Report: `pr8-web-financial-workspace`
+
+## Verdict
+
+**PASS WITH WARNINGS — PR8 is complete within its bounded web scope.**
+
+The six PR8 slices are implemented, individually below the 400-line review budget, and already committed/pushed. The scoped web test suite, typecheck, production build, OpenSpec validation, and dirty-path audit pass. The warning is scope-only: PR9 and parent-owned lifecycle/delivery actions remain outside PR8.
+
+## Scope and task completion
+
+- PR8 implementation tasks: **5/5 checked**.
+- PR8 requirements/scenarios covered in this scoped report: **9/9 requirements, 19/19 scenarios**.
+- Slice authored changed-line units: PR8a **357**, PR8b **375**, PR8c **359**, PR8d **382**, PR8e **286**, PR8f **347**; every slice is below 400 and no slice requires a size exception.
+- Preserved boundaries: backend, mobile, generated clients, invalidation-only WebSocket behavior, and `web-professional-redesign` were not modified by the PR8 commits.
+- Untracked `.pi/gentle-ai/sdd-preflight.json` and `NUL` were preserved and excluded from delivery.
+
+## Verification commands
+
+| Command | Result |
+| --- | --- |
+| `npm --prefix web run test` | PASS — exit 0, 17 files / 118 tests; one pre-existing React `act(...)` warning |
+| `npm --prefix web run typecheck` | PASS — exit 0 |
+| `npm --prefix web run build` | PASS — exit 0 |
+| `openspec validate group-outing-workspaces --strict` | PASS — exit 0 |
+| `git diff --check` and dirty-path audit | PASS — exit 0 |
+
+The complete combined stdout/stderr hashes are recorded in the machine envelope above and in `apply-progress.md`. No product files were changed during this verification run.
+
+## Delivery boundary
+
+PR8 is terminal as a product slice. The full OpenSpec change is not terminal: PR9 membership/settings UI, the three parent-owned lifecycle rows, and final stacked-candidate review/receipts/delivery remain pending. This report does not mark those rows complete or authorize a commit/push.
+
+---
+
 # Verify Report: `pr3b-outing-service` corrective rerun
 
 ## Status

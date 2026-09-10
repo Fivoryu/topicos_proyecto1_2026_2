@@ -2951,3 +2951,17 @@ The following PR6–PR9 and parent-owned rows remain unchecked in `tasks.md`; th
 
 - An embedded route seam reuses account-scoped selection without duplicating authorization or introducing a router.
 - Keep legacy anchors in the protected shell while rendering canonical screens from server-scoped query identities; stale selections must stop before child panels render.
+
+## PR8 parent reconciliation — web financial workspace complete
+
+- The five broad PR8 implementation rows are now checked in `tasks.md`. This reconciliation is limited to PR8; PR9 and all parent-owned lifecycle rows remain unchecked.
+- PR8a–PR8f each remained below the per-slice 400-line review budget: **357**, **375**, **359**, **382**, **286**, and **347** authored changed-line units respectively. No slice exceeded the repository hard limit of 800 lines.
+- Fresh web verification: `npm --prefix web run test` — exit 0, 17 files / 118 tests; `npm --prefix web run typecheck` — exit 0; `npm --prefix web run build` — exit 0. The test run retains one pre-existing React `act(...)` warning.
+- Fresh artifact verification: `openspec validate group-outing-workspaces --strict` — exit 0; `git diff --check` and dirty-path audit — exit 0. Current untracked paths are preserved `.pi/gentle-ai/sdd-preflight.json` and `NUL`; no backend, mobile, generated-client, or `web-professional-redesign` path was added to PR8 commits.
+- Evidence hashes for the complete combined stdout/stderr of the fresh independent web gates: test `sha256:05d691290128bf90ada496d6ff256c23c8f1efca5d11713e57992169aac4678a`; typecheck `sha256:e6fe0eeddd18fcb346b8378ad6e5a0c66f65ba916015bd7c73a25e49be0bb345`; build `sha256:bfdb86f02b0c4d9d21228b0fb7e7bbe198cd5b48ec42803890d4cd3b2b723b61`.
+- PR8 product scope is complete and reversible by slice. Remaining work is outside PR8: PR9 membership/settings UI, the three parent-owned lifecycle rows, and any final stacked-candidate review/delivery action.
+
+### Key Learnings
+
+- A PR8 completion claim must reconcile the five broad task rows only after all six bounded slices have independent TDD and gate evidence; slice commits alone are insufficient.
+- The protected shell can integrate the financial workspace without changing backend authority, generated output, mobile UI, invalidation-only WebSocket behavior, or preserved redesign files.
