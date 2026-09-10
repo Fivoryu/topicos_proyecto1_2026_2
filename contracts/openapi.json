@@ -534,6 +534,121 @@
         "title": "HealthStatus",
         "type": "string"
       },
+      "JoinCodeConsumeRequest": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "new_participant_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New Participant Name"
+          },
+          "participant_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Participant Id"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "title": "JoinCodeConsumeRequest",
+        "type": "object"
+      },
+      "JoinCodeResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "generation": {
+            "title": "Generation",
+            "type": "integer"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "group_id",
+          "code",
+          "generation"
+        ],
+        "title": "JoinCodeResponse",
+        "type": "object"
+      },
+      "JoinCodeStatus": {
+        "additionalProperties": false,
+        "properties": {
+          "active": {
+            "title": "Active",
+            "type": "boolean"
+          },
+          "generation": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Generation"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "group_id",
+          "generation",
+          "active"
+        ],
+        "title": "JoinCodeStatus",
+        "type": "object"
+      },
+      "JoinResponse": {
+        "additionalProperties": false,
+        "properties": {
+          "account_id": {
+            "title": "Account Id",
+            "type": "string"
+          },
+          "group_id": {
+            "title": "Group Id",
+            "type": "string"
+          },
+          "participant_id": {
+            "title": "Participant Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "group_id",
+          "account_id",
+          "participant_id"
+        ],
+        "title": "JoinResponse",
+        "type": "object"
+      },
       "LoginRequest": {
         "additionalProperties": false,
         "description": "Credentials accepted by the seeded-account login operation.",
@@ -1047,6 +1162,71 @@
         "summary": "Create Group",
         "tags": [
           "groups"
+        ]
+      }
+    },
+    "/api/v1/groups/join": {
+      "post": {
+        "operationId": "consume_join_code_api_v1_groups_join_post",
+        "parameters": [
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/JoinCodeConsumeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Consume Join Code",
+        "tags": [
+          "join"
         ]
       }
     },
@@ -1623,6 +1803,249 @@
         "summary": "Edit Expense",
         "tags": [
           "expenses"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/join-code": {
+      "delete": {
+        "operationId": "revoke_join_code_api_v1_groups__group_id__join_code_delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCodeStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Revoke Join Code",
+        "tags": [
+          "join"
+        ]
+      },
+      "get": {
+        "operationId": "get_join_code_status_api_v1_groups__group_id__join_code_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCodeStatus"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Get Join Code Status",
+        "tags": [
+          "join"
+        ]
+      },
+      "post": {
+        "operationId": "generate_join_code_api_v1_groups__group_id__join_code_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Generate Join Code",
+        "tags": [
+          "join"
+        ]
+      }
+    },
+    "/api/v1/groups/{group_id}/join-code/regenerate": {
+      "post": {
+        "operationId": "regenerate_join_code_api_v1_groups__group_id__join_code_regenerate_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "group_id",
+            "required": true,
+            "schema": {
+              "title": "Group Id",
+              "type": "string"
+            }
+          },
+          {
+            "description": "Must match the readable cc_csrf cookie.",
+            "in": "header",
+            "name": "X-CSRF-Token",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JoinCodeResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "403": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "404": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "409": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "422": {
+            "$ref": "#/components/responses/ErrorResponse"
+          },
+          "500": {
+            "$ref": "#/components/responses/ErrorResponse"
+          }
+        },
+        "security": [
+          {
+            "cc_session": []
+          }
+        ],
+        "summary": "Regenerate Join Code",
+        "tags": [
+          "join"
         ]
       }
     },

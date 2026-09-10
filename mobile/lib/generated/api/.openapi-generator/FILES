@@ -25,6 +25,11 @@ doc/GroupsApi.md
 doc/HealthApi.md
 doc/HealthResponse.md
 doc/HealthStatus.md
+doc/JoinApi.md
+doc/JoinCodeConsumeRequest.md
+doc/JoinCodeResponse.md
+doc/JoinCodeStatus.md
+doc/JoinResponse.md
 doc/LoginRequest.md
 doc/OutingResponse.md
 doc/OutingWriteRequest.md
@@ -44,6 +49,7 @@ lib/src/api/balances_api.dart
 lib/src/api/expenses_api.dart
 lib/src/api/groups_api.dart
 lib/src/api/health_api.dart
+lib/src/api/join_api.dart
 lib/src/api/outings_api.dart
 lib/src/api/participants_api.dart
 lib/src/api/settlement_api.dart
@@ -70,6 +76,10 @@ lib/src/model/group_summary_response.dart
 lib/src/model/group_update_request.dart
 lib/src/model/health_response.dart
 lib/src/model/health_status.dart
+lib/src/model/join_code_consume_request.dart
+lib/src/model/join_code_response.dart
+lib/src/model/join_code_status.dart
+lib/src/model/join_response.dart
 lib/src/model/login_request.dart
 lib/src/model/outing_response.dart
 lib/src/model/outing_write_request.dart
@@ -102,6 +112,11 @@ test/groups_api_test.dart
 test/health_api_test.dart
 test/health_response_test.dart
 test/health_status_test.dart
+test/join_api_test.dart
+test/join_code_consume_request_test.dart
+test/join_code_response_test.dart
+test/join_code_status_test.dart
+test/join_response_test.dart
 test/login_request_test.dart
 test/outing_response_test.dart
 test/outing_write_request_test.dart

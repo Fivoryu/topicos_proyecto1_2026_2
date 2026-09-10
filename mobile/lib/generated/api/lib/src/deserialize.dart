@@ -13,6 +13,10 @@ import 'package:openapi/src/model/group_response.dart';
 import 'package:openapi/src/model/group_summary_response.dart';
 import 'package:openapi/src/model/group_update_request.dart';
 import 'package:openapi/src/model/health_response.dart';
+import 'package:openapi/src/model/join_code_consume_request.dart';
+import 'package:openapi/src/model/join_code_response.dart';
+import 'package:openapi/src/model/join_code_status.dart';
+import 'package:openapi/src/model/join_response.dart';
 import 'package:openapi/src/model/login_request.dart';
 import 'package:openapi/src/model/outing_response.dart';
 import 'package:openapi/src/model/outing_write_request.dart';
@@ -77,6 +81,14 @@ final _regMap = RegExp(r'^Map<String,(.*)>$');
         case 'HealthStatus':
           
           
+        case 'JoinCodeConsumeRequest':
+          return JoinCodeConsumeRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'JoinCodeResponse':
+          return JoinCodeResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'JoinCodeStatus':
+          return JoinCodeStatus.fromJson(value as Map<String, dynamic>) as ReturnType;
+        case 'JoinResponse':
+          return JoinResponse.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'LoginRequest':
           return LoginRequest.fromJson(value as Map<String, dynamic>) as ReturnType;
         case 'OutingResponse':

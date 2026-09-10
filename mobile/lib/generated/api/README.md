@@ -81,6 +81,11 @@ Class | Method | HTTP request | Description
 [*GroupsApi*](doc/GroupsApi.md) | [**listGroupsApiV1GroupsGet**](doc/GroupsApi.md#listgroupsapiv1groupsget) | **GET** /api/v1/groups | List Groups
 [*GroupsApi*](doc/GroupsApi.md) | [**updateGroupApiV1GroupsGroupIdPatch**](doc/GroupsApi.md#updategroupapiv1groupsgroupidpatch) | **PATCH** /api/v1/groups/{group_id} | Update Group
 [*HealthApi*](doc/HealthApi.md) | [**healthHealthGet**](doc/HealthApi.md#healthhealthget) | **GET** /health | Health
+[*JoinApi*](doc/JoinApi.md) | [**consumeJoinCodeApiV1GroupsJoinPost**](doc/JoinApi.md#consumejoincodeapiv1groupsjoinpost) | **POST** /api/v1/groups/join | Consume Join Code
+[*JoinApi*](doc/JoinApi.md) | [**generateJoinCodeApiV1GroupsGroupIdJoinCodePost**](doc/JoinApi.md#generatejoincodeapiv1groupsgroupidjoincodepost) | **POST** /api/v1/groups/{group_id}/join-code | Generate Join Code
+[*JoinApi*](doc/JoinApi.md) | [**getJoinCodeStatusApiV1GroupsGroupIdJoinCodeGet**](doc/JoinApi.md#getjoincodestatusapiv1groupsgroupidjoincodeget) | **GET** /api/v1/groups/{group_id}/join-code | Get Join Code Status
+[*JoinApi*](doc/JoinApi.md) | [**regenerateJoinCodeApiV1GroupsGroupIdJoinCodeRegeneratePost**](doc/JoinApi.md#regeneratejoincodeapiv1groupsgroupidjoincoderegeneratepost) | **POST** /api/v1/groups/{group_id}/join-code/regenerate | Regenerate Join Code
+[*JoinApi*](doc/JoinApi.md) | [**revokeJoinCodeApiV1GroupsGroupIdJoinCodeDelete**](doc/JoinApi.md#revokejoincodeapiv1groupsgroupidjoincodedelete) | **DELETE** /api/v1/groups/{group_id}/join-code | Revoke Join Code
 [*OutingsApi*](doc/OutingsApi.md) | [**archiveOutingApiV1GroupsGroupIdOutingsOutingIdArchivePost**](doc/OutingsApi.md#archiveoutingapiv1groupsgroupidoutingsoutingidarchivepost) | **POST** /api/v1/groups/{group_id}/outings/{outing_id}/archive | Archive Outing
 [*OutingsApi*](doc/OutingsApi.md) | [**createOutingApiV1GroupsGroupIdOutingsPost**](doc/OutingsApi.md#createoutingapiv1groupsgroupidoutingspost) | **POST** /api/v1/groups/{group_id}/outings | Create Outing
 [*OutingsApi*](doc/OutingsApi.md) | [**deleteOutingApiV1GroupsGroupIdOutingsOutingIdDelete**](doc/OutingsApi.md#deleteoutingapiv1groupsgroupidoutingsoutingiddelete) | **DELETE** /api/v1/groups/{group_id}/outings/{outing_id} | Delete Outing
@@ -116,6 +121,10 @@ Class | Method | HTTP request | Description
  - [GroupUpdateRequest](doc/GroupUpdateRequest.md)
  - [HealthResponse](doc/HealthResponse.md)
  - [HealthStatus](doc/HealthStatus.md)
+ - [JoinCodeConsumeRequest](doc/JoinCodeConsumeRequest.md)
+ - [JoinCodeResponse](doc/JoinCodeResponse.md)
+ - [JoinCodeStatus](doc/JoinCodeStatus.md)
+ - [JoinResponse](doc/JoinResponse.md)
  - [LoginRequest](doc/LoginRequest.md)
  - [OutingResponse](doc/OutingResponse.md)
  - [OutingWriteRequest](doc/OutingWriteRequest.md)
