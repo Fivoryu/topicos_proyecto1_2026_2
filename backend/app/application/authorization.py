@@ -87,12 +87,14 @@ EXPENSE_MUTATION_OPERATIONS = frozenset(
     {"create_expense", "edit_expense", "delete_expense"}
 )
 JOIN_CODE_OPERATIONS = frozenset({"manage_join_code"})
+MEMBERSHIP_OPERATIONS = frozenset({"remove_member", "leave_group"})
 WEBSOCKET_OPERATIONS = frozenset({"websocket"})
 ORDINARY_OPERATIONS = frozenset(
     READ_OPERATIONS
     | PARTICIPANT_MUTATION_OPERATIONS
     | EXPENSE_MUTATION_OPERATIONS
     | JOIN_CODE_OPERATIONS
+    | MEMBERSHIP_OPERATIONS
     | WEBSOCKET_OPERATIONS
 )
 POLICY_UPDATE_OPERATION = "update_group_policy"
@@ -163,8 +165,10 @@ class AuthorizationService:
         account_id = _account_id(actor)
         operation_name = _operation_name(operation)
         membership = self._find_membership(account_id, group_id)
-        if membership is None or not self._membership_matches(
-            membership, account_id, group_id
+        if (
+            membership is None
+            or not self._membership_matches(membership, account_id, group_id)
+            or not self._membership_is_active(membership)
         ):
             raise ForbiddenError()
         if (
@@ -198,6 +202,8 @@ class AuthorizationService:
             policy == "owner_only" and role != "owner"
         ):
             raise ForbiddenError()
+        if operation_name == "remove_member" and role != "owner":
+            raise ForbiddenError()
         return AuthorizationContext(account_id, group_id, role, operation_name, policy)
 
     def _find_membership(self, account_id: str, group_id: str) -> object | None:
@@ -224,6 +230,10 @@ class AuthorizationService:
             return finder(group_id)
         except (AttributeError, KeyError, TypeError, ValueError) as error:
             raise ForbiddenError() from error
+
+    @staticmethod
+    def _membership_is_active(membership: object) -> bool:
+        return _value(membership, "ended_at", default=None) is None
 
     @staticmethod
     def _membership_matches(membership: object, account_id: str, group_id: str) -> bool:

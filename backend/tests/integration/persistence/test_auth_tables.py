@@ -9,15 +9,18 @@ import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from backend.app.adapters.db.repositories import (
+    AccountParticipantLinkRepositoryAdapter,
     GroupRepositoryAdapter,
     MembershipRepositoryAdapter,
 )
 from backend.app.adapters.db.tables import (
     Account,
+    AccountParticipantLink,
     AuthSession,
     Base,
     Group,
     GroupMembership,
+    Participant,
 )
 from backend.app.adapters.db.uow import SqlAlchemyUnitOfWork
 from backend.app.application.workspace_service import WorkspaceGroupRecord
@@ -403,3 +406,44 @@ def test_unit_of_work_exposes_memberships_in_the_transaction():
     with Session(engine) as session:
         assert session.get(GroupMembership, (group_id, owner_id)) is not None
     engine.dispose()
+
+
+def test_active_member_listing_and_link_end_preserve_history():
+    engine = create_engine("sqlite://")
+    Base.metadata.create_all(engine)
+    with Session(engine) as session:
+        owner = Account(id=uuid4(), login_name="owner", password_hash="hash")
+        member = Account(id=uuid4(), login_name="member", password_hash="hash")
+        group = Group(id=uuid4(), name="group", owner_account_id=owner.id)
+        participant = Participant(
+            id=uuid4(), group_id=group.id, name="Member", normalized_name="member"
+        )
+        link = AccountParticipantLink(
+            group_id=group.id, account_id=member.id, participant_id=participant.id
+        )
+        session.add_all([
+            owner,
+            member,
+            group,
+            participant,
+            GroupMembership(group_id=group.id, account_id=owner.id),
+            GroupMembership(group_id=group.id, account_id=member.id),
+            link,
+        ])
+        session.commit()
+        memberships = MembershipRepositoryAdapter(session)
+        links = AccountParticipantLinkRepositoryAdapter(session)
+        listed = memberships.list_active_by_group(group.id)
+        assert {row.account_id for row in listed} == {owner.id, member.id}
+        assert next(row for row in listed if row.account_id == member.id).participant_id == participant.id  # noqa: E501
+        ended_at = datetime(2026, 1, 4)
+        assert memberships.end(group.id, member.id, ended_at)
+        assert links.end(group.id, member.id, ended_at)
+        session.commit()
+        assert [row.account_id for row in memberships.list_active_by_group(group.id)] == [owner.id]  # noqa: E501
+        assert (
+            session.get(GroupMembership, (group.id, member.id)).ended_at
+            == session.get(AccountParticipantLink, (group.id, member.id)).ended_at
+            == ended_at
+        )
+        assert session.get(Participant, participant.id) is not None

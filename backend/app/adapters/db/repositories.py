@@ -17,6 +17,7 @@ from sqlalchemy.orm import Session as OrmSession
 from backend.app.application.ports import (
     AccountRecord,
     ExpenseRecord,
+    MemberRecord,
     MembershipRecord,
     OutingRecord,
     ParticipantRecord,
@@ -191,11 +192,11 @@ class MembershipRepositoryAdapter:
         return memberships[0] if memberships else None
 
     def find_for_account_in_group(
-        self, account_id: object, group_id: object
+        self, account_id: object, group_id: object, *, for_update: bool = False
     ) -> MembershipRecord | None:
         """Return an active membership only within the requested group."""
 
-        row = self.session.execute(
+        statement = (
             select(GroupMembership, Group)
             .join(Group, Group.id == GroupMembership.group_id)
             .join(Account, Account.id == GroupMembership.account_id)
@@ -205,18 +206,55 @@ class MembershipRepositoryAdapter:
                 GroupMembership.ended_at.is_(None),
                 Account.is_active.is_(True),
             )
-        ).first()
+        )
+        if for_update:
+            statement = statement.with_for_update()
+        row = self.session.execute(statement).first()
         if row is None:
             return None
         membership, group = row
         return self._membership_record(membership, group)
 
     def find_active_by_group_account(
-        self, group_id: object, account_id: object
+        self, group_id: object, account_id: object, *, for_update: bool = False
     ) -> MembershipRecord | None:
         """Return an active membership using group-first lookup semantics."""
 
-        return self.find_for_account_in_group(account_id, group_id)
+        return self.find_for_account_in_group(
+            account_id, group_id, for_update=for_update
+        )
+
+    def list_active_by_group(self, group_id: object) -> list[MemberRecord]:
+        """Return active members with only their active participant link metadata."""
+
+        rows = self.session.execute(
+            select(GroupMembership, Group, Account, AccountParticipantLink)
+            .join(Group, Group.id == GroupMembership.group_id)
+            .join(Account, Account.id == GroupMembership.account_id)
+            .outerjoin(
+                AccountParticipantLink,
+                (AccountParticipantLink.group_id == GroupMembership.group_id)
+                & (AccountParticipantLink.account_id == GroupMembership.account_id)
+                & AccountParticipantLink.ended_at.is_(None),
+            )
+            .where(
+                GroupMembership.group_id == _coerce_uuid(group_id),
+                GroupMembership.ended_at.is_(None),
+                Account.is_active.is_(True),
+            )
+            .order_by(GroupMembership.created_at, GroupMembership.account_id)
+        ).all()
+        return [
+            MemberRecord(
+                account_id=membership.account_id,
+                group_id=membership.group_id,
+                owner_account_id=group.owner_account_id,
+                login_name=account.login_name,
+                participant_id=(link.participant_id if link is not None else None),
+                ended_at=membership.ended_at,
+            )
+            for membership, group, account, link in rows
+        ]
 
     # This name mirrors the authorization port's alternative lookup spelling.
     find_for_account_and_group = find_for_account_in_group
@@ -282,11 +320,16 @@ class MembershipRepositoryAdapter:
     ) -> bool:
         """End an active membership without deleting its history row."""
 
-        membership = self.session.get(
-            GroupMembership,
-            (_coerce_uuid(group_id), _coerce_uuid(account_id)),
+        membership = self.session.scalar(
+            select(GroupMembership)
+            .where(
+                GroupMembership.group_id == _coerce_uuid(group_id),
+                GroupMembership.account_id == _coerce_uuid(account_id),
+                GroupMembership.ended_at.is_(None),
+            )
+            .with_for_update()
         )
-        if membership is None or membership.ended_at is not None:
+        if membership is None:
             return False
         membership.ended_at = ended_at or datetime.now(UTC)
         self.session.flush()
@@ -378,6 +421,26 @@ class AccountParticipantLinkRepositoryAdapter:
             link.ended_at = None
         self.session.flush()
         return link
+
+    def end(
+        self, group_id: object, account_id: object, ended_at: datetime | None = None
+    ) -> bool:
+        """End the active link without deleting its history row."""
+
+        link = self.session.scalar(
+            select(AccountParticipantLink)
+            .where(
+                AccountParticipantLink.group_id == _coerce_uuid(group_id),
+                AccountParticipantLink.account_id == _coerce_uuid(account_id),
+                AccountParticipantLink.ended_at.is_(None),
+            )
+            .with_for_update()
+        )
+        if link is None:
+            return False
+        link.ended_at = ended_at or datetime.now(UTC)
+        self.session.flush()
+        return True
 
 
 class GroupRepositoryAdapter:

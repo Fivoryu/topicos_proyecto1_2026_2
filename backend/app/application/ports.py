@@ -71,6 +71,18 @@ class MembershipRecord:
 
 
 @dataclass(slots=True)
+class MemberRecord:
+    """Account-safe active member data with optional active participant link."""
+
+    account_id: AccountId
+    group_id: GroupId
+    owner_account_id: AccountId
+    login_name: str
+    participant_id: ParticipantId | None = None
+    ended_at: datetime | None = None
+
+
+@dataclass(slots=True)
 class SessionRecord:
     """Persisted session data; the raw token is intentionally not a field."""
 
@@ -295,6 +307,7 @@ class UnitOfWork(Protocol):
     outings: OutingRepository
     groups: GroupRepository
     memberships: MembershipRepository
+    account_participant_links: AccountParticipantLinkRepository
 
     def __enter__(self) -> Self:
         """Begin and return this transaction."""
@@ -334,9 +347,13 @@ class MembershipRepository(Protocol):
         ...
 
     def find_active_by_group_account(
-        self, group_id: GroupId, account_id: AccountId
+        self, group_id: GroupId, account_id: AccountId, *, for_update: bool = False
     ) -> MembershipRecord | None:
         """Return an active membership using group-first lookup semantics."""
+        ...
+
+    def list_active_by_group(self, group_id: GroupId) -> list[MemberRecord]:
+        """Return active, account-safe members and active link metadata."""
         ...
 
     def create_or_reactivate(
@@ -353,6 +370,26 @@ class MembershipRepository(Protocol):
 
     def count_active_owners(self, group_id: GroupId) -> int:
         """Count active memberships belonging to the server-owned group owner."""
+        ...
+
+
+class AccountParticipantLinkRepository(Protocol):
+    """Manage the active account-to-participant link lifecycle."""
+
+    def find_active(self, group_id: GroupId, account_id: AccountId) -> object | None:
+        """Return the active link, when one exists."""
+        ...
+
+    def end(
+        self, group_id: GroupId, account_id: AccountId, ended_at: datetime | None = None
+    ) -> bool:
+        """End the active link while preserving its history row."""
+        ...
+
+    def upsert_active(
+        self, group_id: GroupId, account_id: AccountId, participant_id: ParticipantId
+    ) -> object:
+        """Create or reactivate one active link."""
         ...
 
 

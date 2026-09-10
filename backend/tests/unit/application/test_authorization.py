@@ -145,7 +145,9 @@ def test_member_can_change_policy_when_current_policy_is_any_member(fixtures):
     assert decision.operation == "update_group_policy"
 
 
-@pytest.mark.parametrize("operation", sorted(ORDINARY_OPERATIONS))
+@pytest.mark.parametrize(
+    "operation", sorted(ORDINARY_OPERATIONS - {"remove_member"})
+)
 def test_both_derived_roles_can_access_ordinary_reads_and_mutations(
     fixtures, operation
 ):
@@ -243,3 +245,38 @@ def test_unknown_operation_is_denied_by_the_explicit_matrix(fixtures):
         )
 
     assert error.value.code == "forbidden"
+
+
+@pytest.mark.parametrize(
+    ("operation", "account_id"),
+    [("remove_member", "account-owner"), ("leave_group", "account-member")],
+)
+def test_membership_lifecycle_operations_are_explicitly_authorized(
+    fixtures, operation, account_id
+):
+    context = fixtures.service.authorize(actor(account_id), "group-one", operation)
+
+    assert context.operation == operation
+    assert context.role == ("owner" if account_id == "account-owner" else "member")
+
+
+def test_member_cannot_remove_members(fixtures):
+    with pytest.raises(ForbiddenError):
+        fixtures.service.authorize(
+            actor("account-member"), "group-one", "remove_member"
+        )
+
+
+def test_ended_membership_is_forbidden_even_if_a_repository_returns_its_history_row(
+    fixtures,
+):
+    ended = SimpleNamespace(
+        account_id="account-member",
+        group_id="group-one",
+        owner_account_id="account-owner",
+        ended_at=object(),
+    )
+    fixtures.memberships.memberships = (ended,)
+
+    with pytest.raises(ForbiddenError):
+        fixtures.service.authorize(actor("account-member"), "group-one", "leave_group")
