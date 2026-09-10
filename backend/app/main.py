@@ -29,6 +29,7 @@ from backend.app.adapters.db.session import (
 )
 from backend.app.adapters.db.uow import SqlAlchemyUnitOfWork
 from backend.app.adapters.events.broadcaster import GroupEventBroadcaster
+from backend.app.adapters.security.join_codes import JoinCodeTokenSource
 from backend.app.adapters.security.passwords import Argon2idPasswordHasher
 from backend.app.adapters.security.sessions import OpaqueSessionTokenSource
 from backend.app.api.errors import register_error_handlers
@@ -37,6 +38,7 @@ from backend.app.api.routes.balances import router as balances_router
 from backend.app.api.routes.events import router as events_router
 from backend.app.api.routes.expenses import router as expenses_router
 from backend.app.api.routes.groups import router as groups_router
+from backend.app.api.routes.join import router as join_router
 from backend.app.api.routes.outings import router as outings_router
 from backend.app.api.routes.participants import router as participants_router
 from backend.app.api.routes.settlement import router as settlement_router
@@ -45,6 +47,7 @@ from backend.app.application.authorization import AuthorizationService
 from backend.app.application.derived_service import DerivedService
 from backend.app.application.expense_service import ExpenseService
 from backend.app.application.group_service import GroupService
+from backend.app.application.join_service import JoinService
 from backend.app.application.outing_service import OutingService
 from backend.app.application.participant_service import ParticipantService
 from backend.app.application.workspace_service import WorkspaceService
@@ -142,6 +145,12 @@ def _wire_request_services(
         invalidation_publisher=invalidation_publisher,
     )
     authorization = AuthorizationService(membership_repository, group_repository)
+    join_service = JoinService(
+        unit_of_work,
+        authorization,
+        JoinCodeTokenSource(),
+        invalidation_publisher=invalidation_publisher,
+    )
     group_service = GroupService(
         group_repository,
         unit_of_work,
@@ -171,6 +180,7 @@ def _wire_request_services(
     state.group_service = group_service
     state.workspace_service = workspace_service
     state.authorization_service = authorization
+    state.join_service = join_service
     state.outing_service = outing_service
 
 
@@ -212,6 +222,7 @@ async def _request_scoped_services(
 register_error_handlers(app)
 app.include_router(auth_router)
 app.include_router(groups_router)
+app.include_router(join_router)
 app.include_router(outings_router)
 app.include_router(participants_router)
 app.include_router(expenses_router)

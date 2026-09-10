@@ -25,11 +25,13 @@ from backend.app.application.ports import (
 
 from .tables import (
     Account,
+    AccountParticipantLink,
     AuthSession,
     Expense,
     ExpenseBeneficiary,
     ExpenseContribution,
     Group,
+    GroupJoinCode,
     GroupMembership,
     Outing,
     Participant,
@@ -296,6 +298,86 @@ class MembershipRepositoryAdapter:
         return membership
 
     add = create
+
+
+class JoinCodeRepositoryAdapter:
+    """Persist the one current, hash-only join code for each group."""
+
+    def __init__(self, session: OrmSession):
+        self.session = session
+
+    def get_current_for_update(self, group_id: object) -> GroupJoinCode | None:
+        return self.session.scalar(
+            select(GroupJoinCode)
+            .where(GroupJoinCode.group_id == _coerce_uuid(group_id))
+            .with_for_update()
+        )
+
+    def find_by_hash_for_update(self, token_hash: bytes) -> GroupJoinCode | None:
+        return self.session.scalar(
+            select(GroupJoinCode)
+            .where(GroupJoinCode.token_hash == token_hash)
+            .with_for_update()
+        )
+
+    def create(self, code: GroupJoinCode) -> GroupJoinCode:
+        self.session.add(code)
+        self.session.flush()
+        return code
+
+    def replace_hash(self, group_id: object, token_hash: bytes) -> GroupJoinCode | None:
+        code = self.get_current_for_update(group_id)
+        if code is None:
+            return None
+        code.token_hash = token_hash
+        code.generation += 1
+        code.revoked_at = None
+        self.session.flush()
+        return code
+
+    def revoke(self, group_id: object) -> GroupJoinCode | None:
+        code = self.get_current_for_update(group_id)
+        if code is None:
+            return None
+        code.revoked_at = datetime.now(UTC)
+        self.session.flush()
+        return code
+
+
+class AccountParticipantLinkRepositoryAdapter:
+    """Persist the active participant choice for an account in a group."""
+
+    def __init__(self, session: OrmSession):
+        self.session = session
+
+    def find_active(
+        self, group_id: object, account_id: object
+    ) -> AccountParticipantLink | None:
+        return self.session.scalar(
+            select(AccountParticipantLink).where(
+                AccountParticipantLink.group_id == _coerce_uuid(group_id),
+                AccountParticipantLink.account_id == _coerce_uuid(account_id),
+                AccountParticipantLink.ended_at.is_(None),
+            )
+        )
+
+    def upsert_active(
+        self, group_id: object, account_id: object, participant_id: object
+    ) -> AccountParticipantLink:
+        key = (_coerce_uuid(group_id), _coerce_uuid(account_id))
+        link = self.session.get(AccountParticipantLink, key)
+        if link is None:
+            link = AccountParticipantLink(
+                group_id=key[0],
+                account_id=key[1],
+                participant_id=_coerce_uuid(participant_id),
+            )
+            self.session.add(link)
+        else:
+            link.participant_id = _coerce_uuid(participant_id)
+            link.ended_at = None
+        self.session.flush()
+        return link
 
 
 class GroupRepositoryAdapter:
@@ -779,8 +861,12 @@ OutingRepository = OutingRepositoryAdapter
 GroupRepository = GroupRepositoryAdapter
 ParticipantRepository = ParticipantRepositoryAdapter
 ExpenseRepository = ExpenseRepositoryAdapter
+JoinCodeRepository = JoinCodeRepositoryAdapter
+AccountParticipantLinkRepository = AccountParticipantLinkRepositoryAdapter
 
 __all__ = [
+    "AccountParticipantLinkRepository",
+    "AccountParticipantLinkRepositoryAdapter",
     "AccountRepository",
     "AccountRepositoryAdapter",
     "ExpenseRepository",
@@ -789,6 +875,8 @@ __all__ = [
     "GroupRepositoryAdapter",
     "MembershipRepository",
     "MembershipRepositoryAdapter",
+    "JoinCodeRepository",
+    "JoinCodeRepositoryAdapter",
     "OutingRepository",
     "OutingRepositoryAdapter",
     "ParticipantRepository",

@@ -115,9 +115,7 @@ class GroupMembership(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utc_now
     )
-    ended_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class Outing(Base):
@@ -159,6 +157,7 @@ class Participant(Base):
         UniqueConstraint(
             "group_id", "normalized_name", name="uq_participants_group_name"
         ),
+        Index("uq_participants_id_group_id", "id", "group_id", unique=True),
         Index("ix_participants_group_id", "group_id"),
         Index("ix_participants_group_created", "group_id", "created_at", "id"),
         CheckConstraint("length(trim(name)) > 0", name="ck_participants_name_nonempty"),
@@ -273,6 +272,57 @@ class ExpenseBeneficiary(Base):
     )
 
 
+class GroupJoinCode(Base):
+    __tablename__ = "group_join_codes"
+    __table_args__ = (
+        CheckConstraint(
+            "length(token_hash) = 32", name="ck_group_join_codes_token_hash_sha256"
+        ),
+    )
+    group_id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True),
+        ForeignKey("groups.id", name="fk_group_join_codes_group", ondelete="CASCADE"),
+        primary_key=True
+    )
+    token_hash: Mapped[bytes] = mapped_column(LargeBinary(length=32), nullable=False)
+    generation: Mapped[int] = mapped_column(Integer, nullable=False, default=1)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now, onupdate=_utc_now
+    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+class AccountParticipantLink(Base):
+    __tablename__ = "account_participant_links"
+    __table_args__ = (
+        PrimaryKeyConstraint(
+            "group_id", "account_id", name="pk_account_participant_links"
+        ),
+        ForeignKeyConstraint(
+            ["group_id", "account_id"],
+            ["group_memberships.group_id", "group_memberships.account_id"],
+            name="fk_account_participant_links_membership", ondelete="CASCADE",
+        ),
+        ForeignKeyConstraint(
+            ["participant_id", "group_id"],
+            ["participants.id", "participants.group_id"],
+            name="fk_account_participant_links_participant", ondelete="RESTRICT",
+        ),
+    )
+    group_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    account_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    participant_id: Mapped[UUID] = mapped_column(Uuid(as_uuid=True), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now, onupdate=_utc_now
+    )
+    ended_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AuthSession(Base):
     """A database-backed session containing only the one-way token digest."""
 
@@ -309,9 +359,7 @@ class AuthSession(Base):
     expires_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    revoked_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True
-    )
+    revoked_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 # ``Session`` is a convenient public model name, while ``AuthSession`` avoids
@@ -320,7 +368,9 @@ Session = AuthSession
 
 __all__ = [
     "Account",
+    "AccountParticipantLink",
     "AuthSession",
+    "GroupJoinCode",
     "Base",
     "Expense",
     "ExpenseBeneficiary",

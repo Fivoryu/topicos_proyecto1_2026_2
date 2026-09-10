@@ -7,8 +7,10 @@ from collections.abc import Callable
 from sqlalchemy.orm import Session as OrmSession
 
 from .repositories import (
+    AccountParticipantLinkRepositoryAdapter,
     ExpenseRepositoryAdapter,
     GroupRepositoryAdapter,
+    JoinCodeRepositoryAdapter,
     MembershipRepositoryAdapter,
     OutingRepositoryAdapter,
     ParticipantRepositoryAdapter,
@@ -33,6 +35,8 @@ class SqlAlchemyUnitOfWork:
         self.outings = None
         self.groups = None
         self.memberships = None
+        self.join_codes = None
+        self.account_participant_links = None
 
     def __enter__(self) -> SqlAlchemyUnitOfWork:
         if self._session is None:
@@ -44,6 +48,10 @@ class SqlAlchemyUnitOfWork:
         self.outings = OutingRepositoryAdapter(self._session)
         self.groups = GroupRepositoryAdapter(self._session)
         self.memberships = MembershipRepositoryAdapter(self._session)
+        self.join_codes = JoinCodeRepositoryAdapter(self._session)
+        self.account_participant_links = AccountParticipantLinkRepositoryAdapter(
+            self._session
+        )
         return self
 
     def __exit__(self, exc_type, _exc, _traceback) -> bool:

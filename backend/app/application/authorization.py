@@ -86,11 +86,13 @@ PARTICIPANT_MUTATION_OPERATIONS = frozenset(
 EXPENSE_MUTATION_OPERATIONS = frozenset(
     {"create_expense", "edit_expense", "delete_expense"}
 )
+JOIN_CODE_OPERATIONS = frozenset({"manage_join_code"})
 WEBSOCKET_OPERATIONS = frozenset({"websocket"})
 ORDINARY_OPERATIONS = frozenset(
     READ_OPERATIONS
     | PARTICIPANT_MUTATION_OPERATIONS
     | EXPENSE_MUTATION_OPERATIONS
+    | JOIN_CODE_OPERATIONS
     | WEBSOCKET_OPERATIONS
 )
 POLICY_UPDATE_OPERATION = "update_group_policy"
