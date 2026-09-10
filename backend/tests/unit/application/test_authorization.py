@@ -7,6 +7,7 @@ import pytest
 from backend.app.application.auth_service import UnauthorizedError
 from backend.app.application.authorization import (
     ORDINARY_OPERATIONS,
+    POLICY_UPDATE_OPERATION,
     AuthorizationService,
     ForbiddenError,
     GroupRecord,
@@ -267,8 +268,12 @@ def test_member_cannot_remove_members(fixtures):
         )
 
 
-def test_ended_membership_is_forbidden_even_if_a_repository_returns_its_history_row(
-    fixtures,
+@pytest.mark.parametrize(
+    "operation",
+    sorted(ORDINARY_OPERATIONS | {POLICY_UPDATE_OPERATION}),
+)
+def test_ended_membership_is_forbidden_for_every_group_operation(
+    fixtures, operation
 ):
     ended = SimpleNamespace(
         account_id="account-member",
@@ -279,4 +284,4 @@ def test_ended_membership_is_forbidden_even_if_a_repository_returns_its_history_
     fixtures.memberships.memberships = (ended,)
 
     with pytest.raises(ForbiddenError):
-        fixtures.service.authorize(actor("account-member"), "group-one", "leave_group")
+        fixtures.service.authorize(actor("account-member"), "group-one", operation)

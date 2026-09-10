@@ -3,6 +3,7 @@
 from datetime import datetime
 from hashlib import sha256
 from importlib import import_module
+from types import SimpleNamespace
 from uuid import uuid4
 
 import pytest
@@ -10,19 +11,33 @@ from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from backend.app.adapters.db.repositories import (
     AccountParticipantLinkRepositoryAdapter,
+    ExpenseRepositoryAdapter,
     GroupRepositoryAdapter,
     MembershipRepositoryAdapter,
+    ParticipantRepositoryAdapter,
 )
 from backend.app.adapters.db.tables import (
     Account,
     AccountParticipantLink,
     AuthSession,
     Base,
+    Expense,
+    ExpenseBeneficiary,
+    ExpenseContribution,
     Group,
+    GroupJoinCode,
     GroupMembership,
+    Outing,
     Participant,
 )
 from backend.app.adapters.db.uow import SqlAlchemyUnitOfWork
+from backend.app.application.authorization import AuthorizationService
+from backend.app.application.derived_service import DerivedService
+from backend.app.application.join_service import (
+    DuplicateMembershipError,
+    JoinService,
+)
+from backend.app.application.membership_service import MembershipService
 from backend.app.application.workspace_service import WorkspaceGroupRecord
 from sqlalchemy import create_engine, event, inspect
 from sqlalchemy.exc import IntegrityError
@@ -447,3 +462,197 @@ def test_active_member_listing_and_link_end_preserve_history():
             == ended_at
         )
         assert session.get(Participant, participant.id) is not None
+
+
+def test_membership_exit_ends_rows_and_preserves_source_and_derived_inputs():
+        engine = create_engine("sqlite://")
+        Base.metadata.create_all(engine)
+        ended_at = datetime(2026, 1, 5)
+        with Session(engine) as session:
+            owner = Account(id=uuid4(), login_name="owner", password_hash="hash")
+            removed = Account(id=uuid4(), login_name="removed", password_hash="hash")
+            leaver = Account(id=uuid4(), login_name="leaver", password_hash="hash")
+            group = Group(id=uuid4(), name="history", owner_account_id=owner.id)
+            owner_participant = Participant(
+                id=uuid4(), group_id=group.id, name="Owner", normalized_name="owner"
+            )
+            removed_participant = Participant(
+                id=uuid4(), group_id=group.id, name="Removed", normalized_name="removed"
+            )
+            leaver_participant = Participant(
+                id=uuid4(), group_id=group.id, name="Leaver", normalized_name="leaver"
+            )
+            outing = Outing(id=uuid4(), group_id=group.id, name="Weekend")
+            expense = Expense(
+                id=uuid4(),
+                group_id=group.id,
+                outing_id=outing.id,
+                description="Shared dinner",
+                amount_cents=300,
+            )
+            session.add_all(
+                [
+                    owner,
+                    removed,
+                    leaver,
+                    group,
+                    owner_participant,
+                    removed_participant,
+                    leaver_participant,
+                    outing,
+                    expense,
+                    GroupMembership(group_id=group.id, account_id=owner.id),
+                    GroupMembership(group_id=group.id, account_id=removed.id),
+                    GroupMembership(group_id=group.id, account_id=leaver.id),
+                    AccountParticipantLink(
+                        group_id=group.id,
+                        account_id=removed.id,
+                        participant_id=removed_participant.id,
+                    ),
+                    AccountParticipantLink(
+                        group_id=group.id,
+                        account_id=leaver.id,
+                        participant_id=leaver_participant.id,
+                    ),
+                    ExpenseContribution(
+                        expense_id=expense.id,
+                        participant_id=removed_participant.id,
+                        amount_cents=300,
+                    ),
+                    ExpenseBeneficiary(
+                        expense_id=expense.id, participant_id=owner_participant.id
+                    ),
+                    ExpenseBeneficiary(
+                        expense_id=expense.id, participant_id=removed_participant.id
+                    ),
+                    ExpenseBeneficiary(
+                        expense_id=expense.id, participant_id=leaver_participant.id
+                    ),
+                ]
+            )
+            session.commit()
+
+            memberships = MembershipRepositoryAdapter(session)
+            participants = ParticipantRepositoryAdapter(session)
+            expenses = ExpenseRepositoryAdapter(session)
+            authorization = AuthorizationService(
+                memberships, GroupRepositoryAdapter(session)
+            )
+            derived = DerivedService(participants, expenses)
+            before = derived.get_balances(group.id)
+            service = MembershipService(
+                memberships,
+                SqlAlchemyUnitOfWork(session=session),
+                authorization,
+                now=lambda: ended_at,
+            )
+
+            service.remove_member(
+                group.id, removed.id, SimpleNamespace(account_id=owner.id)
+            )
+            service.leave_group(group.id, SimpleNamespace(account_id=leaver.id))
+            session.expire_all()
+
+            assert (
+                session.get(GroupMembership, (group.id, removed.id)).ended_at
+                is not None
+            )
+            assert (
+                session.get(GroupMembership, (group.id, leaver.id)).ended_at
+                is not None
+            )
+            assert (
+                session.get(AccountParticipantLink, (group.id, removed.id)).ended_at
+                is not None
+            )
+            assert (
+                session.get(AccountParticipantLink, (group.id, leaver.id)).ended_at
+                is not None
+            )
+            assert session.get(Participant, removed_participant.id) is not None
+            assert session.get(Participant, leaver_participant.id) is not None
+            assert session.get(Outing, outing.id) is not None
+            assert session.get(Expense, expense.id) is not None
+            assert session.get(
+                ExpenseContribution, (expense.id, removed_participant.id)
+            ).amount_cents == 300
+            assert len(
+                session.query(ExpenseBeneficiary).filter_by(expense_id=expense.id).all()
+            ) == 3
+            after = derived.get_balances(group.id)
+            assert after == before
+            assert sum(row["balance_cents"] for row in after.values()) == 0
+
+
+def test_rejoin_reactivates_history_with_one_fresh_choice_and_rejects_duplicate():
+        engine = create_engine("sqlite://")
+        Base.metadata.create_all(engine)
+        token = "rejoin-token"
+        with Session(engine) as session:
+            owner = Account(id=uuid4(), login_name="owner", password_hash="hash")
+            member = Account(id=uuid4(), login_name="member", password_hash="hash")
+            group = Group(id=uuid4(), name="rejoin", owner_account_id=owner.id)
+            existing = Participant(
+                id=uuid4(),
+                group_id=group.id,
+                name="Existing",
+                normalized_name="existing",
+            )
+            old_participant = Participant(
+                id=uuid4(), group_id=group.id, name="Old", normalized_name="old"
+            )
+            ended = datetime(2026, 1, 6)
+            session.add_all(
+                [
+                    owner,
+                    member,
+                    group,
+                    existing,
+                    old_participant,
+                    GroupMembership(group_id=group.id, account_id=owner.id),
+                    GroupMembership(
+                        group_id=group.id, account_id=member.id, ended_at=ended
+                    ),
+                    AccountParticipantLink(
+                        group_id=group.id,
+                        account_id=member.id,
+                        participant_id=old_participant.id,
+                        ended_at=ended,
+                    ),
+                    GroupJoinCode(
+                        group_id=group.id,
+                        token_hash=sha256(token.encode("utf-8")).digest(),
+                    ),
+                ]
+            )
+            session.commit()
+
+            service = JoinService(
+                SqlAlchemyUnitOfWork(session=session),
+                AuthorizationService(
+                    MembershipRepositoryAdapter(session),
+                    GroupRepositoryAdapter(session),
+                ),
+                SimpleNamespace(
+                    hash=lambda value: sha256(value.encode("utf-8")).digest()
+                ),
+            )
+            result = service.consume(
+                token,
+                SimpleNamespace(account_id=member.id),
+                participant_id=existing.id,
+            )
+            assert result.participant_id == existing.id
+            assert session.get(GroupMembership, (group.id, member.id)).ended_at is None
+            link = session.get(AccountParticipantLink, (group.id, member.id))
+            assert link.ended_at is None and link.participant_id == existing.id
+            assert session.query(Participant).count() == 2
+
+            with pytest.raises(DuplicateMembershipError):
+                service.consume(
+                    token,
+                    SimpleNamespace(account_id=member.id),
+                    new_participant_name="Fresh",
+                )
+            assert session.query(Participant).count() == 2
+        engine.dispose()

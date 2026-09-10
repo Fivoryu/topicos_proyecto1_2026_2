@@ -16,6 +16,10 @@ from backend.app.api.errors import register_error_handlers
 from backend.app.api.routes._common import get_membership_service
 from backend.app.api.routes.memberships import router
 from backend.app.application.auth_service import UnauthorizedError
+from backend.app.application.membership_service import (
+    FinalOwnerExitError,
+    MemberNotFoundError,
+)
 from fastapi import FastAPI
 from httpx import ASGITransport, AsyncClient
 
@@ -95,6 +99,7 @@ def app():
             get_membership_service: lambda: service,
         }
     )
+    api.state.test_memberships = memberships
     return api, calls
 
 
@@ -149,3 +154,74 @@ async def test_mutations_require_csrf_and_use_server_identity(app):
     assert removed.status_code == left.status_code == 204
     assert calls["remove"] == [(GROUP, MEMBER, OWNER)]
     assert calls["leave"] == [(GROUP, MEMBER)]
+
+
+@pytest.mark.asyncio
+async def test_ended_membership_cannot_read_with_an_existing_session(app):
+    api, _ = app
+    api.state.test_memberships.find_for_account_in_group = (
+        lambda account_id, group_id: (
+            SimpleNamespace(
+                account_id=MEMBER,
+                group_id=GROUP,
+                owner_account_id=OWNER,
+                ended_at=datetime(2026, 1, 2, tzinfo=UTC),
+            )
+            if account_id == MEMBER and group_id == GROUP
+            else None
+        )
+    )
+    async with AsyncClient(
+        transport=ASGITransport(app=api),
+        base_url="http://test",
+        cookies=cookies("member-token"),
+    ) as client:
+        response = await client.get(f"/api/v1/groups/{GROUP}/members")
+
+    assert response.status_code == 403
+    assert response.json()["error_code"] == "forbidden"
+    assert "participant_id" not in response.text
+
+
+def _raise(error):
+    def handler(*_args, **_kwargs):
+        raise error
+
+    return handler
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method", "path", "error", "status", "error_code"),
+    [
+        (
+            "POST",
+            f"/api/v1/groups/{GROUP}/leave",
+            FinalOwnerExitError(),
+            409,
+            "final_owner_exit",
+        ),
+        (
+            "DELETE",
+            f"/api/v1/groups/{GROUP}/members/{MEMBER}",
+            MemberNotFoundError(),
+            404,
+            "member_not_found",
+        ),
+    ],
+)
+async def test_membership_domain_errors_use_stable_api_envelopes(
+    app, method, path, error, status, error_code
+):
+    api, _ = app
+    api.dependency_overrides[get_membership_service] = lambda: SimpleNamespace(
+        leave_group=_raise(error), remove_member=_raise(error)
+    )
+    async with AsyncClient(
+        transport=ASGITransport(app=api), base_url="http://test", cookies=cookies()
+    ) as client:
+        response = await client.request(method, path, headers=headers())
+
+    assert response.status_code == status
+    assert response.json()["error_code"] == error_code
+    assert set(response.json()) >= {"error_code", "message"}

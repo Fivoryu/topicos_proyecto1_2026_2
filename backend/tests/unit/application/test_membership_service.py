@@ -129,6 +129,24 @@ def test_owner_cannot_remove_owner_or_non_active_targets():
     assert (publisher.groups, uow.commits) == ([], 0)
 
 
+@pytest.mark.parametrize("action", ["remove_member", "leave_group"])
+def test_second_concurrent_style_exit_is_rejected_without_second_invalidation(action):
+    service_, _memberships, _links, publisher, uow = service()
+    actor = SimpleNamespace(account_id=OWNER if action == "remove_member" else MEMBER)
+
+    if action == "remove_member":
+        service_.remove_member(GROUP, MEMBER, actor)
+        with pytest.raises(MemberNotFoundError):
+            service_.remove_member(GROUP, MEMBER, actor)
+    else:
+        service_.leave_group(GROUP, actor)
+        with pytest.raises(MemberNotFoundError):
+            service_.leave_group(GROUP, actor)
+
+    assert publisher.groups == [GROUP]
+    assert uow.commits == 1
+
+
 def test_missing_or_failed_commit_publishes_nothing_and_rolls_back():
     failing, memberships, links, publisher, uow = service(fail_commit=True)
     with pytest.raises(RuntimeError, match="commit failed"):

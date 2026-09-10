@@ -50,6 +50,37 @@ def test_export_describes_the_protected_wire_contract(tmp_path: Path) -> None:
     assert rename_operation["security"] == [{"cc_session": []}]
     assert _required_header(rename_operation, "X-CSRF-Token")
 
+    membership_paths = {
+        "/api/v1/groups/{group_id}/members": "get",
+        "/api/v1/groups/{group_id}/leave": "post",
+        "/api/v1/groups/{group_id}/members/{account_id}": "delete",
+    }
+    expected_errors = {"401", "403", "404", "409", "422"}
+    for path, method in membership_paths.items():
+        operation = document["paths"][path][method]
+        assert operation["security"] == [{"cc_session": []}]
+        assert expected_errors.issubset(operation["responses"])
+        assert all(
+            operation["responses"][status]["$ref"]
+            == "#/components/responses/ErrorResponse"
+            for status in expected_errors
+        )
+        if method != "get":
+            assert _required_header(operation, "X-CSRF-Token")
+
+    member_properties = document["components"]["schemas"]["MemberResponse"][
+        "properties"
+    ]
+    assert not {"password_hash", "token", "token_hash"}.intersection(member_properties)
+    assert not {"password_hash", "token", "token_hash"}.intersection(
+        json.dumps(
+            {
+                path: document["paths"][path]
+                for path in membership_paths
+            }
+        )
+    )
+
     for path_item in document["paths"].values():
         for operation in path_item.values():
             if not isinstance(operation, dict) or "responses" not in operation:
