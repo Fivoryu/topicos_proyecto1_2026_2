@@ -3,11 +3,26 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Icon } from "../components/icons";
 import { Button, StatusBadge } from "../components/ui";
 import { connectGroupWebSocket } from "../core/websocket";
-import { BalancesPanel } from "../features/balances";
-import { ExpensesPanel } from "../features/expenses";
+import {
+  BalancesPanel,
+  ScopedBalancesPanel,
+} from "../features/balances";
+import {
+  ExpensesPanel,
+  ScopedExpensesPanel,
+} from "../features/expenses";
 import { GroupSettings } from "../features/group";
-import { ParticipantsPanel } from "../features/participants";
-import { SettlementPanel } from "../features/settlement";
+import { ParticipantDetailPanel, ParticipantsPanel } from "../features/participants";
+import {
+  ScopedSettlementPanel,
+  SettlementPanel,
+} from "../features/settlement";
+import { OutingDetailPanel, OutingsPanel } from "../features/outings";
+import { SummaryPanel } from "../features/workspace";
+import {
+  parseWorkspaceHash,
+  type WorkspaceRoute,
+} from "../core/workspace-navigation";
 import { SessionProvider, useSession } from "./auth/session-provider";
 import { ProtectedRoute } from "./routes/protected-route";
 import { WorkspaceShell } from "./workspace-shell";
@@ -40,9 +55,14 @@ function Brand() {
 
 function getCurrentNavHash() {
   if (typeof window === "undefined") return navItems[0].href;
-  return navItems.some((item) => item.href === window.location.hash)
-    ? window.location.hash
-    : navItems[0].href;
+  const hash = window.location.hash;
+  if (navItems.some((item) => item.href === hash)) return hash;
+  const route = parseWorkspaceHash(hash);
+  if (route.kind === "balances") return "#balances";
+  if (route.kind === "settlement") return "#liquidacion";
+  if (route.kind === "participant") return "#participantes";
+  if (route.kind === "settings") return "#grupo";
+  return navItems[0].href;
 }
 
 function Navigation() {
@@ -69,6 +89,78 @@ function Navigation() {
         </a>
       ))}
     </nav>
+  );
+}
+
+function SelectedGroupView({
+  groupId,
+  route,
+}: {
+  groupId: string;
+  route: WorkspaceRoute;
+}) {
+  let panel: React.ReactNode;
+  switch (route.kind) {
+    case "summary":
+    case "groups":
+      panel = <SummaryPanel groupId={groupId} />;
+      break;
+    case "outings":
+      panel = <OutingsPanel groupId={groupId} />;
+      break;
+    case "outing":
+      panel = <OutingDetailPanel groupId={groupId} outingId={route.outingId} />;
+      break;
+    case "outing-expenses":
+      panel = (
+        <ScopedExpensesPanel
+          groupId={groupId}
+          scope={{ outingId: route.outingId }}
+        />
+      );
+      break;
+    case "expenses":
+      panel = (
+        <>
+          <ScopedExpensesPanel groupId={groupId} scope="group" />
+          <ScopedExpensesPanel groupId={groupId} scope="general" />
+        </>
+      );
+      break;
+    case "participant":
+      panel = (
+        <ParticipantDetailPanel
+          groupId={groupId}
+          participantId={route.participantId}
+        />
+      );
+      break;
+    case "balances":
+      panel = <ScopedBalancesPanel groupId={groupId} />;
+      break;
+    case "settlement":
+      panel = <ScopedSettlementPanel groupId={groupId} />;
+      break;
+    case "legacy":
+      panel = {
+        gastos: <ExpensesPanel groupId={groupId} />,
+        balances: <BalancesPanel groupId={groupId} />,
+        liquidacion: <SettlementPanel groupId={groupId} />,
+        participantes: <ParticipantsPanel groupId={groupId} />,
+        grupo: <GroupSettings groupId={groupId} />,
+      }[route.anchor];
+      break;
+    case "settings":
+      panel = <GroupSettings groupId={groupId} />;
+      break;
+    case "unknown":
+      panel = <p role="alert">Esta ruta no está disponible.</p>;
+      break;
+  }
+  return (
+    <div data-testid="workspace-route-view" tabIndex={-1}>
+      {panel}
+    </div>
   );
 }
 
@@ -168,22 +260,25 @@ function ProtectedShell() {
                 id="gastos"
                 className="dashboard-slot dashboard-slot-expenses"
               >
-                <ExpensesPanel groupId={activeGroupId} />
+                <WorkspaceShell
+                  embedded
+                  renderSelected={(groupId, route) => (
+                    <SelectedGroupView groupId={groupId} route={route} />
+                  )}
+                />
               </div>
 
               <div className="dashboard-summary-grid">
                 <div
                   id="balances"
                   className="dashboard-slot dashboard-slot-balances"
-                >
-                  <BalancesPanel groupId={activeGroupId} />
-                </div>
+                  tabIndex={-1}
+                />
                 <div
                   id="liquidacion"
                   className="dashboard-slot dashboard-slot-settlement"
-                >
-                  <SettlementPanel groupId={activeGroupId} />
-                </div>
+                  tabIndex={-1}
+                />
               </div>
             </div>
 
@@ -194,12 +289,13 @@ function ProtectedShell() {
               <div
                 id="participantes"
                 className="dashboard-slot dashboard-slot-participants"
-              >
-                <ParticipantsPanel groupId={activeGroupId} />
-              </div>
-              <div id="grupo" className="dashboard-slot dashboard-slot-group">
-                <GroupSettings groupId={activeGroupId} />
-              </div>
+                tabIndex={-1}
+              />
+              <div
+                id="grupo"
+                className="dashboard-slot dashboard-slot-group"
+                tabIndex={-1}
+              />
             </aside>
           </div>
         </div>

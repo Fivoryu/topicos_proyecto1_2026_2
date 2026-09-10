@@ -1,4 +1,11 @@
-import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "./auth/session-provider";
 import {
@@ -22,6 +29,8 @@ import {
 export interface WorkspaceShellProps {
   client?: WorkspaceClient;
   realtimeStatus?: "connected" | "offline";
+  embedded?: boolean;
+  renderSelected?: (groupId: string, route: WorkspaceRoute) => ReactNode;
 }
 
 function routeGroupId(route: WorkspaceRoute): string | undefined {
@@ -36,6 +45,8 @@ function writeHash(route: WorkspaceRoute): void {
 export function WorkspaceShell({
   client = generatedWorkspaceClient,
   realtimeStatus = "offline",
+  embedded = false,
+  renderSelected,
 }: WorkspaceShellProps) {
   const session = useSession();
   const queryClient = useQueryClient();
@@ -53,7 +64,7 @@ export function WorkspaceShell({
     enabled: session.isAuthenticated && Boolean(accountId),
     subscribed: session.isAuthenticated,
   });
-  const groups = groupsQuery.data ?? [];
+  const groups = Array.isArray(groupsQuery.data) ? groupsQuery.data : [];
   const route = useMemo(() => parseWorkspaceHash(hash), [hash]);
   const requestedGroupId = routeGroupId(route);
   const requestedGroup = requestedGroupId
@@ -130,13 +141,13 @@ export function WorkspaceShell({
   if (!session.isAuthenticated) return null;
   if (groupsQuery.isPending)
     return (
-      <ShellFrame>
+      <ShellFrame embedded={embedded}>
         <p role="status">Cargando tus grupos…</p>
       </ShellFrame>
     );
   if (groupsQuery.isError) {
     return (
-      <ShellFrame>
+      <ShellFrame embedded={embedded}>
         <p role="alert">
           No se pudieron cargar tus grupos. Intenta nuevamente.
         </p>
@@ -167,6 +178,44 @@ export function WorkspaceShell({
     if (!groupName.trim() || createMutation.isPending) return;
     createMutation.mutate(groupName);
   };
+
+  if (embedded) {
+    return (
+      <ShellFrame embedded>
+        {groups.length === 0 ? (
+          <EmptyGroupsForm
+            name={groupName}
+            error={createError}
+            pending={createMutation.isPending}
+            onNameChange={setGroupName}
+            onSubmit={submitCreate}
+          />
+        ) : staleSelection ? (
+          <section aria-labelledby="workspace-selection-error">
+            <p id="workspace-selection-error" role="alert">
+              No tienes acceso a ese grupo. Elige un grupo activo.
+            </p>
+            <GroupPicker groups={groups} onSelect={select} />
+          </section>
+        ) : selectedGroup ? (
+          <>
+            {groups.length > 1 && <GroupPicker groups={groups} onSelect={select} />}
+            {renderSelected ? (
+              renderSelected(selectedGroup.id, route)
+            ) : (
+              <WorkspaceSummary group={summaryQuery.data ?? selectedGroup} />
+            )}
+          </>
+        ) : (
+          <section aria-labelledby="workspace-picker-title">
+            <h2 id="workspace-picker-title">Elige un grupo</h2>
+            <p>Selecciona el espacio que quieres consultar.</p>
+            <GroupPicker groups={groups} onSelect={select} />
+          </section>
+        )}
+      </ShellFrame>
+    );
+  }
 
   return (
     <ShellFrame>
@@ -241,7 +290,14 @@ export function WorkspaceShell({
   );
 }
 
-function ShellFrame({ children }: { children: React.ReactNode }) {
+function ShellFrame({
+  children,
+  embedded = false,
+}: {
+  children: ReactNode;
+  embedded?: boolean;
+}) {
+  if (embedded) return <>{children}</>;
   return (
     <main data-testid="workspace-shell" tabIndex={-1}>
       {children}

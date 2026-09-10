@@ -2751,3 +2751,203 @@ The following PR6–PR9 and parent-owned rows remain unchecked in `tasks.md`; th
 - PR7a depends on the already-landed PR6 join/link persistence and supplies the lifecycle core; PR7b depends on PR7a; PR7c depends on PR7b; PR7d and PR7e depend on the frozen contract in PR7c.
 - The PR7 task rows remain unchecked until the parent decides how to close the documented residual tests for rejoin, concurrent/stale sessions, and explicit expense/outing-history preservation. This manifest does not claim those scenarios are covered merely because the implementation preserves the data paths.
 - Each slice rolls back only its listed paths. The lifecycle rollback disables leave/remove writes while retaining ended memberships, participant links, participants, outings, expenses, and derived history.
+
+## PR8 — bounded web financial workspace slices
+
+- Parent decision: split the broad PR8 candidate into six additive stacked-to-main slices, each with a stricter **<=400 changed-line** target (and never above the repository hard cap of 800). Counts include additions, deletions, tests, and evidence; no code-golf or generated-file hand edits.
+- **PR8a — financial adapters and query identity (first):** `web/src/features/{outings,expenses,balances,settlement}/api.ts`, `web/src/features/outings/index.ts`, and `web/tests/features/financial-api-clients.test.ts`; no shell/design/generated changes. Target 220–350 units.
+- **PR8b — outing list/detail workspace:** additive outing list/detail, active/archived sections, archived read-only state, and focused tests. Target 260–390 units; depends on PR8a.
+- **PR8c — scoped expense views:** additive group/general/outing expense views and nullable-scope rendering tests. Target 280–390 units; depends on PR8a and PR8b.
+- **PR8d — summary and participant detail:** additive group summary and participant-detail views plus focused tests. Target 260–380 units; depends on PR8b and PR8c.
+- **PR8e — scoped balances and settlement:** additive outing/group wrappers and mixed-scope/no-double-counting tests. Target 260–380 units; depends on PR8a and PR8d.
+- **PR8f — protected-shell integration and final web gates:** one additive integration seam, legacy anchors, accessibility/focus/manual-refresh coverage, and final verification. Target 300–390 units; depends on PR8b–PR8e and preserves every `web-professional-redesign` byte.
+- All six bounded slices now have their own RED/GREEN/TRIANGULATE/REFACTOR/Verify evidence and remain independently rollbackable. Broad PR8 task rows are intentionally left for parent task/lifecycle reconciliation; no task checkbox was changed by these slices.
+
+## PR8a — scope-aware web financial adapters and query identity
+
+### Status and boundary
+
+- Consumed authoritative status: `changeName=group-outing-workspaces`, `artifactStore=openspec`, `applyState=ready`, `dependencies.apply=ready`, `actionContext.mode=repo-local`; unrelated verify-envelope blocker did not block apply.
+- Parent-held native attempt: `pr8a-web-financial-adapters`, max `400` changed lines; no second attempt, commit, reset, clean, review, or delivery gate was used.
+- Produced status: `partial`; this is only PR8a RED/GREEN/TRIANGULATE/REFACTOR. PR8b–PR8e and the broad PR8 rows remain deferred.
+
+### TDD Cycle Evidence
+
+| Cycle | Evidence | Result |
+| --- | --- | --- |
+| RED | Focused Vitest before implementation | Expected failure: missing `web/src/features/outings/api.ts` |
+| GREEN | `npm --prefix web run test -- --run tests/features/financial-api-clients.test.ts` | 5 passed |
+| TRIANGULATE | Adapter mutation/read-shape and scoped query-key isolation assertions | 5 passed; legacy callers preserved |
+| REFACTOR | Full web test, typecheck, build, and diff checks | 13 files/92 tests passed; typecheck/build passed |
+
+### Implementation and verification
+
+- Added the OutingsApi adapter and index with read plus create/edit/archive/unarchive/delete lifecycle methods; mutations include the current CSRF cookie.
+- Extended expense reads to all/general/exact outing scopes and balances/settlement reads to optional `outingId`; mutation payloads remain backward-compatible.
+- Added behavior tests for generated-client call shapes, CSRF mutation arguments, and group/general/outing query identity isolation.
+- Files changed: `web/src/features/outings/api.ts`, `web/src/features/outings/index.ts`, `web/src/features/expenses/api.ts`, `web/src/features/balances/api.ts`, `web/src/features/settlement/api.ts`, `web/tests/features/financial-api-clients.test.ts`, and this progress section only.
+- Commands: focused Vitest **5 passed**; `npm --prefix web run test` **13 files/92 tests passed**; `npm --prefix web run typecheck` **passed**; `npm --prefix web run build` **passed**; `git diff --check` **clean** (only LF/CRLF warnings).
+- Exact PR8a count: **357 changed lines** in the native attempt (319 adapter/test lines + 38 PR8a evidence lines), below the 400-line bound. The reproducible aggregate from `HEAD` is **367** because it also includes the 10-line pre-attempt PR8 split manifest. No `tasks.md` checkbox was changed because this is a partial PR8 slice.
+
+### Remaining tasks and rollback
+
+```text
+- [ ] RED — Add behavior tests for outing/general expense separation, outing archived read-only state, server-provided scoped balances/settlement, participant detail, loading/empty/forbidden/error states, route/deep-link protection, and cache invalidation/refetch; audit redesign paths before running. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement additive laptop-first pages/states for outing detail/expenses, general expenses, group summary, participant detail, balances, and settlement using generated client data and shared integer-cent formatter; perform no client monetary arithmetic. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Cover mixed-scope no-double-counting, stale selected group/outing, archived history, WebSocket outage/manual refresh, membership changes, Spanish accessible names, keyboard focus, visible state cues, and preserved legacy anchors. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Integrate through the protected shell without overwriting `web-professional-redesign`; remove only additive duplication, preserve query identity and REST authority, then rerun focused web tests. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, `npm --prefix web run test`, `npm --prefix web run typecheck`, `npm --prefix web run build`, exact dirty-path audit, and final <=800 changed-line count; stop and split at a screen boundary if over cap. <!-- sdd-owner: implementation -->
+```
+
+- Rollback boundary: revert only the PR8a adapter files, focused test, and this evidence section; preserve backend, generated clients, shell, CSS, redesign bytes, and unrelated dirty/untracked paths.
+
+## PR8b — outing list/detail workspace
+
+### Status and boundary
+
+- Consumed authoritative status: `group-outing-workspaces`, `applyState=ready`, `dependencies.apply=ready`, `actionContext.mode=repo-local`; parent supplied the active `pr8b-web-outing-workspace` attempt with a 400-line bound.
+- Implemented only additive outing list/detail panels and their focused behavior tests. No shell, CSS, expense, summary, participant, balance, settlement, generated, or unrelated redesign path changed.
+- Produced status: `partial`; broad PR8 rows and parent-owned lifecycle remain deferred. No task checkbox was changed.
+
+### TDD Cycle Evidence
+
+| Cycle | Evidence | Result |
+| --- | --- | --- |
+| RED | Focused Vitest before panel implementation | Expected failure: exported panels were undefined (4 failed) |
+| GREEN | Focused outing-panel Vitest | 4 passed |
+| TRIANGULATE | Archived metadata/read-only, empty/error refresh, and stale cross-group/id response tests | 4 passed |
+| REFACTOR | Full Vitest, typecheck, build, and diff checks | 14 files/96 tests passed; typecheck/build/diff checks passed |
+
+### Files, verification, and rollback
+
+- Changed paths: `web/src/features/outings/outings-panel.tsx`, `web/src/features/outings/index.ts`, `web/tests/features/outings/outings-panel.test.tsx`, and this section only.
+- Query identity is group-plus-outing scoped; stale detail responses fail visibly without rendering returned data. Archived `archived`/`archivedAt` metadata remains visible and read-only.
+- PR8b authored count: **375 changed-line units** (192 panel + 153 test + 6 index + 24 evidence), below the 400-line bound.
+- Verification: focused Vitest **4 passed**; full `npm --prefix web run test` **14 files/96 tests passed**; `npm --prefix web run typecheck` and `npm --prefix web run build` passed; bounded `git diff --check` passed.
+- Rollback boundary: revert only the PR8b panel, export additions, focused test, and this evidence section; preserve PR8a adapters, backend, generated clients, shell/CSS, redesign bytes, and unrelated paths.
+
+## PR8c — scoped expense views
+
+### Status and boundary
+
+- Consumed authoritative status: `group-outing-workspaces`, `applyState=ready`, `actionContext.mode=repo-local`; parent supplied the active `pr8c-web-scoped-expense-views` attempt with a 400-line bound. No second attempt, commit, reset, clean, review, or delivery gate was used.
+- Implemented only the additive `ScopedExpensesPanel`, its expense-feature export, focused tests, and this evidence section. Summary, participant, balances, settlement, shell, CSS, generated, backend, mobile, and redesign paths remain untouched.
+- Produced status: `partial`; no `tasks.md` checkbox changed because this is a bounded PR8 sub-slice and the broad PR8 rows remain deferred.
+
+### TDD Cycle Evidence
+
+| Cycle | Evidence | Result |
+| --- | --- | --- |
+| RED | Focused Vitest before implementation | Expected failure: exported `ScopedExpensesPanel` was undefined (4 failed) |
+| GREEN | Focused scoped-expense Vitest | 4 passed; group/general/outing rendering and query calls work |
+| TRIANGULATE | Focused Vitest after loading, archived, empty/error, and stale-scope coverage | 5 passed |
+| REFACTOR | Full Vitest, typecheck, build, and diff checks | 15 files/101 tests passed; typecheck/build/diff checks passed |
+
+### Implementation, verification, and rollback
+
+- `ScopedExpensesPanel` uses `workspaceQueryKeys.group.expenses`, supports group/all, general, and exact outing scopes, formats server integer cents with `formatCents`, renders server contributor/beneficiary names, provides Spanish loading/empty/error/manual-refresh states, and rejects mismatched group or outing responses before rendering.
+- Changed paths: `web/src/features/expenses/scoped-expenses-panel.tsx`, `web/src/features/expenses/index.ts`, `web/tests/features/expenses/scoped-expenses-panel.test.tsx`, and this section only. Exact authored count: **359 changed-line units** (199 panel + 123 test + 5 export + 32 evidence), below the 400-line target.
+- Verification: focused Vitest **5 passed**; `npm --prefix web run test` **15 files/101 tests passed**; `npm --prefix web run typecheck` and `npm --prefix web run build` passed; bounded `git diff --check` passed.
+- Rollback boundary: revert only the PR8c panel, export, focused test, and this evidence section; preserve PR8a/PR8b, backend, generated clients, shell/CSS, redesign bytes, and unrelated paths.
+
+### Remaining unchecked implementation rows
+
+```text
+- [ ] RED — Add behavior tests for outing/general expense separation, outing archived read-only state, server-provided scoped balances/settlement, participant detail, loading/empty/forbidden/error states, route/deep-link protection, and cache invalidation/refetch; audit redesign paths before running. <!-- sdd-owner: implementation -->
+- [ ] GREEN — Implement additive laptop-first pages/states for outing detail/expenses, general expenses, group summary, participant detail, balances, and settlement using generated client data and shared integer-cent formatter; perform no client monetary arithmetic. <!-- sdd-owner: implementation -->
+- [ ] TRIANGULATE — Cover mixed-scope no-double-counting, stale selected group/outing, archived history, WebSocket outage/manual refresh, membership changes, Spanish accessible names, keyboard focus, visible state cues, and preserved legacy anchors. <!-- sdd-owner: implementation -->
+- [ ] REFACTOR — Integrate through the protected shell without overwriting `web-professional-redesign`; remove only additive duplication, preserve query identity and REST authority, then rerun focused web tests. <!-- sdd-owner: implementation -->
+- [ ] Verify separately with native attempt authority, `npm --prefix web run test`, `npm --prefix web run typecheck`, `npm --prefix web run build`, exact dirty-path audit, and final <=800 changed-line count; stop and split at a screen boundary if over cap. <!-- sdd-owner: implementation -->
+```
+
+## PR8d — summary and participant detail
+
+### Status and boundary
+
+- Consumed parent-resolved status: `group-outing-workspaces`, apply ready, repo-local action context; parent-held attempt `pr8d-web-summary-participant-detail`, max 400 changed lines. No second attempt, commit, reset, clean, review, or delivery gate.
+- Implemented only the additive summary and participant-detail panels, their exports, focused tests, and this evidence section. PR8a/PR8b/PR8c, shell, CSS, balances, settlement, generated, backend, mobile, and redesign paths remain untouched.
+
+### TDD Cycle Evidence
+
+| Cycle | Evidence | Result |
+| --- | --- | --- |
+| RED | Focused Vitest before implementation | Expected 6 failures: new exports were undefined |
+| GREEN | Focused summary/participant Vitest | 6 passed |
+| TRIANGULATE | Empty, archived, forbidden, stale cross-group, loading, not-found, and refresh cases | 7 passed |
+| REFACTOR | Full Vitest, typecheck, build, and diff checks | 16 files/108 tests passed; typecheck/build/diff checks passed |
+
+### Implementation, verification, and rollback
+
+- `SummaryPanel` reads the selected group from the existing workspace client, uses the group summary query key, renders server name/role/counts and empty/loading/error/refresh states, and performs no monetary calculation.
+- `ParticipantDetailPanel` reads through the existing participant client, keys by group and participant identity, rejects foreign/stale responses before rendering, and shows Spanish archived-history, not-found, loading, error, and refresh states without account identity.
+- Changed paths: `web/src/features/workspace/summary-panel.tsx`, `web/src/features/workspace/index.ts`, `web/src/features/participants/participant-detail-panel.tsx`, `web/src/features/participants/index.ts`, `web/tests/features/workspace/summary-participant-detail.test.tsx`, and this section only.
+- Exact PR8d authored count: **382 changed-line units** (355 component/test lines + 5 export lines + 22 evidence lines), below the 400-line bound. No task checkbox changed because this is a bounded PR8 sub-slice; broad PR8 rows remain deferred.
+- Rollback boundary: revert only the two panels, two export additions, focused test, and this evidence section; preserve PR8a/PR8b/PR8c, backend, generated clients, shell/CSS, redesign bytes, and unrelated paths.
+
+## PR8e — scoped balances and settlement views
+
+### Status, TDD, and boundary
+
+- Consumed parent-resolved `group-outing-workspaces` apply-ready status and the held `pr8e-web-scoped-derived-views` attempt (`400` max changed lines); no second attempt, commit, reset, clean, review, or delivery gate was used.
+- RED: focused Vitest before implementation failed with `6/6` undefined component renders.
+- GREEN/TRIANGULATE: scoped client calls, query isolation, integer formatting, archived labels, empty/all-settled, stale-scope rejection, loading, error, and manual refresh coverage passed.
+- REFACTOR: focused Vitest `7 passed`; full `npm --prefix web run test` `17 files / 115 tests passed`; `npm --prefix web run typecheck` and `npm --prefix web run build` passed.
+
+### Implementation and evidence
+
+- Added standalone `ScopedBalancesPanel` and `ScopedSettlementPanel`; both accept optional `groupId`/`outingId`, use `workspaceQueryKeys.group.balances/settlement`, validate returned group and outing scope, and render only server-derived cents/transfers through existing formatters.
+- Settlement preserves server policy; balances preserve archived participant labels. Spanish scope cues, loading, empty/all-settled, error, and refresh states are additive and shell-free.
+- Changed paths: `web/src/features/balances/scoped-balances-panel.tsx`, `web/src/features/balances/index.ts`, `web/src/features/settlement/scoped-settlement-panel.tsx`, `web/src/features/settlement/index.ts`, `web/tests/features/balances-settlement/scoped-derived-panels.test.tsx`, and this append only.
+- Product delta: `79 + 4 + 61 + 4 + 103 = 251` lines; this evidence append is `35` lines, for `286` changed-line units, below the `400` bound.
+- No task checkbox changed; broad PR8/PR7 rows and parent-owned lifecycle rows remain deferred.
+- Rollback boundary: revert only the two scoped panels, two export additions, focused test, and this PR8e section; preserve PR8a–PR8d, backend, generated clients, shell/CSS, redesign bytes, and unrelated paths.
+
+### Remaining work and handoff
+
+- Exact unchecked implementation rows remain the broad PR8 RED/GREEN/TRIANGULATE/REFACTOR/Verify rows:
+  ```text
+  - [ ] RED — Add behavior tests for outing/general expense separation, outing archived read-only state, server-provided scoped balances/settlement, participant detail, loading/empty/forbidden/error states, route/deep-link protection, and cache invalidation/refetch; audit redesign paths before running. <!-- sdd-owner: implementation -->
+  - [ ] GREEN — Implement additive laptop-first pages/states for outing detail/expenses, general expenses, group summary, participant detail, balances, and settlement using generated client data and shared integer-cent formatter; perform no client monetary arithmetic. <!-- sdd-owner: implementation -->
+  - [ ] TRIANGULATE — Cover mixed-scope no-double-counting, stale selected group/outing, archived history, WebSocket outage/manual refresh, membership changes, Spanish accessible names, keyboard focus, visible state cues, and preserved legacy anchors. <!-- sdd-owner: implementation -->
+  - [ ] REFACTOR — Integrate through the protected shell without overwriting `web-professional-redesign`; remove only additive duplication, preserve query identity and REST authority, then rerun focused web tests. <!-- sdd-owner: implementation -->
+  - [ ] Verify separately with native attempt authority, `npm --prefix web run test`, `npm --prefix web run typecheck`, `npm --prefix web run build`, exact dirty-path audit, and final <=800 changed-line count; stop and split at a screen boundary if over cap. <!-- sdd-owner: implementation -->
+  ```
+- `actionContext` warning: aggregate worktree contains earlier partial slices and preserved redesign bytes; this slice touched only the six explicit allowed paths.
+- `next_recommended: parent-lifecycle`; parent owns native attempt settlement, bounded review/refutation/correction/validation, receipts, and delivery gates.
+
+### Key Learnings
+
+- Scope identity must be part of both the query key and response validation; server-provided derived data must never be recomputed or trusted across scopes.
+- Standalone panels can preserve policy, archive history, and recovery states without integrating the protected shell.
+
+## PR8f — protected-shell integration
+
+### Status, TDD, and boundary
+
+- Consumed authoritative status: `group-outing-workspaces`, `applyState=ready`, `actionContext.mode=repo-local`; parent-held `pr8f-web-shell-integration` attempt, max `400` changed lines. No second attempt, commit, reset, clean, review, receipt, or delivery gate was used.
+- RED: focused app tests failed (`2` new integration tests) because canonical selected routes were not connected to the protected shell.
+- GREEN/TRIANGULATE: focused app/shell tests pass (`17` tests); canonical summary/balance deep links, legacy anchor navigation, visible focus target, stale-group fail-closed behavior, and Spanish navigation are covered.
+- REFACTOR: full web test suite passes (`17` files / `118` tests), typecheck and production build pass, and bounded `git diff --check` is clean.
+
+### Implementation and evidence
+
+- Added one embedded `WorkspaceShell` seam that validates selected groups against the account-scoped query before invoking the route view. `App.tsx` maps canonical routes to existing PR8a-e panels; no PR9 settings/membership controls were added.
+- Changed paths: `web/src/app/App.tsx` (`136` changed lines), `web/src/app/workspace-shell.tsx` (`66`), `web/tests/app.test.tsx` (`114`), and this evidence append (`31`); PR8f authored total: **347 changed-line units**, below the `400` bound. `workspace-shell.test.tsx` was permitted but unchanged.
+- Verification: focused app/shell test, full `npm --prefix web run test`, `npm --prefix web run typecheck`, `npm --prefix web run build`, and `git diff --check` — all passed; focused run retains one pre-existing React `act(...)` stderr warning.
+- No task checkbox changed: broad PR8 rows remain parent-reconciled and unchecked. Exact remaining implementation rows are:
+  ```text
+  - [ ] RED — Add behavior tests for outing/general expense separation, outing archived read-only state, server-provided scoped balances/settlement, participant detail, loading/empty/forbidden/error states, route/deep-link protection, and cache invalidation/refetch; audit redesign paths before running. <!-- sdd-owner: implementation -->
+  - [ ] GREEN — Implement additive laptop-first pages/states for outing detail/expenses, general expenses, group summary, participant detail, balances, and settlement using generated client data and shared integer-cent formatter; perform no client monetary arithmetic. <!-- sdd-owner: implementation -->
+  - [ ] TRIANGULATE — Cover mixed-scope no-double-counting, stale selected group/outing, archived history, WebSocket outage/manual refresh, membership changes, Spanish accessible names, keyboard focus, visible state cues, and preserved legacy anchors. <!-- sdd-owner: implementation -->
+  - [ ] REFACTOR — Integrate through the protected shell without overwriting `web-professional-redesign`; remove only additive duplication, preserve query identity and REST authority, then rerun focused web tests. <!-- sdd-owner: implementation -->
+  - [ ] Verify separately with native attempt authority, `npm --prefix web run test`, `npm --prefix web run typecheck`, `npm --prefix web run build`, exact dirty-path audit, and final <=800 changed-line count; stop and split at a screen boundary if over cap. <!-- sdd-owner: implementation -->
+  ```
+  PR9 and parent-owned lifecycle rows remain deferred.
+- Rollback boundary: revert only the PR8f hunks in `web/src/app/App.tsx`, `web/src/app/workspace-shell.tsx`, `web/tests/app.test.tsx`, and this appended section. Preserve PR8a-e files, backend/generated/mobile paths, redesign bytes, anchors, and unrelated dirty work.
+- Workload boundary: final PR8 slice, `stacked-to-main`, `exception-ok` inherited from the parent plan; no chaining decision or size exception was needed because the authored candidate is below `400`.
+- Action-context warning: aggregate worktree contains earlier partial PR8 slices and preserved redesign bytes; only explicit PR8f paths were edited. Next recommendation is `parent-lifecycle`; parent owns attempt settlement, review, receipts, and delivery gates.
+
+### Key Learnings
+
+- An embedded route seam reuses account-scoped selection without duplicating authorization or introducing a router.
+- Keep legacy anchors in the protected shell while rendering canonical screens from server-scoped query identities; stale selections must stop before child panels render.

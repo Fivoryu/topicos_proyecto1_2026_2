@@ -189,6 +189,120 @@ describe("Cuentas Claras web shell", () => {
   });
 });
 
+describe("selected workspace route integration", () => {
+  const selectedGroup = {
+    id: "group-demo",
+    name: "Viaje a Samaipata",
+    owner_account_id: "account-1",
+    role: "owner",
+    settlement_policy: "owner_only",
+    member_count: 4,
+    participants_count: 4,
+    outings_count: 1,
+    expenses_count: 4,
+  };
+
+  it("renders a canonical selected-group view inside the protected shell", async () => {
+    window.history.replaceState(null, "", "#/groups/group-demo/summary");
+    const fetchApi = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      const body = url.includes("/api/v1/auth/session")
+        ? validSession
+        : [selectedGroup];
+      return Promise.resolve(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchApi);
+    render(<App />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("protected-shell")).toBeInTheDocument(),
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Viaje a Samaipata" }),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("workspace-route-view")).toHaveAttribute("tabindex", "-1");
+    expect(
+      within(screen.getAllByRole("navigation", { name: "Secciones del grupo" })[0]).getByRole(
+        "link",
+        { name: "Gastos" },
+      ),
+    ).toHaveAttribute("aria-current", "page");
+    expect(document.getElementById("gastos")).toBeInTheDocument();
+    expect(document.getElementById("balances")).toBeInTheDocument();
+    expect(document.getElementById("liquidacion")).toBeInTheDocument();
+    expect(document.getElementById("participantes")).toBeInTheDocument();
+    expect(document.getElementById("grupo")).toBeInTheDocument();
+  });
+
+  it("routes scoped balances and preserves the legacy balance anchor", async () => {
+    window.history.replaceState(null, "", "#/groups/group-demo/balances");
+    const fetchApi = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      let body: unknown = [selectedGroup];
+      if (url.includes("/api/v1/auth/session")) body = validSession;
+      if (url.includes("/balances")) {
+        body = {
+          group_id: "group-demo",
+          outing_id: null,
+          participants: [],
+        };
+      }
+      return Promise.resolve(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchApi);
+    render(<App />);
+
+    expect(
+      await screen.findByRole("heading", { name: "Balances del grupo" }),
+    ).toBeInTheDocument();
+    expect(
+      within(screen.getAllByRole("navigation", { name: "Secciones del grupo" })[0]).getByRole(
+        "link",
+        { name: "Balances" },
+      ),
+    ).toHaveAttribute("aria-current", "page");
+
+    window.location.hash = "#balances";
+    expect(await screen.findByRole("heading", { name: "Balances" })).toBeInTheDocument();
+  });
+
+  it("fails closed for a stale canonical group deep link", async () => {
+    window.history.replaceState(null, "", "#/groups/missing/summary");
+    const fetchApi = vi.fn().mockImplementation((input: RequestInfo | URL) => {
+      const url = String(input);
+      const body = url.includes("/api/v1/auth/session")
+        ? validSession
+        : [selectedGroup];
+      return Promise.resolve(
+        new Response(JSON.stringify(body), {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        }),
+      );
+    });
+    vi.stubGlobal("fetch", fetchApi);
+    render(<App />);
+
+    expect(
+      await screen.findByText(/no tienes acceso a ese grupo/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Viaje a Samaipata", { selector: "h2" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByTestId("protected-shell")).toBeInTheDocument();
+  });
+});
+
 describe("shared presentation states", () => {
   it("announces loading and error text through semantic state roles", () => {
     render(
