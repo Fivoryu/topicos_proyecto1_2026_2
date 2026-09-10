@@ -1,18 +1,41 @@
 ```yaml
 schema: gentle-ai.verify-result/v1
-evidence_revision: sha256:bbc9744d9ce08f1de211a0776fbe71978836851c874298e1c20c356ffc9191a7
+evidence_revision: sha256:06c7d5c144569caae40d1dab0ebf0a1ffc4ab58c60b589f0ab368dcb2eb8b933
 verdict: pass_with_warnings
 blockers: 0
 critical_findings: 0
-requirements: 9/9
-scenarios: 19/19
+requirements: 5/5
+scenarios: 14/14
 test_command: npm --prefix web run test
 test_exit_code: 0
-test_output_hash: sha256:05d691290128bf90ada496d6ff256c23c8f1efca5d11713e57992169aac4678a
+test_output_hash: sha256:e0ea276b8b87fbec4d9d7d7bc61d470d5977c5325d04a3f618a11932b4afcdbb
 build_command: npm --prefix web run build
 build_exit_code: 0
-build_output_hash: sha256:bfdb86f02b0c4d9d21228b0fb7e7bbe198cd5b48ec42803890d4cd3b2b723b61
+build_output_hash: sha256:a1ea710adc108a6beaf2753dc2404096563af7c44f92c8076f44b0887b57da46
 ```
+
+# Verify Report: `pr9-web-membership-settings`
+
+## Verdict
+
+**PASS WITH WARNINGS — PR9 implementation is complete; final manual browser acceptance remains open.**
+
+PR9a, PR9b, and PR9c are implemented as bounded slices of 237, 373, and 366 authored changed-line units. Automated web, backend, lint, contract-drift, OpenSpec, and diff gates pass. Four of the five PR9 implementation rows are reconciled. The Verify row remains unchecked because browser/MCP tooling was unavailable for the required manual laptop-first accessibility/browser rehearsal.
+
+## Scope and verification
+
+- Requirements/scenarios in this scoped report: **5/5 requirements, 14/14 scenarios**.
+- Web: **21 files / 132 tests**, typecheck and build pass.
+- Backend: **316 tests** and Ruff pass.
+- Contract drift: pass; generated clients remain untouched.
+- Scope audit: only handwritten web/test paths changed for PR9; backend, mobile, contracts, generated clients, and `web-professional-redesign` were preserved.
+- `.pi/gentle-ai/sdd-preflight.json` and `NUL` remain untracked and preserved.
+
+## Acceptance gap
+
+No manual browser/MCP execution is claimed. Existing tests cover Spanish accessible names, exclusive participant choice, protected roles, server errors, recovery, token non-disclosure, query invalidation, and keyboard-oriented states. A human must perform the laptop-first browser rehearsal before checking the final Verify row and declaring the full change archive-ready.
+
+---
 
 # Verify Report: `pr8-web-financial-workspace`
 

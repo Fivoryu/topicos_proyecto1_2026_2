@@ -2965,3 +2965,12 @@ The following PR6–PR9 and parent-owned rows remain unchecked in `tasks.md`; th
 
 - A PR8 completion claim must reconcile the five broad task rows only after all six bounded slices have independent TDD and gate evidence; slice commits alone are insufficient.
 - The protected shell can integrate the financial workspace without changing backend authority, generated output, mobile UI, invalidation-only WebSocket behavior, or preserved redesign files.
+
+## PR9 implementation reconciliation — membership/settings web UI
+
+- PR9a adapters/query/invalidation: **237** authored changed-line units; PR9b settings/membership controls: **373/400**; PR9c authenticated join-code consumption: **366/400**. Each slice stayed below the 400-line limit; aggregate PR9 is intentionally chained and measures **974** observed changed lines, not a single review unit.
+- PR9a–PR9c completed RED/GREEN/TRIANGULATE/REFACTOR evidence with focused tests. The four corresponding PR9 implementation rows are now checked in `tasks.md`; the Verify row remains open until the manual laptop-first browser/accessibility rehearsal is performed.
+- Automated verification: `npm --prefix web run test` — exit 0, **21 files / 132 tests**; `npm --prefix web run typecheck` — exit 0; `npm --prefix web run build` — exit 0; `python -m pytest backend/tests -q` — exit 0, **316 tests**; `python -m ruff check backend` — exit 0; `python -m backend.scripts.check_contract_drift --cwd .` — exit 0, clients drift-free; `openspec validate group-outing-workspaces --strict` — exit 0; `git diff --check` — exit 0.
+- Fresh web evidence hashes (complete combined stdout/stderr): test `sha256:e0ea276b8b87fbec4d9d7d7bc61d470d5977c5325d04a3f618a11932b4afcdbb`; typecheck `sha256:e6fe0eeddd18fcb346b8378ad6e5a0c66f65ba916015bd7c73a25e49be0bb345`; build `sha256:a1ea710adc108a6beaf2753dc2404096563af7c44f92c8076f44b0887b57da46`.
+- Scope audit found only 15 handwritten web/test paths for PR9; generated clients, backend, mobile, contracts, and `web-professional-redesign` remain untouched. `.pi/gentle-ai/sdd-preflight.json` and `NUL` remain preserved and untracked.
+- Remaining PR9 acceptance gap: browser/MCP tooling was unavailable for a manual laptop-first accessibility/browser run. Source-level accessible names, protected/error/recovery states, and keyboard-oriented tests pass; no manual browser result is claimed.
