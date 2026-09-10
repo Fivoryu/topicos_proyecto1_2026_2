@@ -1321,6 +1321,86 @@ a {
   font-weight: 750;
 }
 
+/* Membership */
+.membership-card {
+  display: grid;
+  gap: 1rem;
+}
+
+.membership-section {
+  display: grid;
+  gap: 0.7rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.membership-section-heading,
+.membership-row,
+.membership-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.membership-section-heading h3 {
+  margin: 0;
+}
+
+.membership-section-heading > span,
+.membership-role,
+.membership-unlinked {
+  color: var(--content-muted);
+  font-size: 0.78rem;
+}
+
+.membership-list {
+  display: grid;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.membership-row {
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--border-default);
+}
+
+.membership-row > div {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.membership-role {
+  font-weight: 750;
+}
+
+.membership-row a {
+  color: var(--brand-primary-strong);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.join-code-reveal {
+  margin: 0;
+  padding: 0.7rem;
+  color: var(--finance-credit);
+  background: var(--credit-soft);
+  border-radius: var(--radius-sm);
+}
+
+.join-code-reveal code {
+  font-weight: 850;
+  letter-spacing: 0.08em;
+}
+
+.membership-section .feature-state-card {
+  justify-content: space-between;
+  min-height: auto;
+}
+
 /* Balances */
 .table-scroll {
   overflow-x: auto;

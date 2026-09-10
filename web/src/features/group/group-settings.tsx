@@ -12,10 +12,17 @@ import {
 import { groupQueryKey } from "../../core/query-client";
 import type { GroupResponseSettlementPolicyEnum } from "../../generated/api";
 import { formatFeatureError, readFeatureError } from "../api-error";
-import { generatedGroupClient, type GroupFeatureClient } from "./api";
+import { MembershipControls } from "./membership-controls";
+import {
+  generatedGroupClient,
+  type GroupFeatureClient,
+  type GroupMembershipClient,
+} from "./api";
+
+type GroupSettingsClient = GroupFeatureClient & Partial<GroupMembershipClient>;
 
 export interface GroupSettingsProps {
-  client?: GroupFeatureClient;
+  client?: GroupSettingsClient;
   groupId?: string;
 }
 const policyLabel = (policy: GroupResponseSettlementPolicyEnum) =>
@@ -66,6 +73,16 @@ export function GroupSettings({
   const canUpdate =
     session.session?.role === "owner" ||
     group.settlementPolicy === "any_member";
+  const membershipClient =
+    typeof client.listMembers === "function" &&
+    typeof client.getJoinCodeStatus === "function" &&
+    typeof client.generateJoinCode === "function" &&
+    typeof client.regenerateJoinCode === "function" &&
+    typeof client.revokeJoinCode === "function" &&
+    typeof client.removeMember === "function" &&
+    typeof client.leaveGroup === "function"
+      ? (client as GroupMembershipClient)
+      : null;
   function submitPolicy(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!selectedPolicy || updatePolicy.isPending) return;
@@ -129,6 +146,14 @@ export function GroupSettings({
           {mutationError}
         </p>
       )}
+      {membershipClient && session.session?.role && (
+        <MembershipControls
+          client={membershipClient}
+          groupId={groupId}
+          role={session.session.role}
+        />
+      )}
+
     </Panel>
   );
 }
