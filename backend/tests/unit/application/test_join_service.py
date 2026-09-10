@@ -1,9 +1,10 @@
 # ruff: noqa: E501, E702, I001
 from contextlib import contextmanager
+from hashlib import sha256
 from types import SimpleNamespace
 import pytest
 from backend.app.application.authorization import ForbiddenError
-from backend.app.application.join_service import DuplicateMembershipError, InvalidJoinCodeError, InvalidParticipantLinkChoiceError, JoinService
+from backend.app.application.join_service import DuplicateMembershipError, InvalidJoinCodeError, InvalidParticipantLinkChoiceError, JoinService, RevokedJoinCodeError
 
 G, OWNER, MEMBER = "group-one", "owner", "member"
 @pytest.fixture
@@ -11,6 +12,7 @@ def fixture():
     parts, memberships, links = [], set(), {}
     codes, tokens, events = SimpleNamespace(current=None), iter(("first", "second")), []
     counts = SimpleNamespace(commits=0, rollbacks=0)
+    fail_commit = SimpleNamespace(value=False)
 
     def current(group):
         return codes.current if codes.current and codes.current.group_id == group else None
@@ -55,28 +57,53 @@ def fixture():
             links.clear(); links.update(snapshot[2]); counts.rollbacks += 1
             raise
         else:
+            if fail_commit.value:
+                del parts[snapshot[0]:]
+                memberships.clear(); memberships.update(snapshot[1])
+                links.clear(); links.update(snapshot[2]); counts.rollbacks += 1
+                raise RuntimeError("commit failed")
             counts.commits += 1
 
     auth = SimpleNamespace(authorize=lambda actor, group, operation: SimpleNamespace(role="owner" if actor.account_id == OWNER else "member"))
-    token_source = SimpleNamespace(generate=lambda: next(tokens), hash=lambda token: f"digest:{token}".encode())
+    token_source = SimpleNamespace(
+        generate=lambda: next(tokens),
+        hash=lambda token: sha256(token.encode("utf-8")).digest(),
+    )
     service = JoinService(lambda: transaction(), auth, token_source, invalidation_publisher=SimpleNamespace(publish=events.append))
-    return SimpleNamespace(service=service, parts=parts, memberships=memberships, links=links, codes=codes, counts=counts, events=events, fail=fail)
+    return SimpleNamespace(service=service, parts=parts, memberships=memberships, links=links, codes=codes, counts=counts, events=events, fail=fail, fail_commit=fail_commit)
 
 def actor(account_id):
     return SimpleNamespace(account_id=account_id)
 
 def test_owner_lifecycle_is_protected_and_regeneration_invalidates_hash(fixture):
     first = fixture.service.generate(G, actor(OWNER))
-    fixture.service.regenerate(G, actor(OWNER))
-    assert fixture.codes.current.token_hash == b"digest:second"
-    assert fixture.service.status(G, actor(OWNER)).generation == 2
+    assert fixture.events == [G]
+    fixture.events.clear()
+
+    second = fixture.service.regenerate(G, actor(OWNER))
+    assert fixture.events == [G]
+    assert fixture.codes.current.token_hash == sha256(b"second").digest()
+    status = fixture.service.status(G, actor(OWNER))
+    assert status.generation == 2 and status.active is True
     with pytest.raises(InvalidJoinCodeError):
         fixture.service.consume(first.code, actor(MEMBER), new_participant_name="Ana")
+
+    first_join = fixture.service.consume(second.code, actor("a"), new_participant_name="Ana")
+    second_join = fixture.service.consume(
+        second.code, actor("b"), participant_id=first_join.participant_id
+    )
+    assert second_join.participant_id == first_join.participant_id
+    assert fixture.events == [G, G, G]
+    fixture.events.clear()
+
     with pytest.raises(ForbiddenError):
         fixture.service.status(G, actor(MEMBER))
     with pytest.raises(ForbiddenError):
         fixture.service.revoke(G, actor(MEMBER))
     assert fixture.service.revoke(G, actor(OWNER)).active is False
+    assert fixture.events == [G]
+    with pytest.raises(RevokedJoinCodeError):
+        fixture.service.consume(second.code, actor("c"), new_participant_name="Carla")
 
 def test_reusable_consume_links_same_group_and_rejects_foreign_or_duplicate(fixture):
     token = fixture.service.generate(G, actor(OWNER)).code
@@ -99,3 +126,21 @@ def test_one_choice_failure_rolls_back_and_does_not_publish(fixture):
         fixture.service.consume(token, actor(MEMBER), new_participant_name="Ana")
     assert fixture.parts == [] and not fixture.memberships and not fixture.links
     assert fixture.events == [G] and (fixture.counts.commits, fixture.counts.rollbacks) == (1, 1)
+
+
+def test_publication_is_once_after_commit_and_absent_on_commit_failure(fixture):
+    token = fixture.service.generate(G, actor(OWNER)).code
+    fixture.events.clear()
+
+    joined = fixture.service.consume(token, actor(MEMBER), new_participant_name="Ana")
+    assert joined.participant_id == fixture.links[G, MEMBER]
+    assert fixture.events == [G]
+
+    fixture.events.clear()
+    fixture.fail_commit.value = True
+    with pytest.raises(RuntimeError, match="commit failed"):
+        fixture.service.consume(token, actor("another"), new_participant_name="Beto")
+    assert fixture.events == []
+    assert [part.name for part in fixture.parts] == ["Ana"]
+    assert fixture.memberships == {(G, MEMBER)}
+    assert fixture.links == {(G, MEMBER): joined.participant_id}

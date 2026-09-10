@@ -68,4 +68,44 @@ async def test_consume_is_authenticated_reusable_and_requires_one_choice(app):
         neither = await client.post("/api/v1/groups/join", headers=headers(), json={"code": "raw"})
         both = await client.post("/api/v1/groups/join", headers=headers(), json={"code": "raw", "participant_id": "new", "new_participant_name": "Ana"})
     assert first.status_code == second.status_code == 200 and len(calls) == 2
-    assert calls[0][3] == "Ana" and neither.status_code == both.status_code == 422
+    assert calls[0][3] == "Ana" and calls[1][2] == "new"
+    assert neither.status_code == both.status_code == 422
+
+
+@pytest.mark.asyncio
+async def test_consume_requires_an_authenticated_session(app):
+    api, calls = app
+    async with AsyncClient(transport=ASGITransport(app=api), base_url="http://test", cookies=cookies()) as client:
+        client.cookies.update(cookies("invalid-token"))
+        response = await client.post(
+            "/api/v1/groups/join",
+            headers=headers(),
+            json={"code": "raw", "new_participant_name": "Ana"},
+        )
+    assert response.status_code == 401
+    assert response.json()["error_code"] == "unauthorized"
+    assert calls == []
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("method", "path", "payload"),
+    [
+        ("POST", f"/api/v1/groups/{G}/join-code", None),
+        ("POST", f"/api/v1/groups/{G}/join-code/regenerate", None),
+        ("DELETE", f"/api/v1/groups/{G}/join-code", None),
+        ("POST", "/api/v1/groups/join", {"code": "raw", "new_participant_name": "Ana"}),
+    ],
+)
+async def test_join_mutations_reject_missing_csrf_and_disallowed_origin(app, method, path, payload):
+    api, calls = app
+    async with AsyncClient(transport=ASGITransport(app=api), base_url="http://test", cookies=cookies()) as client:
+        missing_csrf = await client.request(
+            method, path, headers={"Origin": "http://localhost:5173"}, json=payload,
+        )
+        disallowed_origin = await client.request(
+            method, path, headers={"Origin": "https://evil.example", CSRF_HEADER_NAME: "csrf"}, json=payload,
+        )
+    assert missing_csrf.status_code == disallowed_origin.status_code == 403
+    assert missing_csrf.json()["error_code"] == disallowed_origin.json()["error_code"] == "csrf_failed"
+    assert calls == []
