@@ -14,6 +14,9 @@ class ErrorCode(StrEnum):
     INVALID_PARTICIPANT_NAME = "invalid_participant_name"
     DUPLICATE_PARTICIPANT_NAME = "duplicate_participant_name"
     PARTICIPANT_IN_USE = "participant_in_use"
+    UNSUPPORTED_CURRENCY = "unsupported_currency"
+    INVALID_RATE = "invalid_rate"
+    CONVERSION_FAILED = "conversion_failed"
 
 
 INVALID_AMOUNT = ErrorCode.INVALID_AMOUNT.value
@@ -24,6 +27,9 @@ CONTRIBUTION_MISMATCH = ErrorCode.CONTRIBUTION_MISMATCH.value
 INVALID_PARTICIPANT_NAME = ErrorCode.INVALID_PARTICIPANT_NAME.value
 DUPLICATE_PARTICIPANT_NAME = ErrorCode.DUPLICATE_PARTICIPANT_NAME.value
 PARTICIPANT_IN_USE = ErrorCode.PARTICIPANT_IN_USE.value
+UNSUPPORTED_CURRENCY = ErrorCode.UNSUPPORTED_CURRENCY.value
+INVALID_RATE = ErrorCode.INVALID_RATE.value
+CONVERSION_FAILED = ErrorCode.CONVERSION_FAILED.value
 
 
 class DomainError(Exception):
@@ -115,3 +121,18 @@ class ContributionMismatchError(DomainError):
         message: str = "Contributor amounts must equal the expense amount.",
     ):
         super().__init__(ErrorCode.CONTRIBUTION_MISMATCH, message)
+
+
+class UnsupportedCurrencyError(DomainError):
+    def __init__(self, message: str = "Currency must be exactly USD, BOB, or EUR."):
+        super().__init__(ErrorCode.UNSUPPORTED_CURRENCY, message)
+
+
+class InvalidRateError(DomainError):
+    def __init__(self, message: str = "Exchange rate must be a finite positive Decimal."):  # noqa: E501
+        super().__init__(ErrorCode.INVALID_RATE, message)
+
+
+class ConversionFailedError(DomainError):
+    def __init__(self, message: str = "Money conversion could not be completed deterministically."):  # noqa: E501
+        super().__init__(ErrorCode.CONVERSION_FAILED, message)
