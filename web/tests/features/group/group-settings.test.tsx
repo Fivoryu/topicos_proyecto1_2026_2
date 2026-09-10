@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   GroupSettings,
   type GroupFeatureClient,
+  type GroupMembershipClient,
 } from "../../../src/features/group";
 import {
   type AuthClient,
@@ -15,6 +16,7 @@ import type {
   GroupResponse,
   SessionIdentityResponse,
 } from "../../../src/generated/api";
+import type { ParticipantFeatureClient } from "../../../src/features/participants/api";
 
 const ownerSession: SessionIdentityResponse = {
   account: { id: "owner-1", loginName: "demo.owner" },
@@ -52,8 +54,9 @@ function authClient(
 }
 
 function renderSettings(
-  client: GroupFeatureClient,
+  client: GroupFeatureClient & Partial<GroupMembershipClient>,
   session: SessionIdentityResponse = ownerSession,
+  participantsClient?: Pick<ParticipantFeatureClient, "listParticipants">,
 ) {
   return render(
     <SessionProvider
@@ -62,7 +65,7 @@ function renderSettings(
         new QueryClient({ defaultOptions: { queries: { retry: false } } })
       }
     >
-      <GroupSettings client={client} />
+      <GroupSettings client={client} participantsClient={participantsClient} />
     </SessionProvider>,
   );
 }
@@ -195,5 +198,21 @@ describe("group settings", () => {
     expect(
       screen.getByRole("heading", { name: "Samaipata" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows the authenticated join form when the membership client supports it", async () => {
+    const client: GroupFeatureClient & Partial<GroupMembershipClient> = {
+      getGroup: vi.fn().mockResolvedValue(group),
+      updatePolicy: vi.fn(),
+      consumeJoinCode: vi.fn(),
+    };
+    const participantsClient = {
+      listParticipants: vi.fn().mockResolvedValue([]),
+    };
+
+    renderSettings(client, ownerSession, participantsClient);
+
+    expect(await screen.findByRole("heading", { name: "Unirme a un grupo" })).toBeInTheDocument();
+    expect(participantsClient.listParticipants).toHaveBeenCalledWith("group-demo");
   });
 });

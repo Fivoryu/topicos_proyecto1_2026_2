@@ -12,6 +12,11 @@ import {
 import { groupQueryKey } from "../../core/query-client";
 import type { GroupResponseSettlementPolicyEnum } from "../../generated/api";
 import { formatFeatureError, readFeatureError } from "../api-error";
+import {
+  generatedParticipantClient,
+  type ParticipantFeatureClient,
+} from "../participants/api";
+import { JoinCodeConsume } from "./join-code-consume";
 import { MembershipControls } from "./membership-controls";
 import {
   generatedGroupClient,
@@ -23,6 +28,7 @@ type GroupSettingsClient = GroupFeatureClient & Partial<GroupMembershipClient>;
 
 export interface GroupSettingsProps {
   client?: GroupSettingsClient;
+  participantsClient?: Pick<ParticipantFeatureClient, "listParticipants">;
   groupId?: string;
 }
 const policyLabel = (policy: GroupResponseSettlementPolicyEnum) =>
@@ -30,6 +36,7 @@ const policyLabel = (policy: GroupResponseSettlementPolicyEnum) =>
 
 export function GroupSettings({
   client = generatedGroupClient,
+  participantsClient = generatedParticipantClient,
   groupId: configuredGroupId,
 }: GroupSettingsProps) {
   const session = useSession();
@@ -73,6 +80,10 @@ export function GroupSettings({
   const canUpdate =
     session.session?.role === "owner" ||
     group.settlementPolicy === "any_member";
+  const joinClient =
+    typeof client.consumeJoinCode === "function"
+      ? { consumeJoinCode: client.consumeJoinCode }
+      : null;
   const membershipClient =
     typeof client.listMembers === "function" &&
     typeof client.getJoinCodeStatus === "function" &&
@@ -154,6 +165,14 @@ export function GroupSettings({
         />
       )}
 
+      {joinClient && session.session?.account.id && (
+        <JoinCodeConsume
+          client={joinClient}
+          participantsClient={participantsClient}
+          groupId={groupId}
+          accountId={session.session.account.id}
+        />
+      )}
     </Panel>
   );
 }
