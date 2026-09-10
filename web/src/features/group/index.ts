@@ -6,4 +6,5 @@ export {
 export {
   generatedGroupClient,
   type GroupFeatureClient,
+  type GroupMembershipClient,
 } from "./api";

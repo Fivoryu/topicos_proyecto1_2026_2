@@ -30,6 +30,30 @@ export function groupQueryKeys(
   );
 }
 
+export const GROUP_MEMBERSHIP_QUERY_RESOURCES = [
+  "members",
+  "join-code-status",
+] as const;
+
+export type GroupMembershipQueryResource =
+  (typeof GROUP_MEMBERSHIP_QUERY_RESOURCES)[number];
+export type GroupMembershipQueryKey = readonly [
+  GroupMembershipQueryResource,
+  string,
+];
+
+export function groupMembershipQueryKeys(
+  groupId: string,
+): Record<GroupMembershipQueryResource, GroupMembershipQueryKey> {
+  return GROUP_MEMBERSHIP_QUERY_RESOURCES.reduce(
+    (keys, resource) => {
+      keys[resource] = [resource, groupId];
+      return keys;
+    },
+    {} as Record<GroupMembershipQueryResource, GroupMembershipQueryKey>,
+  );
+}
+
 export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {

@@ -5,7 +5,10 @@ import {
   connectGroupWebSocket,
   type WebSocketLike,
 } from "../../src/core/websocket";
-import { groupQueryKeys } from "../../src/core/query-client";
+import {
+  groupMembershipQueryKeys,
+  groupQueryKeys,
+} from "../../src/core/query-client";
 
 class FakeWebSocket implements WebSocketLike {
   static instances: FakeWebSocket[] = [];
@@ -45,10 +48,32 @@ describe("group websocket", () => {
       role: "owner",
     });
 
-    expect(invalidateQueries).toHaveBeenCalledTimes(5);
+    expect(invalidateQueries).toHaveBeenCalledTimes(7);
     expect(
       invalidateQueries.mock.calls.map(([options]) => options?.queryKey),
-    ).toEqual(Object.values(groupQueryKeys("group-demo")));
+    ).toEqual([
+      ...Object.values(groupQueryKeys("group-demo")),
+      ...Object.values(groupMembershipQueryKeys("group-demo")),
+    ]);
+  });
+
+  it("ignores malformed and non-signal messages", () => {
+    FakeWebSocket.instances = [];
+    const queryClient = new QueryClient();
+    const invalidateQueries = vi
+      .spyOn(queryClient, "invalidateQueries")
+      .mockResolvedValue(undefined);
+
+    connectGroupWebSocket({
+      groupId: "group-demo",
+      queryClient,
+      webSocketFactory: (url) => new FakeWebSocket(url),
+    });
+    const socket = FakeWebSocket.instances[0];
+    socket.receive({ type: "balance_changed", balanceCents: 123 });
+    socket.onmessage?.({ data: "not-json" } as MessageEvent<string>);
+
+    expect(invalidateQueries).not.toHaveBeenCalled();
   });
 
   it("closes cleanly when REST remains the authoritative path during an outage", () => {

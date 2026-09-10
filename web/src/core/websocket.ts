@@ -1,6 +1,9 @@
 import type { QueryClient } from "@tanstack/react-query";
 import { webConfig } from "./config";
-import { groupQueryKeys } from "./query-client";
+import {
+  groupMembershipQueryKeys,
+  groupQueryKeys,
+} from "./query-client";
 
 export interface WebSocketLike {
   onmessage: ((event: MessageEvent<string>) => void) | null;
@@ -57,7 +60,10 @@ export function connectGroupWebSocket({
   const socket = factory(websocketUrl(groupId, baseUrl));
   socket.onmessage = (event) => {
     if (!isDataChangedMessage(event)) return;
-    const keys = Object.values(groupQueryKeys(groupId));
+    const keys = [
+      ...Object.values(groupQueryKeys(groupId)),
+      ...Object.values(groupMembershipQueryKeys(groupId)),
+    ];
     void Promise.all(
       keys.map((queryKey) => queryClient.invalidateQueries({ queryKey })),
     );

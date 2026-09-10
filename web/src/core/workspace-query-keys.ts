@@ -9,6 +9,8 @@ export const workspaceQueryKeys = {
     root: (groupId: string) => ["group", groupId] as const,
     summary: (groupId: string) => ["group", groupId, "summary"] as const,
     members: (groupId: string) => ["group", groupId, "members"] as const,
+    joinCodeStatus: (groupId: string) =>
+      ["group", groupId, "join-code-status"] as const,
     outings: (groupId: string) => ["group", groupId, "outings"] as const,
     expenses: (groupId: string, scope = "all") =>
       ["group", groupId, "expenses", scope] as const,
