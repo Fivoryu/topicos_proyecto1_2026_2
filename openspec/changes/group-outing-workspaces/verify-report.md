@@ -18,9 +18,9 @@ build_output_hash: sha256:a1ea710adc108a6beaf2753dc2404096563af7c44f92c8076f44b0
 
 ## Verdict
 
-**PASS WITH WARNINGS — PR9 implementation is complete; final manual browser acceptance remains open.**
+**PASS WITH WARNINGS — PR9 is complete within its bounded web scope.**
 
-PR9a, PR9b, and PR9c are implemented as bounded slices of 237, 373, and 366 authored changed-line units. Automated web, backend, lint, contract-drift, OpenSpec, and diff gates pass. Four of the five PR9 implementation rows are reconciled. The Verify row remains unchecked because browser/MCP tooling was unavailable for the required manual laptop-first accessibility/browser rehearsal.
+PR9a, PR9b, and PR9c are implemented as bounded slices of 237, 373, and 366 authored changed-line units. Automated web, backend, lint, contract-drift, OpenSpec, and diff gates pass. All five PR9 implementation rows are reconciled. The warning is procedural: RDD review is disabled for this clone, so no native review receipt was started.
 
 ## Scope and verification
 
@@ -31,9 +31,9 @@ PR9a, PR9b, and PR9c are implemented as bounded slices of 237, 373, and 366 auth
 - Scope audit: only handwritten web/test paths changed for PR9; backend, mobile, contracts, generated clients, and `web-professional-redesign` were preserved.
 - `.pi/gentle-ai/sdd-preflight.json` and `NUL` remain untracked and preserved.
 
-## Acceptance gap
+## Manual acceptance
 
-No manual browser/MCP execution is claimed. Existing tests cover Spanish accessible names, exclusive participant choice, protected roles, server errors, recovery, token non-disclosure, query invalidation, and keyboard-oriented states. A human must perform the laptop-first browser rehearsal before checking the final Verify row and declaring the full change archive-ready.
+The user confirmed the manual laptop/browser rehearsal at `http://localhost:5173`: login, owner/member settings, join-code lifecycle, membership controls, authenticated join flow, protected/error/recovery states, Spanish accessible copy, and laptop layout. No token or sensitive credential was recorded.
 
 ---
 

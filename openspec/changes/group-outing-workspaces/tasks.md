@@ -131,7 +131,7 @@ Chain strategy: stacked-to-main
 - [x] GREEN — Implement group/membership settings, authenticated join-code consumption UI with explicit participant link/create choice, member removal/leave actions, Spanish copy, and safe protected recovery states using server-derived role/error responses. <!-- sdd-owner: implementation -->
 - [x] TRIANGULATE — Add full regression cases for account selection, outing lifecycle, scoped expenses/derived results, invalidation-only WebSocket behavior, no public join/account creation, no token leakage, official Samaipata exact data/result, and all protected deep links. <!-- sdd-owner: implementation -->
 - [x] REFACTOR — Normalize source-mutating files before candidate freeze, preserve all redesign bytes/modes, remove no required acceptance coverage, and confirm the final web remains dependency-free with mobile UI out of scope. <!-- sdd-owner: implementation -->
-- [ ] Verify separately with native attempt authority, complete backend/web/contract/migration gates, manual laptop-first accessibility/browser flow, protected-path and generated-output audits, and final <=760 changed-line count. <!-- sdd-owner: implementation -->
+- [x] Verify separately with native attempt authority, complete backend/web/contract/migration gates, manual laptop-first accessibility/browser flow, protected-path and generated-output audits, and final <=760 changed-line count. <!-- sdd-owner: implementation -->
 - [ ] Preserve the exact normalized candidate and evidence for every slice, then hand the frozen stack to the parent for bounded lifecycle review and delivery gates; do not mark this task complete from planning alone. <!-- sdd-owner: parent -->
 
 ## Explicit decision gates and completion criteria
