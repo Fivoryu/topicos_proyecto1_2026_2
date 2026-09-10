@@ -22,4 +22,5 @@ def test_alembic_harness_includes_source_revision():
         BACKEND_ROOT / "migrations" / "versions" / "0004_outing.py",
         BACKEND_ROOT / "migrations" / "versions" / "0005_expense_outing.py",
         BACKEND_ROOT / "migrations" / "versions" / "0006_join_codes.py",
+        BACKEND_ROOT / "migrations" / "versions" / "0007_multi_currency.py",
     ]

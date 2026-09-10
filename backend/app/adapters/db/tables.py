@@ -8,9 +8,11 @@ server-owned ``owner_account_id``; no role claim is persisted.
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from decimal import Decimal
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
+    CHAR,
     Boolean,
     CheckConstraint,
     DateTime,
@@ -19,11 +21,13 @@ from sqlalchemy import (
     Index,
     Integer,
     LargeBinary,
+    Numeric,
     PrimaryKeyConstraint,
     String,
     Text,
     UniqueConstraint,
     Uuid,
+    desc,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -187,6 +191,28 @@ class Expense(Base):
     __tablename__ = "expenses"
     __table_args__ = (
         CheckConstraint("amount_cents > 0", name="ck_expenses_amount_positive"),
+        CheckConstraint(
+            "source_currency IN ('USD', 'BOB', 'EUR')",
+            name="ck_expenses_source_currency_supported",
+        ),
+        CheckConstraint("usd_rate > 0", name="ck_expenses_usd_rate_positive"),
+        CheckConstraint(
+            "rate_provider IN ('system', 'frankfurter', 'manual', 'legacy')",
+            name="ck_expenses_rate_provider_supported",
+        ),
+        CheckConstraint(
+            "rate_provenance IN ('usd_identity', 'frankfurter_current', "
+            "'stored_fallback', 'manual', 'legacy_migration')",
+            name="ck_expenses_rate_provenance_supported",
+        ),
+        CheckConstraint(
+            "(rate_provider = 'system' AND rate_provenance = 'usd_identity') OR "
+            "(rate_provider = 'frankfurter' AND rate_provenance IN "
+            "('frankfurter_current', 'stored_fallback')) OR "
+            "(rate_provider = 'manual' AND rate_provenance = 'manual') OR "
+            "(rate_provider = 'legacy' AND rate_provenance = 'legacy_migration')",
+            name="ck_expenses_rate_provider_provenance",
+        ),
         ForeignKeyConstraint(
             ["outing_id", "group_id"],
             ["outings.id", "outings.group_id"],
@@ -208,11 +234,77 @@ class Expense(Base):
     outing_id: Mapped[UUID | None] = mapped_column(Uuid(as_uuid=True), nullable=True)
     description: Mapped[str] = mapped_column(String(500), nullable=False)
     amount_cents: Mapped[int] = mapped_column(Integer, nullable=False)
+    source_currency: Mapped[str] = mapped_column(
+        CHAR(3), nullable=False, default="USD"
+    )
+    usd_rate: Mapped[Decimal] = mapped_column(
+        Numeric(30, 18, asdecimal=True), nullable=False, default=lambda: Decimal("1")
+    )
+    rate_provider: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="legacy"
+    )
+    rate_provenance: Mapped[str] = mapped_column(
+        String(32), nullable=False, default="legacy_migration"
+    )
+    rate_observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now
+    )
+    rate_frozen_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, default=_utc_now
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utc_now
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False, default=_utc_now, onupdate=_utc_now
+    )
+
+
+class ExchangeRateCache(Base):
+    """A valid Frankfurter source-to-USD observation."""
+
+    __tablename__ = "exchange_rate_cache"
+    __table_args__ = (
+        CheckConstraint(
+            "source_currency IN ('BOB', 'EUR')",
+            name="ck_exchange_rate_cache_source_currency_supported",
+        ),
+        CheckConstraint(
+            "quote_currency = 'USD'",
+            name="ck_exchange_rate_cache_quote_currency_usd",
+        ),
+        CheckConstraint("rate > 0", name="ck_exchange_rate_cache_rate_positive"),
+        CheckConstraint(
+            "provider = 'frankfurter'",
+            name="ck_exchange_rate_cache_provider_frankfurter",
+        ),
+        Index(
+            "ix_exchange_rate_cache_latest_valid",
+            "source_currency",
+            "quote_currency",
+            "valid",
+            desc("observed_at"),
+            desc("fetched_at"),
+        ),
+    )
+
+    id: Mapped[UUID] = mapped_column(
+        Uuid(as_uuid=True), primary_key=True, default=uuid4
+    )
+    source_currency: Mapped[str] = mapped_column(CHAR(3), nullable=False)
+    quote_currency: Mapped[str] = mapped_column(CHAR(3), nullable=False)
+    rate: Mapped[Decimal] = mapped_column(
+        Numeric(30, 18, asdecimal=True), nullable=False
+    )
+    provider: Mapped[str] = mapped_column(String(32), nullable=False)
+    observed_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    fetched_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+    valid: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True, server_default="true"
     )
 
 
@@ -373,6 +465,7 @@ __all__ = [
     "GroupJoinCode",
     "Base",
     "Expense",
+    "ExchangeRateCache",
     "ExpenseBeneficiary",
     "ExpenseContribution",
     "Group",

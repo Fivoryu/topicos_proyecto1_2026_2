@@ -28,26 +28,26 @@ Chain strategy: stacked-to-main
 
 ### Slice 0 — coordination and baseline gate
 
-- [ ] Confirm `group-outing-workspaces` nullable `outing_id`, composite integrity, authorization, scoped derivation, and actual Alembic/API heads; record the merge base and protected paths in the implementation notes without editing its artifacts. <!-- sdd-owner: implementation -->
-- [ ] Run baseline focused backend, web, contract, and OpenSpec checks and capture any pre-existing failures separately from this change. <!-- sdd-owner: implementation -->
-- [ ] Define the slice branch/stack boundaries so no slice exceeds the approved review budget and no generated or mobile-owned file is used as an implementation surface. <!-- sdd-owner: implementation -->
+- [x] Confirm `group-outing-workspaces` nullable `outing_id`, composite integrity, authorization, scoped derivation, and actual Alembic/API heads; record the merge base and protected paths in the implementation notes without editing its artifacts. <!-- sdd-owner: implementation -->
+- [x] Run baseline focused backend, web, contract, and OpenSpec checks and capture any pre-existing failures separately from this change. <!-- sdd-owner: implementation -->
+- [x] Define the slice branch/stack boundaries so no slice exceeds the approved review budget and no generated or mobile-owned file is used as an implementation surface. <!-- sdd-owner: implementation -->
 
 ### Slice 1 — money domain and deterministic USD conversion (PR 1)
 
 Allowed edit surfaces: `backend/app/domain/money.py`, new/adjacent domain conversion/error modules, and focused domain tests under `backend/tests/unit/` or the repository’s existing domain-test location.
 
-- [ ] RED: add focused tests for exact `USD`/`BOB`/`EUR` parsing, lexical source cents, invalid symbols/lowercase/JPY, invalid rates, Decimal-only conversion, `ROUND_HALF_UP`, signed intermediates, and no float/double arithmetic; run the focused test command and observe failure. <!-- sdd-owner: implementation -->
-- [ ] GREEN: implement closed currency/source-money/exchange-rate value objects, Decimal validation, total-first source-to-USD cent conversion, and stable `unsupported_currency`, `invalid_rate`, and `conversion_failed` errors. <!-- sdd-owner: implementation -->
-- [ ] RED/GREEN: test and implement largest-remainder paid allocation from the one converted total, then CC-01 USD residual selection and exact-zero balance/settlement inputs without changing existing split semantics. <!-- sdd-owner: implementation -->
-- [ ] TRIANGULATE: cover high precision, excessive scale, half-cent ties, negative derived values, one/many contributors, residual ties, empty contributor-beneficiary intersection, and conservation invariants. <!-- sdd-owner: implementation -->
-- [ ] REFACTOR: centralize Decimal context and integer-cent helpers, remove duplicate conversion logic, run all domain/money tests and `python -m ruff check backend`. <!-- sdd-owner: implementation -->
+- [x] RED: add focused tests for exact `USD`/`BOB`/`EUR` parsing, lexical source cents, invalid symbols/lowercase/JPY, invalid rates, Decimal-only conversion, `ROUND_HALF_UP`, signed intermediates, and no float/double arithmetic; run the focused test command and observe failure. <!-- sdd-owner: implementation -->
+- [x] GREEN: implement closed currency/source-money/exchange-rate value objects, Decimal validation, total-first source-to-USD cent conversion, and stable `unsupported_currency`, `invalid_rate`, and `conversion_failed` errors. <!-- sdd-owner: implementation -->
+- [x] RED/GREEN: test and implement largest-remainder paid allocation from the one converted total, then CC-01 USD residual selection and exact-zero balance/settlement inputs without changing existing split semantics. <!-- sdd-owner: implementation -->
+- [x] TRIANGULATE: cover high precision, excessive scale, half-cent ties, negative derived values, one/many contributors, residual ties, empty contributor-beneficiary intersection, and conservation invariants. <!-- sdd-owner: implementation -->
+- [x] REFACTOR: centralize Decimal context and integer-cent helpers, remove duplicate conversion logic, run all domain/money tests and `python -m ruff check backend`. <!-- sdd-owner: implementation -->
 
 ### Slice 2 — additive persistence, cache, and legacy migration (PR 2)
 
 Allowed edit surfaces: actual current-head revision in `backend/migrations/versions/`, `backend/app/adapters/db/tables.py`, `repositories.py`, `uow.py`, ports/records, and persistence/migration tests. Do not touch the workspace owner’s revision.
 
-- [ ] RED: add migration tests proving legacy rows, source contribution cents, beneficiaries, participant/group IDs, timestamps, and nullable outing relations are preserved; assert repeatable backfill and no fabricated quote. <!-- sdd-owner: implementation -->
-- [ ] GREEN: add one additive Alembic revision based on the coordinated current head, `exchange_rate_cache`, expense currency/rate/provider/provenance/timestamp fields, constraints/indexes, and USD legacy backfill with explicit `legacy_migration` metadata. <!-- sdd-owner: implementation -->
+- [x] RED: add migration tests proving legacy rows, source contribution cents, beneficiaries, participant/group IDs, timestamps, and nullable outing relations are preserved; assert repeatable backfill and no fabricated quote. <!-- sdd-owner: implementation -->
+- [x] GREEN: add one additive Alembic revision based on the coordinated current head, `exchange_rate_cache`, expense currency/rate/provider/provenance/timestamp fields, constraints/indexes, and USD legacy backfill with explicit `legacy_migration` metadata. <!-- sdd-owner: implementation -->
 - [ ] RED/GREEN: add repository/ORM tests for Decimal-to-`NUMERIC(30,18)` mapping, append-only valid observations, latest-valid ordering, invalid-row exclusion, optional cache linkage, and atomic child replacement. <!-- sdd-owner: implementation -->
 - [ ] TRIANGULATE: run upgrade/backfill twice, test partial metadata guards, concurrent latest selection, rollback on derived failure, and compatibility with fail-closed/idempotent seed without modifying protected fixture files. <!-- sdd-owner: implementation -->
 - [ ] REFACTOR: keep schema checks and repository mappings explicit, verify migration head/foreign-key ordering, run persistence tests and the relevant backend suite. <!-- sdd-owner: implementation -->
