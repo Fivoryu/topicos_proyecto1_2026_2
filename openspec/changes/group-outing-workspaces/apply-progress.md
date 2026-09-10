@@ -2679,3 +2679,75 @@ The following PR6–PR9 and parent-owned rows remain unchecked in `tasks.md`; th
 - TRIANGULATE: request-state authorization rejects the foreign outing for both endpoints, while the focused affected API files pass: `python -m pytest backend/tests/integration/api/test_expense_derived_routes.py backend/tests/integration/api/test_outing_routes.py -q` — **17 passed**.
 - Ruff: `python -m ruff check backend/app/api/routes/balances.py backend/app/api/routes/settlement.py backend/tests/integration/api/test_expense_derived_routes.py backend/tests/integration/api/test_outing_routes.py` — **All checks passed**.
 - Boundary: no monetary arithmetic, contract/generated output, PR6+ task checkbox, parent-owned lifecycle action, or app-scoped authorization fallback was changed.
+
+
+## PR7 — Membership lifecycle candidate verification and contract synchronization
+
+### Scope and independent verification
+
+- The initial compact handwritten PR7 candidate was independently audited before generation at **235 tracked diff units + 565 PR7 untracked source/test lines = 800 units**. After removing the unrequested member-detail GET endpoint and its helper/tests, the final handwritten implementation/test scope is **771 units**. `.pi/` and `NUL` were preserved; no commit, push, reset, clean, or delivery operation was run.
+- Independent verifier `mtv1ebqx-6-h3th` found no functional blocker. It confirmed server-derived owner/member authorization, active-membership/group isolation, immutable-owner protection, history-preserving `ended_at` updates, and one post-commit invalidation with no publication on failure.
+- Residual coverage is recorded rather than hidden: dedicated rejoin, concurrent/stale-session, and explicit expense/outing-history lifecycle tests remain recommended. The implementation already uses the existing reactivation/upsert paths and does not delete history.
+
+### Contract and generated-output evidence
+
+- Exported `contracts/openapi.json` from the handwritten FastAPI routes/schemas. The contract adds `MemberResponse` and the three requested membership lifecycle operations (list, remove, and leave); no migration was needed because the nullable `ended_at` columns already exist in the authoritative revisions.
+- Regenerated the pinned `typescript-fetch` and `dart-dio` clients, normalized them through the repository drift workflow, and built Dart serialization parts successfully. No generated file was hand-edited.
+- `python -m backend.scripts.check_contract_drift --cwd .` — **Contract and generated clients are drift-free.** The build emitted only existing tool warnings about the ignored build-runner flag and the broad `json_annotation` constraint.
+
+### Final gates
+
+- `python -m pytest backend/tests -q` — **316 passed, 1 existing Starlette/httpx deprecation warning**.
+- `python -m ruff check backend` — **All checks passed**.
+- `npm --prefix web run test` — **12 files / 87 tests passed**, with the existing React `act(...)` warning.
+- `npm --prefix web run typecheck` — **passed**.
+- `npm --prefix web run build` — **passed**.
+- `git diff --check` — **passed**; only non-mutating LF/CRLF conversion warnings were emitted.
+- `openspec validate group-outing-workspaces --strict` — **valid**; all four planning artifacts are complete.
+
+### Changed-path and budget audit after generation
+
+- Allowed handwritten PR7 paths remain confined to backend application/API/tests. Generated changes are confined to `contracts/openapi.json`, `web/src/generated/api/**`, and `mobile/lib/generated/api/**`; no `AGENTS.md`, fixture, archive, redesign, mobile UI/domain, or WebSocket payload path changed.
+- Required generated outputs add **1,194 units** (`contracts/openapi.json` 226; web generated output 303; mobile generated output 665). The candidate before this evidence section is **1,965 units (771 handwritten + 1,194 generated)** and does **not** fit as one <=800-unit PR7 boundary when generated output is counted as required by `tasks.md`.
+- This is a hard budget finding, not an approval to exceed the cap: the generated contract/client work must be split into separately bounded chained work units before candidate freeze. PR7 implementation rows remain unchecked until that split and the residual coverage decision are settled.
+- Rollback boundary: disable membership leave/remove writes while retaining ended memberships, participant links, participants, outings, expenses, and all derived history; generated outputs roll back with the corresponding contract work unit.
+- Result: **handwritten PR7 behavior is verified and contract synchronization is green, but the integrated PR7 candidate is not yet freeze-ready under the documented 800-unit cap.**
+
+
+## PR7 stack freeze — bounded work-unit manifest
+
+### Boundary decision
+
+- The uncommitted PR7 candidate is intentionally split into five file-level work units. The aggregate is **1,965 product units**, but each unit is independently below the hard **800-unit** cap; this follows the established per-slice interpretation for generated-client chains.
+- Unit counts use Git `numstat` additions plus deletions for tracked files and physical line counts for newly generated/source files. `apply-progress.md` evidence, `.pi/`, and `NUL` are excluded from product-unit counts.
+- No generated output was hand-edited. The contract and both client trees came from the pinned generator workflow and passed the final drift check. No commit, push, reset, clean, or delivery operation was performed.
+
+### Ordered slices
+
+1. **PR7a — lifecycle core and persistence — 509 units**
+   - `backend/app/adapters/db/repositories.py`
+   - `backend/app/application/ports.py`
+   - `backend/app/application/authorization.py`
+   - `backend/app/application/membership_service.py`
+   - `backend/tests/integration/persistence/test_auth_tables.py`
+   - `backend/tests/unit/application/test_authorization.py`
+   - `backend/tests/unit/application/test_membership_service.py`
+2. **PR7b — API wiring and endpoint tests — 262 units**
+   - `backend/app/api/errors.py`
+   - `backend/app/api/routes/_common.py`
+   - `backend/app/main.py`
+   - `backend/app/api/routes/memberships.py`
+   - `backend/app/api/schemas/memberships.py`
+   - `backend/tests/integration/api/test_membership_routes.py`
+3. **PR7c — OpenAPI contract snapshot — 226 units**
+   - `contracts/openapi.json`
+4. **PR7d — generated TypeScript client — 303 units**
+   - `web/src/generated/api/**` changed paths only
+5. **PR7e — generated Dart client — 665 units**
+   - `mobile/lib/generated/api/**` changed paths only
+
+### Handoff and residual coverage
+
+- PR7a depends on the already-landed PR6 join/link persistence and supplies the lifecycle core; PR7b depends on PR7a; PR7c depends on PR7b; PR7d and PR7e depend on the frozen contract in PR7c.
+- The PR7 task rows remain unchecked until the parent decides how to close the documented residual tests for rejoin, concurrent/stale sessions, and explicit expense/outing-history preservation. This manifest does not claim those scenarios are covered merely because the implementation preserves the data paths.
+- Each slice rolls back only its listed paths. The lifecycle rollback disables leave/remove writes while retaining ended memberships, participant links, participants, outings, expenses, and derived history.
