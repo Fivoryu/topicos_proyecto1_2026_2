@@ -22,6 +22,7 @@ export * from './JoinCodeResponse';
 export * from './JoinCodeStatus';
 export * from './JoinResponse';
 export * from './LoginRequest';
+export * from './MemberResponse';
 export * from './OutingResponse';
 export * from './OutingWriteRequest';
 export * from './ParticipantResponse';

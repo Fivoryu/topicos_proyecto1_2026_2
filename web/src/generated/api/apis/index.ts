@@ -6,6 +6,7 @@ export * from './ExpensesApi';
 export * from './GroupsApi';
 export * from './HealthApi';
 export * from './JoinApi';
+export * from './MembershipsApi';
 export * from './OutingsApi';
 export * from './ParticipantsApi';
 export * from './SettlementApi';

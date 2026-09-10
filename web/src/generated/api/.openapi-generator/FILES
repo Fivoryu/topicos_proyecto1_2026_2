@@ -5,6 +5,7 @@ apis/ExpensesApi.ts
 apis/GroupsApi.ts
 apis/HealthApi.ts
 apis/JoinApi.ts
+apis/MembershipsApi.ts
 apis/OutingsApi.ts
 apis/ParticipantsApi.ts
 apis/SettlementApi.ts
@@ -32,6 +33,7 @@ models/JoinCodeResponse.ts
 models/JoinCodeStatus.ts
 models/JoinResponse.ts
 models/LoginRequest.ts
+models/MemberResponse.ts
 models/OutingResponse.ts
 models/OutingWriteRequest.ts
 models/ParticipantResponse.ts
